@@ -3,6 +3,8 @@ package io.scalacraft.core
 import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.MethodMirror
 
 object Marshallers {
@@ -164,7 +166,7 @@ object Marshallers {
     }
   }
 
-  class ArrayMarshaller[T](paramMarshaller: Marshaller[T], lengthMarshaller: Marshaller[Int]) extends Marshaller[Array[T]] {
+  class ArrayMarshaller[T: ClassTag](paramMarshaller: Marshaller[T], lengthMarshaller: Marshaller[Int]) extends Marshaller[Array[T]] {
     override def marshal(obj: Array[T])(implicit outStream: BufferedOutputStream): Unit = {
       lengthMarshaller.marshal(obj.length)
       for (elem <- obj) {
@@ -182,17 +184,17 @@ object Marshallers {
     }
   }
 
-  class StructureMarshaller[T <: Product](fieldsMarshaller: List[Marshaller[Any]], constructorMirror: MethodMirror)
-    extends Marshaller[T] {
-    override def marshal(obj: T)(implicit outStream: BufferedOutputStream): Unit = {
+  class StructureMarshaller(fieldsMarshaller: List[Marshaller[Any]], constructorMirror: MethodMirror)
+    extends Marshaller[Structure] {
+    override def marshal(obj: Structure)(implicit outStream: BufferedOutputStream): Unit = {
       obj.productIterator.zip(fieldsMarshaller) foreach { t =>
         t._2.marshal(t._1)
       }
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): T = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Structure = {
       val fields = fieldsMarshaller map { _.unmarshal() }
-      constructorMirror(fields :_*).asInstanceOf[T]
+      constructorMirror(fields :_*).asInstanceOf[Structure]
     }
   }
 
