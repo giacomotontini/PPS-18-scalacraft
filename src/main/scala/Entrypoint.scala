@@ -2,27 +2,31 @@ import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream,
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+import PlayPackets.{PlayerInfoAction, TestPacket}
+
 import scala.annotation.StaticAnnotation
 import scala.language.postfixOps
 
 
 object Entrypoint extends App {
 
-  val originalPacket = hex2bytes("000002a3000000000001140764656661756c7400")
+  val originalPacket = hex2bytes("0100000005")
   val serializedPacket = new ByteArrayOutputStream()
   implicit val inStream: BufferedInputStream = new BufferedInputStream(new ByteArrayInputStream(originalPacket))
   implicit val outStream: BufferedOutputStream = new BufferedOutputStream(serializedPacket)
 
-//  val fields = PacketManager.packetFieldsMarshaller(0x25) map { m => m.unmarshal() }
-//  val jg = PacketManager.instanceConstructors(0x25)(fields: _*).asInstanceOf[JoinGame]
-//
+  val fields = PacketManager.packetFieldsMarshaller(0x0) map { m => m.unmarshal() }
+  val jg = PacketManager.instanceConstructors(0x0)(fields: _*).asInstanceOf[TestPacket]
+
+  println(jg)
+
 //  jg.productIterator.zip(PacketManager.packetFieldsMarshaller(0x25)) foreach { tuple =>
 //    tuple._2.marshal(tuple._1)
 //  }
-
-  inStream.close()
-  outStream.close()
-
+//
+//  inStream.close()
+//  outStream.close()
+//
 //  println(jg)
 //  assert(originalPacket.toList sameElements serializedPacket.toByteArray)
 
@@ -102,174 +106,22 @@ object PacketManager {
         StringMarshaller
       case sym if isSymType[Boolean](sym) =>
         BooleanMarshaller
+      case sym if isSymType[Option[_]](sym) =>
+        new OptionalMarshaller(sym.info.typeArgs(0))
+      case sym if isSymType[Array[_]](sym) =>
+        new ArrayMarshaller(sym.info.typeArgs(0))
     }
     list.asInstanceOf[List[Marshaller[Any]]] // todo: bad type conversion :(
   } toMap
 
-  private def isSymType[T: TypeTag](symbol: Symbol): Boolean = symbol.info =:= typeOf[T]
+  private def isSymType[T: TypeTag](symbol: Symbol): Boolean = symbol.info <:< typeOf[T]
   private def hasAnnotation[T: TypeTag](symbol: Symbol): Boolean = symbol.annotations.exists {_.tree.tpe =:= typeOf[T]}
 
 }
 
-trait Marshaller[T] {
-  def marshal(obj: T)(implicit outStream: BufferedOutputStream): Unit
-  def unmarshal()(implicit inStream: BufferedInputStream): T
-}
 
-object ValueMarshaller {
 
-  object BooleanMarshaller extends Marshaller[Boolean] {
-    override def marshal(obj: Boolean)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write(if (obj) 0x1 else 0x0)
-    }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Boolean = {
-      inStream.read() == 0x1
-    }
-  }
-
-  object ByteMarshaller extends Marshaller[Int] {
-    override def marshal(obj: Int)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write(obj & 0xFF)
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): Int = {
-      inStream.read()
-    }
-  }
-
-  object ShortMarshaller extends Marshaller[Int] {
-    override def marshal(obj: Int)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write((obj >> 8) & 0xFF)
-      outStream.write(obj & 0xFF)
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): Int = {
-      (inStream.read() << 8) | inStream.read()
-    }
-  }
-
-  implicit object IntMarshaller extends Marshaller[Int] {
-    override def marshal(obj: Int)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write((obj >> 24) & 0xFF)
-      outStream.write((obj >> 16) & 0xFF)
-      outStream.write((obj >> 8) & 0xFF)
-      outStream.write(obj & 0xFF)
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): Int = {
-      (inStream.read() << 24) | (inStream.read() << 16) | (inStream.read() << 8) | inStream.read()
-    }
-  }
-
-  object LongMarshaller extends Marshaller[Long] {
-    override def marshal(obj: Long)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write(((obj >> 56) & 0xFF).toInt)
-      outStream.write(((obj >> 48) & 0xFF).toInt)
-      outStream.write(((obj >> 40) & 0xFF).toInt)
-      outStream.write(((obj >> 32) & 0xFF).toInt)
-      outStream.write(((obj >> 24) & 0xFF).toInt)
-      outStream.write(((obj >> 16) & 0xFF).toInt)
-      outStream.write(((obj >> 8) & 0xFF).toInt)
-      outStream.write((obj & 0xFF).toInt)
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): Long = {
-      (inStream.read() << 56) |(inStream.read() << 48) | (inStream.read() << 40) | (inStream.read() << 32) | (inStream.read() << 24) | (inStream.read() << 16) | (inStream.read() << 8) | inStream.read()
-    }
-  }
-
-  object VarIntMarshaller extends Marshaller[Int] {
-    override def marshal(obj: Int)(implicit outStream: BufferedOutputStream): Unit = {
-      var value = obj
-      do {
-        var temp = value & 0x7f
-        value = value >>> 7
-        if (value != 0) {
-          temp |= 0x80
-        }
-        outStream.write(temp)
-      } while (value != 0)
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): Int = {
-      var numRead = 0
-      var result = 0
-      var read = 0
-      do {
-        read = inStream.read()
-        result |= ((read & 0x7f) << (7 * numRead))
-        numRead += 1
-        if (numRead > 5) {
-          throw new Exception("VarInt is too big")
-        }
-      } while ((read & 0x80) != 0)
-
-      result
-    }
-  }
-
-  object StringMarshaller extends Marshaller[String] {
-    override def marshal(obj: String)(implicit outStream: BufferedOutputStream): Unit = {
-      val buffer = obj.getBytes(StandardCharsets.UTF_8)
-      val length = buffer.length
-      VarIntMarshaller.marshal(length)
-
-      for (i <- 0 until length) {
-        outStream.write(buffer(i))
-      }
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): String = {
-      val length = VarIntMarshaller.unmarshal()
-      val buffer = new Array[Byte](length)
-      for (i <- 0 until length) {
-        buffer(i) = inStream.read().toByte
-      }
-
-      new String(buffer, StandardCharsets.UTF_8)
-    }
-  }
-
-  object UUIDMarshaller extends Marshaller[UUID] {
-    private val UUID_Size = 16
-
-    override def marshal(obj: UUID)(implicit outStream: BufferedOutputStream): Unit = {
-      LongMarshaller.marshal(obj.getMostSignificantBits)
-      LongMarshaller.marshal(obj.getLeastSignificantBits)
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): UUID = {
-      val buffer = new Array[Byte](UUID_Size)
-      for (i <- 0 until UUID_Size) {
-        buffer(i) = inStream.read().toByte
-      }
-
-      UUID.nameUUIDFromBytes(buffer)
-    }
-  }
-
-  class OptionalMarshaller[T] extends Marshaller[Option[T]] {
-    import ValueMarshaller._
-
-    override def marshal(obj: Option[T])(implicit outStream: BufferedOutputStream): Unit = {
-      if (obj.isDefined) {
-        BooleanMarshaller.marshal(obj = true)
-        // marshallers(classOf[T]).marshal(obj.get)
-      }
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): Option[T] = {
-      if (BooleanMarshaller.unmarshal()) {
-        // Some(marshallers(classOf[T]).unmarshal())
-        None
-      } else {
-        None
-      }
-    }
-  }
-
-}
 
 object PacketAnnotations {
   class packet(id: Int) extends StaticAnnotation
@@ -305,23 +157,21 @@ trait Message {
   }
 }
 
-class VarInt(val value: Int) extends AnyVal
 
+case class VarInt(value: Int) extends AnyVal
 
 
 object PlayPackets {
   import PacketAnnotations._
-
-
 
   sealed trait PlayerInfoAction {
     val uuid: UUID
   }
 
   @packetStructure
-  case class AddPlayerProperty(@string(32767) name: String,
-                               @string(32767) value: String,
-                               @string(32767) signature: Option[String])
+  case class AddPlayerProperty(name: String,
+                               value: String,
+                               signature: Option[String])
 
   case class AddPlayer(
                         uuid: UUID,
@@ -334,7 +184,10 @@ object PlayPackets {
 
 
   @packet(0x30)
-  case class PlayerInfo(@switch[VarInt, PlayerInfoAction](Map(0 -> AddPlayer)) playerAction: Array[PlayerInfoAction])
+  case class PlayerInfo(@switch[VarInt, Class[_]](Map(VarInt(0) -> classOf[AddPlayer])) playerAction: Array[PlayerInfoAction])
     extends Message
+
+  @packet(0x0)
+  case class TestPacket(testOption: Option[Int])
 
 }
