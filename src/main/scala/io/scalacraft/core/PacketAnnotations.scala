@@ -11,6 +11,7 @@ object PacketAnnotations {
   class short extends StaticAnnotation
   class enum(values: Any*) extends StaticAnnotation
   class maxLength(value: Int) extends StaticAnnotation
-  class switch[K](options: (K, Class[_])*) extends StaticAnnotation
-  class precededBy[T]() extends StaticAnnotation
+  class switchType[K] extends StaticAnnotation
+  class switchKey(value: Any) extends StaticAnnotation
+  class precededBy[T] extends StaticAnnotation
 }

@@ -12,11 +12,12 @@ object PlayPackets {
     val uuid: UUID
   }
 
+
   case class AddPlayerProperty(name: String,
                                @boxed test: Option[Int],
                                value: String,
                                signature: Option[String]) extends Structure
-
+  @switchKey(0)
   case class AddPlayer(
                         uuid: UUID,
                         @maxLength(16) name: String,
@@ -27,7 +28,7 @@ object PlayPackets {
                       ) extends PlayerInfoAction with Structure
 
   @packet(0x30)
-  case class PlayerInfo(@switch[VarInt](VarInt(0) -> classOf[AddPlayer]) playerAction: Array[PlayerInfoAction])
+  case class PlayerInfo(@switchType[VarInt] @precededBy[VarInt] playerAction: Array[PlayerInfoAction])
     extends Structure
 
   @packet(0x0)

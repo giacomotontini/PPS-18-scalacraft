@@ -4,8 +4,11 @@ import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+import io.scalacraft.core.serverbound.PlayPackets.AddPlayer
+
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.MethodMirror
+import scala.reflect.runtime.universe.{Type, TypeTag}
 
 object Marshallers {
 
@@ -187,14 +190,29 @@ object Marshallers {
   class StructureMarshaller(fieldsMarshaller: List[Marshaller[Any]], constructorMirror: MethodMirror)
     extends Marshaller[Structure] {
     override def marshal(obj: Structure)(implicit outStream: BufferedOutputStream): Unit = {
-      obj.productIterator.zip(fieldsMarshaller) foreach { t =>
-        t._2.marshal(t._1)
+      obj.productIterator.zip(fieldsMarshaller.toIterator) foreach {
+        case (obj, marshaller) => marshaller.marshal(obj)
       }
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Structure = {
       val fields = fieldsMarshaller map { _.unmarshal() }
       constructorMirror(fields :_*).asInstanceOf[Structure]
+    }
+  }
+
+  class SwitchMarshaller[K, V: TypeTag](keyMarshaller: Marshaller[K],
+                              valuesMarshaller: Map[K, Marshaller[V]],
+                              valuesTypes: Map[Type, K]) extends Marshaller[V] {
+    override def marshal(obj: V)(implicit outStream: BufferedOutputStream): Unit = {
+      val key = valuesTypes(Helpers.runtimeType(obj))
+      keyMarshaller.marshal(key)
+      valuesMarshaller(key).marshal(obj)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): V = {
+      val key = keyMarshaller.unmarshal()
+      valuesMarshaller(key).unmarshal()
     }
   }
 
