@@ -10,7 +10,7 @@ import scala.language.postfixOps
 
 object Entrypoint extends App {
 
-  val pm = new PacketManager[PlayPackets.type]
+  val pm = new PacketManager
 
   val originalPacket = Helpers.hex2bytes("0100000005")
   val serializedPacket = new ByteArrayOutputStream()
