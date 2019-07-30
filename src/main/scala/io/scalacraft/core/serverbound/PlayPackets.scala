@@ -5,6 +5,7 @@ import java.util.UUID
 import io.scalacraft.core.DataTypes.VarInt
 import io.scalacraft.core.PacketAnnotations._
 import io.scalacraft.core.Structure
+import scala.reflect.runtime.universe.typeOf
 
 object PlayPackets {
 
@@ -27,7 +28,7 @@ object PlayPackets {
 
 
   @packet(0x30)
-  case class PlayerInfo(@switch[VarInt, Class[_]](Map(VarInt(0) -> classOf[AddPlayer])) playerAction: Array[PlayerInfoAction])
+  case class PlayerInfo(@switch(VarInt(0) -> typeOf[AddPlayer]) playerAction: Array[PlayerInfoAction])
     extends Structure
 
   @packet(0x0)

@@ -25,10 +25,9 @@ class PacketManager[T: TypeTag] {
   } toMap
 
   private lazy val packetTypes: Map[Int, Type] = classTypes collect {
-    case tpe if tpe.typeSymbol.annotations.exists(_.tree.tpe =:= typeOf[packet]) =>
-      val annotation = tpe.typeSymbol.annotations.find {_.tree.tpe =:= typeOf[packet]} get
-      val packetId = annotation.tree.children.tail.collectFirst { case Literal(Constant(value)) => value }.get
-      packetId.asInstanceOf[Int] -> tpe
+    case tpe if hasAnnotation[packet](tpe.typeSymbol) =>
+      val ann = annotation[packet](tpe.typeSymbol)
+      annotationParam[Int](ann, 0) -> tpe
   } toMap
 
   private lazy val packetIds: Map[Type, Int] = packetTypes map { _.swap }
@@ -60,7 +59,12 @@ class PacketManager[T: TypeTag] {
         }
       case sym if isSymType[Long](sym) => LongMarshaller
       case sym if isSymType[VarInt](sym) => VarIntMarshaller
-      case sym if isSymType[String](sym) => new StringMarshaller(32767)
+      case sym if isSymType[String](sym) =>
+        if (hasAnnotation[maxLength](sym)) {
+          new StringMarshaller(annotationParam[Int](annotation(sym), 0))
+        } else {
+          new StringMarshaller(MaxStringLength)
+        }
       case sym if isSymType[Boolean](sym) => BooleanMarshaller
       case sym if isSymType[UUID](sym) => UUIDMarshaller
       case sym if isSymType[Option[_]](sym) => new OptionalMarshaller(createMarshaller(sym.info.typeArgs(0)))
@@ -73,11 +77,14 @@ class PacketManager[T: TypeTag] {
 
   private def isSymType[U: TypeTag](symbol: Symbol): Boolean = symbol.info <:< typeOf[U]
   private def hasAnnotation[U: TypeTag](symbol: Symbol): Boolean = symbol.annotations.exists {_.tree.tpe =:= typeOf[U]}
-//  private def getAnnotationParam(annotation: Annotation, index: Int) = {
-//    val l = annotation.tree.children.tail
-//    l.
-//
-//
-//  } //. { case Literal(Constant(value)) => value }.get
+  private def annotation[U: TypeTag](symbol: Symbol): Annotation =
+    symbol.annotations.find {_.tree.tpe =:= typeOf[packet]}.get
+  private def annotationParams(annotation: Annotation, index: Int): List[Any] = annotation.tree.children.tail map {
+    case Literal(Constant(value)) => value
+  }
+  private def annotationParam[U](annotation: Annotation, index: Int): U =
+    annotationParams(annotation, index).asInstanceOf[U]
+
+
 
 }
