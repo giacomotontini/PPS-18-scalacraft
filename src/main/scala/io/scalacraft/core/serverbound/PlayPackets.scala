@@ -31,6 +31,6 @@ object PlayPackets {
     extends Structure
 
   @packet(0x0)
-  case class TestPacket(@maxLength(16) testOption: Option[String]) extends Structure
+  case class TestPacket(testOption: Option[Int]) extends Structure
 
 }
