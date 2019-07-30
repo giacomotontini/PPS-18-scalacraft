@@ -18,12 +18,18 @@ object Entrypoint extends App {
   implicit val outStream: BufferedOutputStream = new BufferedOutputStream(serializedPacket)
 
   val testPacket = pm.unmarshal(0).asInstanceOf[TestPacket]
+
   println(testPacket)
+
+
+  pm.marshal(testPacket)
 
   inStream.close()
   outStream.close()
 
-//  assert(originalPacket.toList sameElements serializedPacket.toByteArray)
+  println(serializedPacket.toByteArray.toList)
+
+  assert(originalPacket.toList sameElements serializedPacket.toByteArray)
 
   //  case class Test(value: Int)
   //  val t = Test(42)
