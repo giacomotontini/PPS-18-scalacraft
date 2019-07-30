@@ -28,7 +28,7 @@ object PlayPackets {
 
 
   @packet(0x30)
-  case class PlayerInfo(@switch(VarInt(0) -> typeOf[AddPlayer]) playerAction: Array[PlayerInfoAction])
+  case class PlayerInfo(@switch[VarInt](VarInt(0) -> typeOf[AddPlayer]) playerAction: Array[PlayerInfoAction])
     extends Structure
 
   @packet(0x0)

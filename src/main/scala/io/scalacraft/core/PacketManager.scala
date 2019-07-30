@@ -15,7 +15,7 @@ class PacketManager[T: TypeTag] {
   private lazy val mirror = runtimeMirror(getClass.getClassLoader)
 
   private lazy val classTypes: List[Type] = typeOf[T].decls.collect {
-    case sym if sym.isClass => sym.asClass.toType
+    case sym if sym.isClass => sym.typeSignature
   } toList
 
   private lazy val classConstructors: Map[Type, MethodMirror] = classTypes map { tpe =>
@@ -32,9 +32,7 @@ class PacketManager[T: TypeTag] {
 
   private lazy val packetIds: Map[Type, Int] = packetTypes map { _.swap }
 
-  private lazy val packetMarshallers: Map[Int, Marshaller[Structure]] = packetTypes collect {
-    case (packetId, tpe) => packetId -> createMarshaller(tpe)
-  } toMap
+  private lazy val packetMarshallers: Map[Int, Marshaller[Structure]] = packetTypes transform((_,v) => createMarshaller(v))
 
   def marshal(packet: Structure)(implicit outStream: BufferedOutputStream): Unit =
     packetMarshallers(packetIds(runtimeType(packet))).marshal(packet)
