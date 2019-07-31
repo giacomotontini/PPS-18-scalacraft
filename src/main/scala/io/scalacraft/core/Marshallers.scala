@@ -4,90 +4,87 @@ import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import io.scalacraft.core.serverbound.PlayPackets.AddPlayer
-
+import scala.language.postfixOps
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.MethodMirror
-import scala.reflect.runtime.universe.{Type, TypeTag}
+import scala.reflect.runtime.universe._
 
 object Marshallers {
 
-  object BooleanMarshaller extends Marshaller[Boolean] {
-    override def marshal(obj: Boolean)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write(if (obj) 0x1 else 0x0)
+  object BooleanMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case b: Boolean => outStream.write(if (b) 0x1 else 0x0)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Boolean = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
       inStream.read() == 0x1
-    }
   }
 
-  object ByteMarshaller extends Marshaller[Int] {
-    override def marshal(obj: Int)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write(obj & 0xFF)
+  object ByteMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case i: Int => outStream.write(i & 0xFF)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Int = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
       inStream.read()
-    }
   }
 
-  object ShortMarshaller extends Marshaller[Int] {
-    override def marshal(obj: Int)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write((obj >> 8) & 0xFF)
-      outStream.write(obj & 0xFF)
+  object ShortMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case i: Int =>
+        outStream.write((i >> 8) & 0xFF)
+        outStream.write(i & 0xFF)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Int = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
       (inStream.read() << 8) | inStream.read()
-    }
   }
 
-  object IntMarshaller extends Marshaller[Int] {
-    override def marshal(obj: Int)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write((obj >> 24) & 0xFF)
-      outStream.write((obj >> 16) & 0xFF)
-      outStream.write((obj >> 8) & 0xFF)
-      outStream.write(obj & 0xFF)
+  object IntMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case i: Int =>
+        outStream.write((i >> 24) & 0xFF)
+        outStream.write((i >> 16) & 0xFF)
+        outStream.write((i >> 8) & 0xFF)
+        outStream.write(i & 0xFF)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Int = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
       (inStream.read() << 24) | (inStream.read() << 16) | (inStream.read() << 8) | inStream.read()
-    }
   }
 
-  object LongMarshaller extends Marshaller[Long] {
-    override def marshal(obj: Long)(implicit outStream: BufferedOutputStream): Unit = {
-      outStream.write(((obj >> 56) & 0xFF).toInt)
-      outStream.write(((obj >> 48) & 0xFF).toInt)
-      outStream.write(((obj >> 40) & 0xFF).toInt)
-      outStream.write(((obj >> 32) & 0xFF).toInt)
-      outStream.write(((obj >> 24) & 0xFF).toInt)
-      outStream.write(((obj >> 16) & 0xFF).toInt)
-      outStream.write(((obj >> 8) & 0xFF).toInt)
-      outStream.write((obj & 0xFF).toInt)
+  object LongMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case l: Long =>
+        outStream.write(((l >> 56) & 0xFF).toInt)
+        outStream.write(((l >> 48) & 0xFF).toInt)
+        outStream.write(((l >> 40) & 0xFF).toInt)
+        outStream.write(((l >> 32) & 0xFF).toInt)
+        outStream.write(((l >> 24) & 0xFF).toInt)
+        outStream.write(((l >> 16) & 0xFF).toInt)
+        outStream.write(((l >> 8) & 0xFF).toInt)
+        outStream.write((l & 0xFF).toInt)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Long = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
       (inStream.read() << 56) |(inStream.read() << 48) | (inStream.read() << 40) | (inStream.read() << 32) |
         (inStream.read() << 24) | (inStream.read() << 16) | (inStream.read() << 8) | inStream.read()
-    }
   }
 
-  object VarIntMarshaller extends Marshaller[Int] {
-    override def marshal(obj: Int)(implicit outStream: BufferedOutputStream): Unit = {
-      var value = obj
-      do {
-        var temp = value & 0x7f
-        value = value >>> 7
-        if (value != 0) {
-          temp |= 0x80
-        }
-        outStream.write(temp)
-      } while (value != 0)
+  object VarIntMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case i: Int =>
+        var value = i
+        do {
+          var temp = value & 0x7f
+          value = value >>> 7
+          if (value != 0) {
+            temp |= 0x80
+          }
+          outStream.write(temp)
+        } while (value != 0)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Int = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
       var numRead = 0
       var result = 0
       var read = 0
@@ -104,45 +101,48 @@ object Marshallers {
     }
   }
 
-  class StringMarshaller(maxLength: Int) extends Marshaller[String] {
-    override def marshal(obj: String)(implicit outStream: BufferedOutputStream): Unit = {
-      if (obj.length > maxLength) {
-        throw new IllegalArgumentException(s"String too big (${obj.length} > $maxLength)")
-      }
+  class StringMarshaller(maxLength: Int) extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case s: String =>
+        checkSize(s)
+        val buffer = s.getBytes(StandardCharsets.UTF_8)
+        val length = buffer.length
+        VarIntMarshaller.marshal(length)
 
-      val buffer = obj.getBytes(StandardCharsets.UTF_8)
-      val length = buffer.length
-      VarIntMarshaller.marshal(length)
-
-      for (i <- 0 until length) {
-        outStream.write(buffer(i))
-      }
+        for (i <- 0 until length) {
+          outStream.write(buffer(i))
+        }
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): String = {
-      val length = VarIntMarshaller.unmarshal()
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+      val length = VarIntMarshaller.unmarshal().asInstanceOf[Int]
       val buffer = new Array[Byte](length)
       for (i <- 0 until length) {
         buffer(i) = inStream.read().toByte
       }
 
       val str = new String(buffer, StandardCharsets.UTF_8)
+      checkSize(str)
+      str
+    }
+
+    private def checkSize(str: String): Unit = {
       if (str.length > maxLength) {
         throw new IllegalArgumentException(s"String too big (${str.length} > $maxLength)")
       }
-      str
     }
   }
 
-  object UUIDMarshaller extends Marshaller[UUID] {
+  object UUIDMarshaller extends Marshaller {
     private val UUID_Size = 16
 
-    override def marshal(obj: UUID)(implicit outStream: BufferedOutputStream): Unit = {
-      LongMarshaller.marshal(obj.getMostSignificantBits)
-      LongMarshaller.marshal(obj.getLeastSignificantBits)
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case u: UUID =>
+        LongMarshaller.marshal(u.getMostSignificantBits)
+        LongMarshaller.marshal(u.getLeastSignificantBits)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): UUID = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
       val buffer = new Array[Byte](UUID_Size)
       for (i <- 0 until UUID_Size) {
         buffer(i) = inStream.read().toByte
@@ -152,16 +152,16 @@ object Marshallers {
     }
   }
 
-  class OptionalMarshaller[T](paramMarshaller: Marshaller[T]) extends Marshaller[Option[T]] {
-    override def marshal(obj: Option[T])(implicit outStream: BufferedOutputStream): Unit = {
-      BooleanMarshaller.marshal(obj.isDefined)
-      if (obj.isDefined) {
-        paramMarshaller.marshal(obj.get)
-      }
+  class OptionalMarshaller(paramMarshaller: Marshaller) extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case Some(value) =>
+        BooleanMarshaller.marshal(true)
+        paramMarshaller.marshal(value)
+      case None => BooleanMarshaller.marshal(false)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Option[T] = {
-      if (BooleanMarshaller.unmarshal()) {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+      if (BooleanMarshaller.unmarshal().asInstanceOf[Boolean]) {
         Some(paramMarshaller.unmarshal())
       } else {
         None
@@ -169,17 +169,20 @@ object Marshallers {
     }
   }
 
-  class ArrayMarshaller[T: ClassTag](paramMarshaller: Marshaller[T], lengthMarshaller: Marshaller[Int]) extends Marshaller[Array[T]] {
-    override def marshal(obj: Array[T])(implicit outStream: BufferedOutputStream): Unit = {
-      lengthMarshaller.marshal(obj.length)
-      for (elem <- obj) {
-        paramMarshaller.marshal(elem)
-      }
+  class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Marshaller, runtimeClass: RuntimeClass)
+    extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case array: Array[Any] =>
+        lengthMarshaller.marshal(array.length)
+        for (elem <- array) {
+          paramMarshaller.marshal(elem)
+        }
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Array[T] = {
-      val length = lengthMarshaller.unmarshal()
-      val array: Array[T] = new Array(length)
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+      // TODO: replace with reflection
+      val length = lengthMarshaller.unmarshal().asInstanceOf[Int]
+      val array = ClassTag(runtimeClass).newArray(length).asInstanceOf[Array[Any]]
       for (i <- 0 until length) {
         array(i) = paramMarshaller.unmarshal()
       }
@@ -187,30 +190,42 @@ object Marshallers {
     }
   }
 
-  class StructureMarshaller(fieldsMarshaller: List[Marshaller[Any]], constructorMirror: MethodMirror)
-    extends Marshaller[Structure] {
-    override def marshal(obj: Structure)(implicit outStream: BufferedOutputStream): Unit = {
-      obj.productIterator.zip(fieldsMarshaller.toIterator) foreach {
-        case (obj, marshaller) => marshaller.marshal(obj)
-      }
+  class StructureMarshaller(fieldsMarshaller: List[Marshaller], constructorMirror: MethodMirror) extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case str: Structure =>
+        str.productIterator.zip(fieldsMarshaller.toIterator) foreach {
+          case (obj, marshaller) => marshaller.marshal(obj)
+        }
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Structure = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
       val fields = fieldsMarshaller map { _.unmarshal() }
-      constructorMirror(fields :_*).asInstanceOf[Structure]
+      constructorMirror(fields :_*)
     }
   }
 
-  class SwitchMarshaller[K, V: TypeTag](keyMarshaller: Marshaller[K],
-                              valuesMarshaller: Map[K, Marshaller[V]],
-                              valuesTypes: Map[Type, K]) extends Marshaller[V] {
-    override def marshal(obj: V)(implicit outStream: BufferedOutputStream): Unit = {
-      val key = valuesTypes(Helpers.runtimeType(obj))
+  class SwitchMarshaller(keyMarshaller: Marshaller,
+                         valuesMarshaller: Map[Any, Marshaller],
+                         valuesTypes: Map[RuntimeClass, Any]) extends Marshaller {
+    private val mirror = runtimeMirror(getClass.getClassLoader)
+
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = {
+//      val objTpe = runtimeMirror(getClass.getClassLoader).classSymbol(obj.getClass).toType
+//      println(runtimeMirror(getClass.getClassLoader).classSymbol(obj.getClass).asType.typeParams)
+//      println(obj.getClass)
+//
+//      println(runtimeMirror(getClass.getClassLoader).classSymbol(obj.getClass))
+//      val keyId = valuesTypes.collectFirst {
+//        case (tpe, key) if tpe =:= objTpe => key
+//      } get
+
+      println(obj.getClass.getTypeName)
+      val key = valuesTypes(obj.getClass)
       keyMarshaller.marshal(key)
       valuesMarshaller(key).marshal(obj)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): V = {
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
       val key = keyMarshaller.unmarshal()
       valuesMarshaller(key).unmarshal()
     }

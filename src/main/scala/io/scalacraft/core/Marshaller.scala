@@ -2,7 +2,7 @@ package io.scalacraft.core
 
 import java.io.{BufferedInputStream, BufferedOutputStream}
 
-trait Marshaller[T] {
-  def marshal(obj: T)(implicit outStream: BufferedOutputStream): Unit
-  def unmarshal()(implicit inStream: BufferedInputStream): T
+trait Marshaller {
+  def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit
+  def unmarshal()(implicit inStream: BufferedInputStream): Any
 }

@@ -6,17 +6,16 @@ import java.util.UUID
 import io.scalacraft.core.DataTypes.VarInt
 import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.PacketAnnotations._
-import io.scalacraft.core.serverbound.PlayPackets
-import io.scalacraft.core.serverbound.PlayPackets.AddPlayerProperty
 
 import scala.language.postfixOps
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 
-class PacketManager {
+class PacketManager[T: TypeTag] {
 
   private val mirror = runtimeMirror(getClass.getClassLoader)
 
-  private val classTypes: List[ClassSymbol] = typeOf[PlayPackets.type].decls.collect {
+  private val classTypes: List[ClassSymbol] = typeOf[T].decls.collect {
     case sym if sym.isClass && !sym.isAbstract => sym.asClass
   } toList
 
@@ -32,44 +31,44 @@ class PacketManager {
       annotationParam[Int](ann, 0) -> sym.toType
   } toMap
 
-  private val packetMarshallers: Map[Int, Marshaller[Structure]] = packetTypes map {
+  private val packetMarshallers: Map[Int, Marshaller] = packetTypes map {
     case (packetId, tpe) => packetId -> createMarshaller(tpe)
   }
 
-  def marshal[T <: Structure: TypeTag](packet: T)(implicit outStream: BufferedOutputStream): Unit = {
+  def marshal[U <: Structure: TypeTag](packet: U)(implicit outStream: BufferedOutputStream): Unit = {
     val packetId = packetTypes.collectFirst {
-      case (packetId, tpe) if tpe =:= Helpers.runtimeType[T](packet) => packetId
+      case (packetId, tpe) if tpe =:= Helpers.runtimeType[U](packet) => packetId
     } get
 
     packetMarshallers(packetId).marshal(packet)
   }
 
   def unmarshal(packetId: Int)(implicit inStream: BufferedInputStream): Structure =
-    packetMarshallers(packetId).unmarshal()
+    packetMarshallers(packetId).unmarshal().asInstanceOf[Structure]
 
-  private def createMarshaller(tpe: Type): Marshaller[Structure] = {
+  private def createMarshaller(tpe: Type): Marshaller = {
     // 0 is to take the first curring arguments list
     val paramSymbols = tpe.decl(termNames.CONSTRUCTOR).asMethod.paramLists.head
-    val paramMarshallers = paramSymbols map subTypesMarshaller map { _.asInstanceOf[Marshaller[Any]]}
+    val paramMarshallers = paramSymbols map subTypesMarshaller
     new StructureMarshaller(paramMarshallers, classConstructors(tpe))
   }
 
-  private def subTypesMarshaller: PartialFunction[Symbol, Marshaller[_]] = {
+  private def subTypesMarshaller: PartialFunction[Symbol, Marshaller] = {
     case sym => subTypesMarshaller(checkAnnotations = true, Some(sym))(sym)
   }
 
-  private def subTypesMarshaller[Any](checkAnnotations: Boolean, symAnnotations: Option[Symbol] = None)
-                                (symbol: Symbol): Marshaller[_] = {
+  private def subTypesMarshaller(checkAnnotations: Boolean, symAnnotations: Option[Symbol] = None)
+                                (symbol: Symbol): Marshaller = {
     symbol match {
       case sym if checkAnnotations && hasAnnotation[switchType[_]](symAnnotations.get) =>
         val keyType = annotationTypeArg(annotation[switchType[_]](symAnnotations.get), 0)
-        val keyMarshaller = subTypesMarshaller(checkAnnotations = false)(keyType).asInstanceOf[Marshaller[Any]]
+        val keyMarshaller = subTypesMarshaller(checkAnnotations = false)(keyType)
 
         val switchTrait = if (isSymType[Array[_]](sym)) {
           sym.info.typeArgs.head.typeSymbol
         } else sym
 
-        val valuesType = classTypes collect {
+        var valuesType = classTypes collect {
           case sym if hasAnnotation[switchKey](sym) && sym.baseClasses.contains(switchTrait) =>
             val ann = annotation[switchKey](sym)
             annotationParam[Any](ann, 0) -> sym.toType
@@ -77,21 +76,29 @@ class PacketManager {
 
         var valuesMarshaller = valuesType map {
           case (keyId, tpe) =>
-            keyId -> createMarshaller(tpe).asInstanceOf[Marshaller[Any]]
+            keyId -> createMarshaller(tpe)
         }
 
         if (isSymType[Array[_]](sym)) {
           val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
           val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
 
+          val valuesWithArrayType = valuesType.map {
+            case (key, tpe) => key -> (sym.info match {
+              case TypeRef(p, sym, _) => TypeRef(p, sym, List(tpe))(compat.token)
+            })
+          }
+
           valuesMarshaller = valuesMarshaller map {
             case (keyId, marshaller) =>
-              keyId -> new ArrayMarshaller(marshaller, precededByMarshaller.asInstanceOf[Marshaller[Int]])
-                .asInstanceOf[Marshaller[Any]]
+              val runtimeClass = mirror.runtimeClass(valuesType(keyId).typeSymbol.asClass)
+              keyId -> new ArrayMarshaller(marshaller, precededByMarshaller, runtimeClass)
           }
-        }
 
-        new SwitchMarshaller(keyMarshaller, valuesMarshaller, valuesType.map { _.swap })
+          valuesType = valuesWithArrayType
+        }
+        // val valuesClazzes = valuesType.map{ case (key, tpe) => mirror.runtimeClass(tpe.typeSymbol.asClass) -> key }
+        new SwitchMarshaller(keyMarshaller, valuesMarshaller, null)
       case sym if isSymType[Int](sym) && checkAnnotations =>
         if (hasAnnotation[byte](symAnnotations.get)) {
           ByteMarshaller
@@ -117,7 +124,8 @@ class PacketManager {
         val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
         val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
-        new ArrayMarshaller(paramMarshaller, precededByMarshaller.asInstanceOf[Marshaller[Int]])
+        val runtimeClass = mirror.runtimeClass(sym.info.typeArgs.head.typeSymbol.asClass)
+        new ArrayMarshaller(paramMarshaller, precededByMarshaller, runtimeClass)
       case sym => createMarshaller(sym.asType.toType)
     }
   }

@@ -12,7 +12,6 @@ object PlayPackets {
     val uuid: UUID
   }
 
-
   case class AddPlayerProperty(name: String,
                                @boxed test: Option[Int],
                                value: String,
