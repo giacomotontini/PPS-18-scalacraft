@@ -108,6 +108,19 @@ class PacketManager[T: TypeTag] {
         }.toMap // don't remove .toMap to avoid type mismatch error
 
         new SwitchMarshaller(keyMarshaller, valuesMarshaller, valuesClazzes)
+      case sym if checkAnnotations && hasAnnotation[enumType[_]](symAnnotations.get) =>
+        val valueType = annotationTypeArg(annotation[enumType[_]](symAnnotations.get), 0)
+        val valueMarshaller = subTypesMarshaller(checkAnnotations = false)(valueType)
+        val companionSymbol = sym.info.typeSymbol.companionSymbol
+        val valuesInstances = companionSymbol.info.decls collect {
+          case memberSymbol if memberSymbol.isModule => memberSymbol.asModule
+        } collect {
+          case sym if hasAnnotation[enumValue](sym) && sym.alternatives.contains(sym) =>
+            val ann = annotation[enumValue](sym)
+            annotationParam[Any](ann, 0) -> moduleInstance(sym.info)
+        } toMap
+
+        new EnumMarshaller(valueMarshaller, valuesInstances)
       case sym if isSymType[Int](sym) && checkAnnotations =>
         if (hasAnnotation[byte](symAnnotations.get)) {
           ByteMarshaller
@@ -159,6 +172,11 @@ class PacketManager[T: TypeTag] {
   private def annotationTypeArg(annotation: Annotation, index: Int): Symbol = {
     val tree = annotation.tree.withFilter(t => t.isType).head
     tree.tpe.typeArgs(index).typeSymbol
+  }
+
+  private def moduleInstance(tpe: Type): Any = {
+      val module = tpe.typeSymbol.companionSymbol.asModule
+      mirror.reflectModule(module).instance
   }
 
 }

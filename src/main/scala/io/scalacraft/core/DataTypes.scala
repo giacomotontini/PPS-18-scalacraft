@@ -11,4 +11,13 @@ object DataTypes {
   case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt) extends Structure
   type Slot = Option[SlotData]
   case class Nbt(name: String, compound: TagCompound)
+
+  case class Entity(@byte firstByte: Int) {
+
+    def isOnFire: Boolean = (firstByte & 0x01) == 0x01
+
+
+
+  }
+
 }

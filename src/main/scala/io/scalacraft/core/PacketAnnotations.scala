@@ -14,4 +14,6 @@ object PacketAnnotations {
   class switchType[K] extends StaticAnnotation
   class switchKey(value: Any) extends StaticAnnotation
   class precededBy[T] extends StaticAnnotation
+  class enumType[K] extends StaticAnnotation
+  class enumValue(value: Any) extends StaticAnnotation
 }

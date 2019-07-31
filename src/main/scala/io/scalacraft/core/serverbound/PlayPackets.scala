@@ -26,14 +26,18 @@ object PlayPackets {
                         @maxLength(32767) chat: Option[String]
                       ) extends PlayerInfoAction with Structure
 
+  
   sealed trait Direction
-  case object Nord
+  object Direction {
+    @enumValue(2) case object North extends Direction
+    @enumValue(1) case object East extends Direction
+  }
 
   @packet(0x30)
   case class PlayerInfo(@switchType[VarInt] @precededBy[VarInt] playerAction: Array[PlayerInfoAction])
     extends Structure
 
   @packet(0x0)
-  case class TestPacket(testOption: Option[Int]) extends Structure
+  case class TestPacket(@enumType[Int] direction: Direction) extends Structure
 
 }

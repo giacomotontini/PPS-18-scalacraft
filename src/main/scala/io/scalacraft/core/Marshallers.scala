@@ -247,8 +247,24 @@ object Marshallers {
       valuesMarshaller(key).unmarshal()
     }
   }
+
+  class EnumMarshaller(valueMarshaller: Marshaller,
+                       valuesInstances: Map[Any, Any]) extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = {
+      val value = valuesInstances collectFirst {
+        case (value, instance) if instance == obj => value
+      }
+      valueMarshaller.marshal(value.get)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+      val key = valueMarshaller.unmarshal()
+      valuesInstances(key)
+    }
+  }
+
   trait VarMarshaller {
-     protected def variableValuesUnmarshaller(upperBound: Integer)(implicit inStream: BufferedInputStream): Int = {
+    protected def variableValuesUnmarshaller(upperBound: Integer)(implicit inStream: BufferedInputStream): Int = {
       var numRead = 0
       var result = 0
       var read = 0
