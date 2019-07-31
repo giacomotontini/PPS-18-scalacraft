@@ -92,7 +92,7 @@ class PacketManager[T: TypeTag] {
           valuesMarshaller = valuesMarshaller map {
             case (keyId, marshaller) =>
               val runtimeClass = mirror.runtimeClass(valuesType(keyId).typeSymbol.asClass)
-              keyId -> new ArrayMarshaller(marshaller, precededByMarshaller, runtimeClass)
+              keyId -> new ArrayMarshaller(marshaller, Some(precededByMarshaller), runtimeClass)
           }
 
           valuesType = valuesWithArrayType
@@ -132,7 +132,7 @@ class PacketManager[T: TypeTag] {
         val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
         val runtimeClass = mirror.runtimeClass(sym.info.typeArgs.head.typeSymbol.asClass)
-        new ArrayMarshaller(paramMarshaller, precededByMarshaller, runtimeClass)
+        new ArrayMarshaller(paramMarshaller, Some(precededByMarshaller), runtimeClass)
       case sym => createMarshaller(sym.asType.toType)
     }
   }

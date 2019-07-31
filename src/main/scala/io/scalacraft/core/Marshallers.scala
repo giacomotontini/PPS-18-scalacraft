@@ -209,11 +209,11 @@ object Marshallers {
     }
   }
 
-  class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Marshaller, runtimeClass: RuntimeClass)
+  class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller], runtimeClass: RuntimeClass)
     extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case array: Array[Any] =>
-        lengthMarshaller.marshal(array.length)
+        if(lengthMarshaller.isDefined) lengthMarshaller.get.marshal(array.length)
         for (elem <- array) {
           paramMarshaller.marshal(elem)
         }
@@ -221,7 +221,11 @@ object Marshallers {
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
       // TODO: replace with reflection
-      val length = lengthMarshaller.unmarshal().asInstanceOf[Int]
+      val length = if (lengthMarshaller.isDefined) {
+        inStream.available()
+      } else {
+        lengthMarshaller.get.unmarshal().asInstanceOf[Int]
+      }
       val array = ClassTag(runtimeClass).newArray(length).asInstanceOf[Array[Any]]
       for (i <- 0 until length) {
         array(i) = paramMarshaller.unmarshal()
