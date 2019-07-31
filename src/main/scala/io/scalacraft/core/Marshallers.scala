@@ -277,9 +277,8 @@ object Marshallers {
 
   object NbtMarshaller extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case Nbt(name, compound) => Io.writeNBT(outStream)((name, compound))
+      case Nbt(name, compoundTag) => Io.writeNBT(outStream)((name,compoundTag))
     }
-
     override def unmarshal()(implicit inStream: BufferedInputStream): Any = Io.readNBT(inStream) match {
       case (name, compoundTag) => Nbt(name, compoundTag)
     }
