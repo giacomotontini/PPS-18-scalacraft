@@ -66,8 +66,9 @@ object Marshallers {
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      (inStream.read() << 56) |(inStream.read() << 48) | (inStream.read() << 40) | (inStream.read() << 32) |
-        (inStream.read() << 24) | (inStream.read() << 16) | (inStream.read() << 8) | inStream.read()
+      (inStream.read().toLong << 56) |(inStream.read().toLong << 48) | (inStream.read().toLong << 40) |
+        (inStream.read().toLong << 32) | (inStream.read() << 24) | (inStream.read() << 16) | (inStream.read() << 8) |
+        inStream.read()
   }
 
   object VarIntMarshaller extends Marshaller {
@@ -143,12 +144,10 @@ object Marshallers {
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-      val buffer = new Array[Byte](UUID_Size)
-      for (i <- 0 until UUID_Size) {
-        buffer(i) = inStream.read().toByte
-      }
+      val leastSignificantBits = LongMarshaller.unmarshal().asInstanceOf[Long]
+      val mostSignificantBits = LongMarshaller.unmarshal().asInstanceOf[Long]
 
-      UUID.nameUUIDFromBytes(buffer)
+      new UUID(leastSignificantBits, mostSignificantBits)
     }
   }
 
@@ -207,19 +206,7 @@ object Marshallers {
   class SwitchMarshaller(keyMarshaller: Marshaller,
                          valuesMarshaller: Map[Any, Marshaller],
                          valuesTypes: Map[RuntimeClass, Any]) extends Marshaller {
-    private val mirror = runtimeMirror(getClass.getClassLoader)
-
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = {
-//      val objTpe = runtimeMirror(getClass.getClassLoader).classSymbol(obj.getClass).toType
-//      println(runtimeMirror(getClass.getClassLoader).classSymbol(obj.getClass).asType.typeParams)
-//      println(obj.getClass)
-//
-//      println(runtimeMirror(getClass.getClassLoader).classSymbol(obj.getClass))
-//      val keyId = valuesTypes.collectFirst {
-//        case (tpe, key) if tpe =:= objTpe => key
-//      } get
-
-      println(obj.getClass.getTypeName)
       val key = valuesTypes(obj.getClass)
       keyMarshaller.marshal(key)
       valuesMarshaller(key).marshal(obj)

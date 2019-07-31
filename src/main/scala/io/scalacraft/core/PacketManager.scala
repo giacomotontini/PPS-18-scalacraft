@@ -8,8 +8,8 @@ import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.PacketAnnotations._
 
 import scala.language.postfixOps
-import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
+import scala.reflect.runtime.universe.compat.token
 
 class PacketManager[T: TypeTag] {
 
@@ -85,7 +85,7 @@ class PacketManager[T: TypeTag] {
 
           val valuesWithArrayType = valuesType.map {
             case (key, tpe) => key -> (sym.info match {
-              case TypeRef(p, sym, _) => TypeRef(p, sym, List(tpe))(compat.token)
+              case TypeRef(p, sym, _) => TypeRef(p, sym, List(tpe))
             })
           }
 
@@ -97,8 +97,12 @@ class PacketManager[T: TypeTag] {
 
           valuesType = valuesWithArrayType
         }
-        // val valuesClazzes = valuesType.map{ case (key, tpe) => mirror.runtimeClass(tpe.typeSymbol.asClass) -> key }
-        new SwitchMarshaller(keyMarshaller, valuesMarshaller, null)
+
+        val valuesClazzes: Map[RuntimeClass, Any] = valuesType.map {
+          case (key, tpe) => mirror.runtimeClass(tpe) -> key
+        }.toMap // don't remove .toMap to avoid type mismatch error
+
+        new SwitchMarshaller(keyMarshaller, valuesMarshaller, valuesClazzes)
       case sym if isSymType[Int](sym) && checkAnnotations =>
         if (hasAnnotation[byte](symAnnotations.get)) {
           ByteMarshaller
