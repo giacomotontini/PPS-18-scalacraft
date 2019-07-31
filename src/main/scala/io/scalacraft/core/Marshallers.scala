@@ -71,35 +71,20 @@ object Marshallers {
         inStream.read()
   }
 
-  object VarIntMarshaller extends Marshaller {
+  object VarIntMarshaller extends Marshaller with VarMarshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case i: Int =>
-        var value = i
-        do {
-          var temp = value & 0x7f
-          value = value >>> 7
-          if (value != 0) {
-            temp |= 0x80
-          }
-          outStream.write(temp)
-        } while (value != 0)
+      case i: Int => variableValuesMarshaller(i)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-      var numRead = 0
-      var result = 0
-      var read = 0
-      do {
-        read = inStream.read()
-        result |= ((read & 0x7f) << (7 * numRead))
-        numRead += 1
-        if (numRead > 5) {
-          throw new IllegalArgumentException("VarInt is too big")
-        }
-      } while ((read & 0x80) != 0)
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = variableValuesUnmarshaller(5)
+  }
 
-      result
+  object VarLongMarshaller extends Marshaller with VarMarshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case l: Long => variableValuesMarshaller(l)
     }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = variableValuesUnmarshaller(10)
   }
 
   class StringMarshaller(maxLength: Int) extends Marshaller {
@@ -217,5 +202,31 @@ object Marshallers {
       valuesMarshaller(key).unmarshal()
     }
   }
-
+  trait VarMarshaller {
+     protected def variableValuesUnmarshaller(upperBound: Integer)(implicit inStream: BufferedInputStream): Int = {
+      var numRead = 0
+      var result = 0
+      var read = 0
+      do {
+        read = inStream.read()
+        result |= ((read & 0x7f) << (7 * numRead))
+        numRead += 1
+        if (numRead > upperBound) {
+          throw new IllegalArgumentException("Var is too big")
+        }
+      } while ((read & 0x80) != 0)
+      result
+    }
+    protected def variableValuesMarshaller(obj: Long)(implicit outStream: BufferedOutputStream): Unit = {
+      var value = obj
+      do {
+        var temp = value & 0x7f
+        value = value >>> 7
+        if (value != 0) {
+          temp |= 0x80
+        }
+        outStream.write(temp.toInt)
+      } while (value != 0)
+    }
+  }
 }
