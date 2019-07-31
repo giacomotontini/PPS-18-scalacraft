@@ -3,7 +3,7 @@ package io.scalacraft.core
 import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.VarInt
+import io.scalacraft.core.DataTypes.{Slot, SlotData, VarInt}
 import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.PacketAnnotations._
 
@@ -15,9 +15,13 @@ class PacketManager[T: TypeTag] {
 
   private val mirror = runtimeMirror(getClass.getClassLoader)
 
-  private val classTypes: List[ClassSymbol] = typeOf[T].decls.collect {
-    case sym if sym.isClass && !sym.isAbstract => sym.asClass
-  } toList
+  private val classTypes: List[ClassSymbol] = loadClassTypes[T]() ++ loadClassTypes[DataTypes.type ]()
+
+  private def loadClassTypes[U: TypeTag](): List[ClassSymbol] = {
+    typeOf[U].decls.collect {
+      case sym if sym.isClass && !sym.isAbstract => sym.asClass
+    } toList
+  }
 
   private val classConstructors: Map[Type, MethodMirror] = classTypes map { sym =>
     val cm = mirror.reflectClass(sym)
@@ -125,7 +129,8 @@ class PacketManager[T: TypeTag] {
         new StringMarshaller(annotationParam[Int](annotation[maxLength](symAnnotations.get), 0))
       case sym if isSymType[String](sym) => new StringMarshaller(MaxStringLength)
       case sym if isSymType[Option[_]](sym) =>
-        val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
+        val argType = if(isSymType[Slot](sym)) typeOf[SlotData].typeSymbol else sym.info.typeArgs.head.typeSymbol
+        val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(argType)
         new OptionalMarshaller(paramMarshaller)
       case sym if isSymType[Array[_]](sym) && checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get) =>
         val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
