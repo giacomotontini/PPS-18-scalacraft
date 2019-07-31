@@ -4,7 +4,8 @@ import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.Position
+import io.scalacraft.core.DataTypes.{Nbt, Nbt, Position}
+import io.scalacraft.core.nbt.Io
 
 import scala.language.postfixOps
 import scala.reflect.ClassTag
@@ -271,6 +272,16 @@ object Marshallers {
         }
         outStream.write(temp.toInt)
       } while (value != 0)
+    }
+  }
+
+  object NbtMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case Nbt(name, compound) => Io.writeNBT(outStream)((name, compound))
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+      Io.readNBT(inStream)
     }
   }
 }
