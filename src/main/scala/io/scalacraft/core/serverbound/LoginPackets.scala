@@ -1,5 +1,5 @@
 package io.scalacraft.core.serverbound
 
-class LoginPackets {
+object LoginPackets {
 
 }

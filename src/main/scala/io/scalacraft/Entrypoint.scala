@@ -4,29 +4,25 @@ import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream,
 
 import io.scalacraft.core.serverbound.PlayPackets
 import io.scalacraft.core.serverbound.PlayPackets.{AddPlayer, PlayerInfo}
-import io.scalacraft.core.{Helpers, PacketManager}
+import io.scalacraft.core.{Helpers, PacketManager, Marshallers}
 
 import scala.language.postfixOps
 
 object Entrypoint extends App {
   val pm = new PacketManager[PlayPackets.type]
 
-  val originalPacket = Helpers.hex2bytes("0001e5620206432e3626b7f44ee340bcfd0a0965636961766174746100000000")
+  //val originalPacket = Helpers.hex2bytes("0001e5620206432e3626b7f44ee340bcfd0a0965636961766174746100000000")
   val serializedPacket = new ByteArrayOutputStream()
-  implicit val inStream: BufferedInputStream = new BufferedInputStream(new ByteArrayInputStream(originalPacket))
+  //implicit val inStream: BufferedInputStream = new BufferedInputStream(new ByteArrayInputStream(originalPacket))
   implicit val outStream: BufferedOutputStream = new BufferedOutputStream(serializedPacket)
 
-  val testPacket = pm.unmarshal(0x30).asInstanceOf[PlayerInfo]
-  testPacket.playerAction.toList.head match {
-    case AddPlayer(uuid, name, property, gameMode, ping, chat) =>
-  }
-  pm.marshal(testPacket)
+  val marshalled = Marshallers.FloatMarshaller.marshal(10.4f)
 
-  inStream.close()
+  //inStream.close()
   outStream.close()
 
   println(serializedPacket.toByteArray)
-  assert(originalPacket.toList sameElements serializedPacket.toByteArray)
+  //assert(originalPacket.toList sameElements serializedPacket.toByteArray)
 
   //  case class Test(value: Int)
   //  val t = Test(42)

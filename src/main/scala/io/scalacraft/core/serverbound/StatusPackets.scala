@@ -2,7 +2,7 @@ package io.scalacraft.core.serverbound
 
 import io.scalacraft.core.PacketAnnotations.{maxLength, packet}
 
-class StatusPackets {
+object StatusPackets {
 
   @packet(id=0x00)
   case class Request()

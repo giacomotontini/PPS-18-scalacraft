@@ -1,7 +1,7 @@
 package io.scalacraft.core.clientbound
 import io.scalacraft.core.PacketAnnotations._
 
-class StatusPacket {
+object StatusPacket {
 
   @packet(id=0x00)
   case class Response(@maxLength(32767) jsonResponse: String)
