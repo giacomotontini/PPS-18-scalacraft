@@ -4,6 +4,8 @@ import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+import io.scalacraft.core.DataTypes.Position
+
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
@@ -71,6 +73,29 @@ object Marshallers {
         inStream.read()
   }
 
+  object FloatMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case f: Float =>
+        val bytes = java.lang.Float.floatToIntBits(f)
+        IntMarshaller.marshal(bytes)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
+      java.lang.Float.intBitsToFloat(IntMarshaller.unmarshal().asInstanceOf[Int])
+  }
+
+  object DoubleMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case d: Double =>
+        val bytes = java.lang.Double.doubleToRawLongBits(d)
+        LongMarshaller.marshal(bytes)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
+      java.lang.Double.doubleToRawLongBits(LongMarshaller.unmarshal().asInstanceOf[Double])
+
+  }
+
   object VarIntMarshaller extends Marshaller with VarMarshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Int => variableValuesMarshaller(i)
@@ -85,6 +110,22 @@ object Marshallers {
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any = variableValuesUnmarshaller(10)
+  }
+
+  object PositionMarshaller  extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match{
+      case Position(x,y,z) =>
+        val position:Long = ((x.toLong & 0x3FFFFFF) << 38) | ((y.toLong & 0xFFF) << 26) | (z.toLong & 0x3FFFFFF)
+        LongMarshaller.marshal(position)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+        val longPosition = LongMarshaller.unmarshal().asInstanceOf[Long]
+        val x = (longPosition >> 38).toInt
+        val y = ((longPosition >> 26) & 0xFFF).toInt
+        val z = (longPosition << 38 >> 38).toInt
+        Position(x,y,z)
+    }
   }
 
   class StringMarshaller(maxLength: Int) extends Marshaller {
@@ -153,19 +194,22 @@ object Marshallers {
     }
   }
 
-  class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Marshaller, runtimeClass: RuntimeClass)
+  class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller], runtimeClass: RuntimeClass)
     extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case array: Array[Any] =>
-        lengthMarshaller.marshal(array.length)
+        if(lengthMarshaller.isDefined) lengthMarshaller.get.marshal(array.length)
         for (elem <- array) {
           paramMarshaller.marshal(elem)
         }
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-      // TODO: replace with reflection
-      val length = lengthMarshaller.unmarshal().asInstanceOf[Int]
+      val length = if (lengthMarshaller.isDefined) {
+        lengthMarshaller.get.unmarshal().asInstanceOf[Int]
+      } else {
+        inStream.available()
+      }
       val array = ClassTag(runtimeClass).newArray(length).asInstanceOf[Array[Any]]
       for (i <- 0 until length) {
         array(i) = paramMarshaller.unmarshal()
