@@ -26,6 +26,9 @@ object PlayPackets {
                         @maxLength(32767) chat: Option[String]
                       ) extends PlayerInfoAction with Structure
 
+  sealed trait Direction
+  case object Nord
+
   @packet(0x30)
   case class PlayerInfo(@switchType[VarInt] @precededBy[VarInt] playerAction: Array[PlayerInfoAction])
     extends Structure
