@@ -4,6 +4,8 @@ import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+import io.scalacraft.core.DataTypes.Position
+
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
@@ -71,6 +73,29 @@ object Marshallers {
         inStream.read()
   }
 
+  object FloatMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case f: Float =>
+        val bytes = java.lang.Float.floatToIntBits(f)
+        IntMarshaller.marshal(bytes)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
+      java.lang.Float.intBitsToFloat(IntMarshaller.unmarshal().asInstanceOf[Int])
+  }
+
+  object DoubleMarshaller extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case d: Double =>
+        val bytes = java.lang.Double.doubleToRawLongBits(d)
+        LongMarshaller.marshal(bytes)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
+      java.lang.Double.doubleToRawLongBits(LongMarshaller.unmarshal().asInstanceOf[Double])
+
+  }
+
   object VarIntMarshaller extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Int =>
@@ -99,6 +124,22 @@ object Marshallers {
       } while ((read & 0x80) != 0)
 
       result
+    }
+  }
+
+  object PositionMarshaller  extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match{
+      case Position(x,y,z) =>
+        val position:Long = ((x.toLong & 0x3FFFFFF) << 38) | ((y.toLong & 0xFFF) << 26) | (z.toLong & 0x3FFFFFF)
+        LongMarshaller.marshal(position)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+        val longPosition = LongMarshaller.unmarshal().asInstanceOf[Long]
+        val x = (longPosition >> 38).toInt
+        val y = ((longPosition >> 26) & 0xFFF).toInt
+        val z = (longPosition << 38 >> 38).toInt
+        Position(x,y,z)
     }
   }
 

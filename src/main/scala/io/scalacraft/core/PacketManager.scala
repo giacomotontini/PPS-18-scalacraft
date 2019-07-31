@@ -116,6 +116,9 @@ class PacketManager[T: TypeTag] {
       case sym if isSymType[Int](sym) => IntMarshaller
       case sym if isSymType[Boolean](sym) => BooleanMarshaller
       case sym if isSymType[Long](sym) => LongMarshaller
+      case sym if isSymType[Float](sym) => FloatMarshaller
+      case sym if isSymType[Double](sym) => DoubleMarshaller
+      case sym if isSymType[Position](sym) => PositionMarshaller
       case sym if isSymType[UUID](sym) => UUIDMarshaller
       case sym if isSymType[VarInt](sym) => VarIntMarshaller
       case sym if isSymType[String](sym) && checkAnnotations && hasAnnotation[maxLength](symAnnotations.get) =>
