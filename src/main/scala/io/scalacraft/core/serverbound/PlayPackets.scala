@@ -2,7 +2,7 @@ package io.scalacraft.core.serverbound
 
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.VarInt
+import io.scalacraft.core.DataTypes.{Particle, VarInt}
 import io.scalacraft.core.PacketAnnotations._
 import io.scalacraft.core.Structure
 
@@ -37,7 +37,7 @@ object PlayPackets {
   case class PlayerInfo(@switchType[VarInt] @precededBy[VarInt] playerAction: Array[PlayerInfoAction])
     extends Structure
 
-  @packet(0x0)
-  case class TestPacket(@enumType[Int] direction: Direction) extends Structure
+  @packet(0x00)
+  case class TestPacket(particle: Particle) extends Structure
 
 }

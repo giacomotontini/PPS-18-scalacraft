@@ -4,7 +4,7 @@ import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Nbt, Position}
+import io.scalacraft.core.DataTypes.{Nbt, Particle, ParticleData, Position}
 import io.scalacraft.core.nbt.Io
 
 import scala.language.postfixOps
@@ -297,6 +297,40 @@ object Marshallers {
     }
     override def unmarshal()(implicit inStream: BufferedInputStream): Any = Io.readNBT(inStream) match {
       case (name, compoundTag) => Nbt(name, compoundTag)
+    }
+  }
+
+
+  class ParticleMarshaller(dataTypes: Map[RuntimeClass, Int], dataMarshaller: Map[Int, Marshaller]) extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case Particle(longDistance: Boolean, x: Float, y: Float, z: Float, offsetX: Float, offsetY: Float, offsetZ: Float, particleData: Float, particleCount: Int, data: ParticleData) =>
+      val particleId = dataTypes(data.getClass)
+        IntMarshaller.marshal(particleId)
+        BooleanMarshaller.marshal(longDistance)
+        FloatMarshaller.marshal(x)
+        FloatMarshaller.marshal(y)
+        FloatMarshaller.marshal(z)
+        FloatMarshaller.marshal(offsetX)
+        FloatMarshaller.marshal(offsetY)
+        FloatMarshaller.marshal(offsetZ)
+        FloatMarshaller.marshal(particleData)
+        IntMarshaller.marshal(particleCount)
+        dataMarshaller(particleId).marshal(data)
+    }
+
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+        val particleId = IntMarshaller.unmarshal.asInstanceOf[Int]
+        val longDistance = BooleanMarshaller.unmarshal.asInstanceOf[Boolean]
+        val x = FloatMarshaller.unmarshal.asInstanceOf[Float]
+        val y = FloatMarshaller.unmarshal.asInstanceOf[Float]
+        val z = FloatMarshaller.unmarshal.asInstanceOf[Float]
+        val offsetX = FloatMarshaller.unmarshal.asInstanceOf[Float]
+        val offsetY = FloatMarshaller.unmarshal.asInstanceOf[Float]
+        val offsetZ = FloatMarshaller.unmarshal.asInstanceOf[Float]
+        val particleData = FloatMarshaller.unmarshal.asInstanceOf[Float]
+        val particleCount = IntMarshaller.unmarshal.asInstanceOf[Int]
+        val data = dataMarshaller(particleId).unmarshal.asInstanceOf[ParticleData]
+        Particle(longDistance, x, y, z, offsetX, offsetY, offsetZ, particleData, particleCount, data)
     }
   }
 }

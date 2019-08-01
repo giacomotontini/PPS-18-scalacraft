@@ -16,4 +16,5 @@ object PacketAnnotations {
   class precededBy[T] extends StaticAnnotation
   class enumType[K] extends StaticAnnotation
   class enumValue(value: Any) extends StaticAnnotation
+  class particle(id: Int) extends StaticAnnotation
 }
