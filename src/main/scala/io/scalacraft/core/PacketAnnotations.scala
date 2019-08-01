@@ -9,6 +9,7 @@ object PacketAnnotations {
   class boxed extends StaticAnnotation
   class byte extends StaticAnnotation
   class short extends StaticAnnotation
+  class notPrecededByBoolean extends  StaticAnnotation
   class enum(values: Any*) extends StaticAnnotation
   class maxLength(value: Int) extends StaticAnnotation
   class switchType[K] extends StaticAnnotation

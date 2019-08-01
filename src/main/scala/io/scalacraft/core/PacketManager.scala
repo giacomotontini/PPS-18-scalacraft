@@ -147,7 +147,7 @@ class PacketManager[T: TypeTag] {
       case sym if isSymType[Option[_]](sym) =>
         val argType = if(isSymType[Slot](sym)) typeOf[SlotData].typeSymbol else sym.info.typeArgs.head.typeSymbol
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(argType)
-        new OptionalMarshaller(paramMarshaller)
+        new OptionalMarshaller(paramMarshaller, !hasAnnotation[notPrecededByBoolean](symAnnotations.get))
       case sym if isSymType[Array[_]](sym) && checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get) =>
         val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
         val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)

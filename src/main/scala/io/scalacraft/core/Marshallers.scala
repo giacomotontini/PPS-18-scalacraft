@@ -1,6 +1,6 @@
 package io.scalacraft.core
 
-import java.io.{BufferedInputStream, BufferedOutputStream}
+import java.io.{BufferedInputStream, BufferedOutputStream, EOFException}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
@@ -13,13 +13,20 @@ import scala.reflect.runtime.universe._
 
 object Marshallers {
 
+  implicit class RichStream(base: BufferedInputStream) {
+    def readIfIsAvailable(): Int = {
+      val readedValue = base.read()
+      if(readedValue<0) throw EOFException else readedValue
+    }
+  }
+
   object BooleanMarshaller extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case b: Boolean => outStream.write(if (b) 0x1 else 0x0)
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      inStream.read() == 0x1
+      inStream.readIfIsAvailable() == 0x1
   }
 
   object ByteMarshaller extends Marshaller {
@@ -28,7 +35,7 @@ object Marshallers {
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      inStream.read()
+      inStream.readIfIsAvailable()
   }
 
   object ShortMarshaller extends Marshaller {
@@ -39,7 +46,7 @@ object Marshallers {
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      (inStream.read() << 8) | inStream.read()
+      (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
   }
 
   object IntMarshaller extends Marshaller {
@@ -52,7 +59,7 @@ object Marshallers {
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      (inStream.read() << 24) | (inStream.read() << 16) | (inStream.read() << 8) | inStream.read()
+      (inStream.readIfIsAvailable() << 24) | (inStream.readIfIsAvailable() << 16) | (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
   }
 
   object LongMarshaller extends Marshaller {
@@ -69,9 +76,9 @@ object Marshallers {
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      (inStream.read().toLong << 56) |(inStream.read().toLong << 48) | (inStream.read().toLong << 40) |
-        (inStream.read().toLong << 32) | (inStream.read() << 24) | (inStream.read() << 16) | (inStream.read() << 8) |
-        inStream.read()
+      (inStream.readIfIsAvailable().toLong << 56) |(inStream.readIfIsAvailable().toLong << 48) | (inStream.readIfIsAvailable().toLong << 40) |
+        (inStream.readIfIsAvailable().toLong << 32) | (inStream.readIfIsAvailable() << 24) | (inStream.readIfIsAvailable() << 16) | (inStream.readIfIsAvailable() << 8) |
+        inStream.readIfIsAvailable()
   }
 
   object FloatMarshaller extends Marshaller {
@@ -146,7 +153,7 @@ object Marshallers {
       val length = VarIntMarshaller.unmarshal().asInstanceOf[Int]
       val buffer = new Array[Byte](length)
       for (i <- 0 until length) {
-        buffer(i) = inStream.read().toByte
+        buffer(i) = inStream.readIfIsAvailable().toByte
       }
 
       val str = new String(buffer, StandardCharsets.UTF_8)
@@ -178,19 +185,26 @@ object Marshallers {
     }
   }
 
-  class OptionalMarshaller(paramMarshaller: Marshaller) extends Marshaller {
+  class OptionalMarshaller(paramMarshaller: Marshaller, isPrecededByBoolean: Boolean = true) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case Some(value) =>
+      case Some(value) if isPrecededByBoolean =>
         BooleanMarshaller.marshal(true)
+        paramMarshaller.marshal(value)
+      case Some(value) if !isPrecededByBoolean =>
         paramMarshaller.marshal(value)
       case None => BooleanMarshaller.marshal(false)
     }
 
     override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-      if (BooleanMarshaller.unmarshal().asInstanceOf[Boolean]) {
-        Some(paramMarshaller.unmarshal())
-      } else {
-        None
+        if (isPrecededByBoolean && BooleanMarshaller.unmarshal().asInstanceOf[Boolean]) {
+          Some(paramMarshaller.unmarshal())
+        } else if(!isPrecededByBoolean) {
+          try Some(paramMarshaller.unmarshal())
+          catch {
+            case _: EOFException => None
+          }
+        } else {
+          None
       }
     }
   }
@@ -269,7 +283,7 @@ object Marshallers {
       var result = 0
       var read = 0
       do {
-        read = inStream.read()
+        read = inStream.readIfIsAvailable()
         result |= ((read & 0x7f) << (7 * numRead))
         numRead += 1
         if (numRead > upperBound) {
