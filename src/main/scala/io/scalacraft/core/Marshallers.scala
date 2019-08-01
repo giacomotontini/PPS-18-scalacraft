@@ -16,7 +16,7 @@ object Marshallers {
   implicit class RichStream(base: BufferedInputStream) {
     def readIfIsAvailable(): Int = {
       val readedValue = base.read()
-      if(readedValue<0) throw EOFException else readedValue
+      if (readedValue < 0) throw new EOFException else readedValue
     }
   }
 
@@ -104,20 +104,66 @@ object Marshallers {
 
   }
 
-  object VarIntMarshaller extends Marshaller with VarMarshaller {
+  object VarIntMarshaller extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case i: Int => variableValuesMarshaller(i)
+      case i: Int =>
+        var value = i
+        do {
+          var temp = value & 0x7f
+          value = value >>> 7
+          if (value != 0) {
+            temp |= 0x80
+          }
+          outStream.write(temp)
+        } while (value != 0)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = variableValuesUnmarshaller(5)
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+      var numRead = 0
+      var result = 0
+      var read = 0
+      do {
+        read = inStream.read()
+        result |= ((read & 0x7f) << (7 * numRead))
+        numRead += 1
+        if (numRead > 5) {
+          throw new IllegalArgumentException("VarInt is too big")
+        }
+      } while ((read & 0x80) != 0)
+
+      result
+    }
   }
 
-  object VarLongMarshaller extends Marshaller with VarMarshaller {
+  object VarLongMarshaller extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case l: Long => variableValuesMarshaller(l)
+      case i: Long =>
+        var value = i
+        do {
+          var temp = value & 0x7f
+          value = value >>> 7
+          if (value != 0) {
+            temp |= 0x80
+          }
+          outStream.write(temp.toInt)
+        } while (value != 0)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = variableValuesUnmarshaller(10)
+    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+      var numRead = 0
+      var result = 0
+      var read = 0
+      do {
+        read = inStream.read()
+        result |= ((read & 0x7f) << (7 * numRead))
+        numRead += 1
+        if (numRead > 10) {
+          throw new IllegalArgumentException("VarInt is too big")
+        }
+      } while ((read & 0x80) != 0)
+
+      result
+    }
   }
 
   object PositionMarshaller  extends Marshaller {
@@ -169,8 +215,6 @@ object Marshallers {
   }
 
   object UUIDMarshaller extends Marshaller {
-    private val UUID_Size = 16
-
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case u: UUID =>
         LongMarshaller.marshal(u.getMostSignificantBits)
@@ -274,34 +318,6 @@ object Marshallers {
     override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
       val key = valueMarshaller.unmarshal()
       valuesInstances(key)
-    }
-  }
-
-  trait VarMarshaller {
-    protected def variableValuesUnmarshaller(upperBound: Integer)(implicit inStream: BufferedInputStream): Int = {
-      var numRead = 0
-      var result = 0
-      var read = 0
-      do {
-        read = inStream.readIfIsAvailable()
-        result |= ((read & 0x7f) << (7 * numRead))
-        numRead += 1
-        if (numRead > upperBound) {
-          throw new IllegalArgumentException("Var is too big")
-        }
-      } while ((read & 0x80) != 0)
-      result
-    }
-    protected def variableValuesMarshaller(obj: Long)(implicit outStream: BufferedOutputStream): Unit = {
-      var value = obj
-      do {
-        var temp = value & 0x7f
-        value = value >>> 7
-        if (value != 0) {
-          temp |= 0x80
-        }
-        outStream.write(temp.toInt)
-      } while (value != 0)
     }
   }
 
