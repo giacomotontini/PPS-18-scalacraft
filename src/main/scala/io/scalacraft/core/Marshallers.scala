@@ -4,7 +4,7 @@ import java.io.{BufferedInputStream, BufferedOutputStream, EOFException}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Nbt, Particle, ParticleData, Position}
+import io.scalacraft.core.DataTypes.{Nbt, Position}
 import io.scalacraft.core.nbt.Io
 
 import scala.language.postfixOps
@@ -20,36 +20,45 @@ object Marshallers {
     }
   }
 
-  object BooleanMarshaller extends Marshaller {
+  class BooleanMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case b: Boolean => outStream.write(if (b) 0x1 else 0x0)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      inStream.readIfIsAvailable() == 0x1
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val bool = inStream.readIfIsAvailable() == 0x1
+      context.addField(bool)
+      bool
+    }
   }
 
-  object ByteMarshaller extends Marshaller {
+  class ByteMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Int => outStream.write(i & 0xFF)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      inStream.readIfIsAvailable()
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val b = inStream.readIfIsAvailable()
+      context.addField(b)
+      b
+    }
   }
 
-  object ShortMarshaller extends Marshaller {
+  class ShortMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Int =>
         outStream.write((i >> 8) & 0xFF)
         outStream.write(i & 0xFF)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val s = (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
+      context.addField(s)
+      s
+    }
   }
 
-  object IntMarshaller extends Marshaller {
+  class IntMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Int =>
         outStream.write((i >> 24) & 0xFF)
@@ -58,11 +67,15 @@ object Marshallers {
         outStream.write(i & 0xFF)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      (inStream.readIfIsAvailable() << 24) | (inStream.readIfIsAvailable() << 16) | (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val i = (inStream.readIfIsAvailable() << 24) | (inStream.readIfIsAvailable() << 16) |
+        (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
+      context.addField(i)
+      i
+    }
   }
 
-  object LongMarshaller extends Marshaller {
+  class LongMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case l: Long =>
         outStream.write(((l >> 56) & 0xFF).toInt)
@@ -75,36 +88,46 @@ object Marshallers {
         outStream.write((l & 0xFF).toInt)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      (inStream.readIfIsAvailable().toLong << 56) |(inStream.readIfIsAvailable().toLong << 48) | (inStream.readIfIsAvailable().toLong << 40) |
-        (inStream.readIfIsAvailable().toLong << 32) | (inStream.readIfIsAvailable() << 24) | (inStream.readIfIsAvailable() << 16) | (inStream.readIfIsAvailable() << 8) |
-        inStream.readIfIsAvailable()
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val l = (inStream.readIfIsAvailable().toLong << 56) |(inStream.readIfIsAvailable().toLong << 48) |
+        (inStream.readIfIsAvailable().toLong << 40) | (inStream.readIfIsAvailable().toLong << 32) |
+        (inStream.readIfIsAvailable() << 24) | (inStream.readIfIsAvailable() << 16) |
+        (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
+      context.addField(l)
+      l
+    }
   }
 
-  object FloatMarshaller extends Marshaller {
+  class FloatMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case f: Float =>
         val bytes = java.lang.Float.floatToIntBits(f)
-        IntMarshaller.marshal(bytes)
+        new IntMarshaller().marshal(bytes)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      java.lang.Float.intBitsToFloat(IntMarshaller.unmarshal().asInstanceOf[Int])
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val f = java.lang.Float.intBitsToFloat(new IntMarshaller().unmarshal.asInstanceOf[Int])
+      context.addField(f)
+      f
+    }
   }
 
-  object DoubleMarshaller extends Marshaller {
+  class DoubleMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case d: Double =>
         val bytes = java.lang.Double.doubleToRawLongBits(d)
-        LongMarshaller.marshal(bytes)
+        new LongMarshaller().marshal(bytes)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any =
-      java.lang.Double.doubleToRawLongBits(LongMarshaller.unmarshal().asInstanceOf[Double])
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val d = java.lang.Double.doubleToRawLongBits(new LongMarshaller().unmarshal().asInstanceOf[Double])
+      context.addField(d)
+      d
+    }
 
   }
 
-  object VarIntMarshaller extends Marshaller {
+  class VarIntMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Int =>
         var value = i
@@ -118,7 +141,7 @@ object Marshallers {
         } while (value != 0)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       var numRead = 0
       var result = 0
       var read = 0
@@ -131,11 +154,12 @@ object Marshallers {
         }
       } while ((read & 0x80) != 0)
 
+      context.addField(result)
       result
     }
   }
 
-  object VarLongMarshaller extends Marshaller {
+  class VarLongMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Long =>
         var value = i
@@ -149,7 +173,7 @@ object Marshallers {
         } while (value != 0)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       var numRead = 0
       var result = 0
       var read = 0
@@ -162,41 +186,45 @@ object Marshallers {
         }
       } while ((read & 0x80) != 0)
 
+      context.addField(result)
       result
     }
   }
 
-  object PositionMarshaller  extends Marshaller {
+  class PositionMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match{
       case Position(x,y,z) =>
         val position:Long = ((x.toLong & 0x3FFFFFF) << 38) | ((y.toLong & 0xFFF) << 26) | (z.toLong & 0x3FFFFFF)
-        LongMarshaller.marshal(position)
+        new LongMarshaller().marshal(position)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-        val longPosition = LongMarshaller.unmarshal().asInstanceOf[Long]
-        val x = (longPosition >> 38).toInt
-        val y = ((longPosition >> 26) & 0xFFF).toInt
-        val z = (longPosition << 38 >> 38).toInt
-        Position(x,y,z)
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val longPosition = new LongMarshaller().unmarshal().asInstanceOf[Long]
+      val x = (longPosition >> 38).toInt
+      val y = ((longPosition >> 26) & 0xFFF).toInt
+      val z = (longPosition << 38 >> 38).toInt
+
+      val p = Position(x,y,z)
+      context.addField(p)
+      p
     }
   }
 
-  class StringMarshaller(maxLength: Int) extends Marshaller {
+  class StringMarshaller(maxLength: Int, val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case s: String =>
         checkSize(s)
         val buffer = s.getBytes(StandardCharsets.UTF_8)
         val length = buffer.length
-        VarIntMarshaller.marshal(length)
+        new VarIntMarshaller().marshal(length)
 
         for (i <- 0 until length) {
           outStream.write(buffer(i))
         }
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-      val length = VarIntMarshaller.unmarshal().asInstanceOf[Int]
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val length = new VarIntMarshaller().unmarshal().asInstanceOf[Int]
       val buffer = new Array[Byte](length)
       for (i <- 0 until length) {
         buffer(i) = inStream.readIfIsAvailable().toByte
@@ -204,6 +232,7 @@ object Marshallers {
 
       val str = new String(buffer, StandardCharsets.UTF_8)
       checkSize(str)
+      context.addField(str)
       str
     }
 
@@ -214,47 +243,57 @@ object Marshallers {
     }
   }
 
-  object UUIDMarshaller extends Marshaller {
+  class UUIDMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case u: UUID =>
-        LongMarshaller.marshal(u.getMostSignificantBits)
-        LongMarshaller.marshal(u.getLeastSignificantBits)
+        val longMarshaller = new LongMarshaller()
+        longMarshaller.marshal(u.getMostSignificantBits)
+        longMarshaller.marshal(u.getLeastSignificantBits)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-      val leastSignificantBits = LongMarshaller.unmarshal().asInstanceOf[Long]
-      val mostSignificantBits = LongMarshaller.unmarshal().asInstanceOf[Long]
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val longMarshaller = new LongMarshaller()
+      val leastSignificantBits = longMarshaller.unmarshal().asInstanceOf[Long]
+      val mostSignificantBits = longMarshaller.unmarshal().asInstanceOf[Long]
 
-      new UUID(leastSignificantBits, mostSignificantBits)
+      val u = new UUID(leastSignificantBits, mostSignificantBits)
+      context.addField(u)
+      u
     }
   }
 
-  class OptionalMarshaller(paramMarshaller: Marshaller, isPrecededByBoolean: Boolean = true) extends Marshaller {
+  class OptionalMarshaller(paramMarshaller: Marshaller, conditionMarshaller: Option[Marshaller] = None,
+                           val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case Some(value) if isPrecededByBoolean =>
-        BooleanMarshaller.marshal(true)
+      case Some(value) if conditionMarshaller.isEmpty =>
+        new BooleanMarshaller().marshal(true)
         paramMarshaller.marshal(value)
-      case Some(value) if !isPrecededByBoolean =>
+      case Some(value) =>
         paramMarshaller.marshal(value)
-      case None => BooleanMarshaller.marshal(false)
+      case None => new BooleanMarshaller().marshal(false)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-        if (isPrecededByBoolean && BooleanMarshaller.unmarshal().asInstanceOf[Boolean]) {
-          Some(paramMarshaller.unmarshal())
-        } else if(!isPrecededByBoolean) {
-          try Some(paramMarshaller.unmarshal())
-          catch {
-            case _: EOFException => None
-          }
-        } else {
-          None
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      if ((conditionMarshaller.isEmpty && new BooleanMarshaller().unmarshal().asInstanceOf[Boolean]) ||
+        (conditionMarshaller.isDefined && checkIfTrue(conditionMarshaller.get.unmarshal()))) {
+        val content = paramMarshaller.unmarshal()
+        Some(content)
+      } else {
+        context.addField(None)
+        None
       }
     }
+
+    def checkIfTrue(obj: Any): Boolean = obj match {
+      case b: Boolean => b
+      case i: Int if i > 0 => true
+      case l: Long if l > 0 => true
+      case _ => false
+    }
   }
 
-  class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller], runtimeClass: RuntimeClass)
-    extends Marshaller {
+  class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller], runtimeClass: RuntimeClass,
+                        val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case array: Array[Any] =>
         if(lengthMarshaller.isDefined) lengthMarshaller.get.marshal(array.length)
@@ -263,21 +302,25 @@ object Marshallers {
         }
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val length = if (lengthMarshaller.isDefined) {
         lengthMarshaller.get.unmarshal().asInstanceOf[Int]
       } else {
         inStream.available()
       }
       val array = ClassTag(runtimeClass).newArray(length).asInstanceOf[Array[Any]]
+      val newContext = Context.create
       for (i <- 0 until length) {
-        array(i) = paramMarshaller.unmarshal()
+        array(i) = paramMarshaller.unmarshal()(newContext, inStream)
       }
+
+      context.addField(newContext)
       array
     }
   }
 
-  class StructureMarshaller(fieldsMarshaller: List[Marshaller], constructorMirror: MethodMirror) extends Marshaller {
+  class StructureMarshaller(fieldsMarshaller: List[Marshaller], constructorMirror: MethodMirror,
+                            val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case str: Structure =>
         str.productIterator.zip(fieldsMarshaller.toIterator) foreach {
@@ -285,29 +328,36 @@ object Marshallers {
         }
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-      val fields = fieldsMarshaller map { _.unmarshal() }
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val newContext = Context.create
+      val fields = fieldsMarshaller map { _.unmarshal()(context, inStream) }
+      context.addField(newContext)
+
       constructorMirror(fields :_*)
     }
   }
 
   class SwitchMarshaller(keyMarshaller: Marshaller,
                          valuesMarshaller: Map[Any, Marshaller],
-                         valuesTypes: Map[RuntimeClass, Any]) extends Marshaller {
+                         valuesTypes: Map[RuntimeClass, Any],
+                         val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = {
       val key = valuesTypes(obj.getClass)
-      keyMarshaller.marshal(key)
+      if (contextFieldIndex.isEmpty) {
+        keyMarshaller.marshal(key)
+      }
       valuesMarshaller(key).marshal(obj)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val key = keyMarshaller.unmarshal()
       valuesMarshaller(key).unmarshal()
     }
   }
 
   class EnumMarshaller(valueMarshaller: Marshaller,
-                       valuesInstances: Map[Any, Any]) extends Marshaller {
+                       valuesInstances: Map[Any, Any],
+                       val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = {
       val value = valuesInstances collectFirst {
         case (value, instance) if instance == obj => value
@@ -315,52 +365,59 @@ object Marshallers {
       valueMarshaller.marshal(value.get)
     }
 
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val key = valueMarshaller.unmarshal()
-      valuesInstances(key)
+      val content = valuesInstances(key)
+      context.addField(content)
+      content
     }
   }
 
-  object NbtMarshaller extends Marshaller {
+  class NbtMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case Nbt(name, compoundTag) => Io.writeNBT(outStream)((name,compoundTag))
     }
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = Io.readNBT(inStream) match {
-      case (name, compoundTag) => Nbt(name, compoundTag)
+
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any =
+      Io.readNBT(inStream) match {
+      case (name, compoundTag) =>
+        val content = Nbt(name, compoundTag)
+        context.addField(content)
+        content
     }
   }
 
 
-  class ParticleMarshaller(dataTypes: Map[RuntimeClass, Int], dataMarshaller: Map[Int, Marshaller]) extends Marshaller {
-    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case Particle(longDistance: Boolean, x: Float, y: Float, z: Float, offsetX: Float, offsetY: Float, offsetZ: Float, particleData: Float, particleCount: Int, data: ParticleData) =>
-      val particleId = dataTypes(data.getClass)
-        IntMarshaller.marshal(particleId)
-        BooleanMarshaller.marshal(longDistance)
-        FloatMarshaller.marshal(x)
-        FloatMarshaller.marshal(y)
-        FloatMarshaller.marshal(z)
-        FloatMarshaller.marshal(offsetX)
-        FloatMarshaller.marshal(offsetY)
-        FloatMarshaller.marshal(offsetZ)
-        FloatMarshaller.marshal(particleData)
-        IntMarshaller.marshal(particleCount)
-        dataMarshaller(particleId).marshal(data)
-    }
-
-    override def unmarshal()(implicit inStream: BufferedInputStream): Any = {
-        val particleId = IntMarshaller.unmarshal.asInstanceOf[Int]
-        val longDistance = BooleanMarshaller.unmarshal.asInstanceOf[Boolean]
-        val x = FloatMarshaller.unmarshal.asInstanceOf[Float]
-        val y = FloatMarshaller.unmarshal.asInstanceOf[Float]
-        val z = FloatMarshaller.unmarshal.asInstanceOf[Float]
-        val offsetX = FloatMarshaller.unmarshal.asInstanceOf[Float]
-        val offsetY = FloatMarshaller.unmarshal.asInstanceOf[Float]
-        val offsetZ = FloatMarshaller.unmarshal.asInstanceOf[Float]
-        val particleData = FloatMarshaller.unmarshal.asInstanceOf[Float]
-        val particleCount = IntMarshaller.unmarshal.asInstanceOf[Int]
-        val data = dataMarshaller(particleId).unmarshal.asInstanceOf[ParticleData]
-        Particle(longDistance, x, y, z, offsetX, offsetY, offsetZ, particleData, particleCount, data)
-    }
-  }
+//  class ParticleMarshaller(dataTypes: Map[RuntimeClass, Int], dataMarshaller: Map[Int, Marshaller], val contextFieldIndex: Option[Int] = None) extends Marshaller {
+//    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+//      case Particle(longDistance: Boolean, x: Float, y: Float, z: Float, offsetX: Float, offsetY: Float, offsetZ: Float, particleData: Float, particleCount: Int, data: ParticleData) =>
+//      val particleId = dataTypes(data.getClass)
+//        IntMarshaller.marshal(particleId)
+//        BooleanMarshaller.marshal(longDistance)
+//        FloatMarshaller.marshal(x)
+//        FloatMarshaller.marshal(y)
+//        FloatMarshaller.marshal(z)
+//        FloatMarshaller.marshal(offsetX)
+//        FloatMarshaller.marshal(offsetY)
+//        FloatMarshaller.marshal(offsetZ)
+//        FloatMarshaller.marshal(particleData)
+//        IntMarshaller.marshal(particleCount)
+//        dataMarshaller(particleId).marshal(data)
+//    }
+//
+//    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+//        val particleId = IntMarshaller.internalUnmarshal.asInstanceOf[Int]
+//        val longDistance = BooleanMarshaller.internalUnmarshal.asInstanceOf[Boolean]
+//        val x = FloatMarshaller.internalUnmarshal.asInstanceOf[Float]
+//        val y = FloatMarshaller.internalUnmarshal.asInstanceOf[Float]
+//        val z = FloatMarshaller.internalUnmarshal.asInstanceOf[Float]
+//        val offsetX = FloatMarshaller.internalUnmarshal.asInstanceOf[Float]
+//        val offsetY = FloatMarshaller.internalUnmarshal.asInstanceOf[Float]
+//        val offsetZ = FloatMarshaller.internalUnmarshal.asInstanceOf[Float]
+//        val particleData = FloatMarshaller.internalUnmarshal.asInstanceOf[Float]
+//        val particleCount = IntMarshaller.internalUnmarshal.asInstanceOf[Int]
+//        val data = dataMarshaller(particleId).internalUnmarshal.asInstanceOf[ParticleData]
+//        Particle(longDistance, x, y, z, offsetX, offsetY, offsetZ, particleData, particleCount, data)
+//    }
+//  }
 }

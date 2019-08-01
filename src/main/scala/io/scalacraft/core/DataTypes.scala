@@ -11,12 +11,6 @@ object DataTypes {
   case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt) extends Structure
   type Slot = Option[SlotData]
   case class Nbt(name: String, compound: TagCompound)
-  trait ParticleData extends Structure
-  case class Particle(longDistance: Boolean, x: Float, y: Float, z: Float, offsetX: Float, offsetY: Float, offsetZ: Float, particleData: Float, particleCount: Int, data: ParticleData)
-
-  @particle(3)
-  case class Block(@boxed blockState: Int) extends ParticleData
-
 
   case class Entity(@byte firstByte: Int) {
 

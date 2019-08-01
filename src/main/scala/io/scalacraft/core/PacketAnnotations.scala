@@ -9,7 +9,6 @@ object PacketAnnotations {
   class boxed extends StaticAnnotation
   class byte extends StaticAnnotation
   class short extends StaticAnnotation
-  class notPrecededByBoolean extends  StaticAnnotation
   class enum(values: Any*) extends StaticAnnotation
   class maxLength(value: Int) extends StaticAnnotation
   class switchType[K] extends StaticAnnotation
@@ -18,4 +17,6 @@ object PacketAnnotations {
   class enumType[K] extends StaticAnnotation
   class enumValue(value: Any) extends StaticAnnotation
   class particle(id: Int) extends StaticAnnotation
+  class fromContext(index: Int) extends StaticAnnotation
+
 }
