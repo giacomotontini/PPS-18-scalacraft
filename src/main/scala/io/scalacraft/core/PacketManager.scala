@@ -150,23 +150,6 @@ class PacketManager[T: TypeTag] {
       case sym if isSymType[UUID](sym) => new UUIDMarshaller(contextFieldIndex)
       case sym if isSymType[VarInt](sym) => new VarIntMarshaller(contextFieldIndex)
       case sym if isSymType[Nbt](sym) => new NbtMarshaller(contextFieldIndex)
-//      case sym if isSymType[Particle](sym) =>
-//         val valuesType = classTypes collect {
-//           case sym if hasAnnotation[particle](sym)=>
-//             val ann = annotation[particle](sym)
-//             annotationParam[Int](ann, 0) -> sym.toType
-//         } toMap
-//
-//        val valuesMarshaller = valuesType map {
-//          case (keyId, tpe) =>
-//            keyId -> createMarshaller(tpe)
-//        }
-//
-//        val valuesClazzes: Map[RuntimeClass, Int] = valuesType.map {
-//          case (key, tpe) => mirror.runtimeClass(tpe) -> key
-//        }.toMap // don't remove .toMap to avoid type mismatch error
-//
-//        new ParticleMarshaller(valuesClazzes, valuesMarshaller, contextFieldIndex)
       case sym if isSymType[String](sym) && checkAnnotations && hasAnnotation[maxLength](symAnnotations.get) =>
         new StringMarshaller(annotationParam[Int](annotation[maxLength](symAnnotations.get), 0), contextFieldIndex)
       case sym if isSymType[String](sym) => new StringMarshaller(MaxStringLength, contextFieldIndex)

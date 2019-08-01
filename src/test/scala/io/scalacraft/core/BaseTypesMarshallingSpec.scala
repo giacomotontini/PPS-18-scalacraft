@@ -1,9 +1,12 @@
 package io.scalacraft.core
 
+import java.util.UUID
+
+import io.scalacraft.core.DataTypes.Position
 import io.scalacraft.core.Marshallers._
 import org.scalatest._
 
-class MarshallersSpec extends FlatSpec with Matchers with MarshallerHelper {
+class BaseTypesMarshallingSpec extends FlatSpec with Matchers with MarshallerHelper {
 
   "A boolean marshaller" should "serialize correct values" in {
     dataTypesMarshal(new BooleanMarshaller, false) shouldBe "00"
@@ -92,6 +95,59 @@ class MarshallersSpec extends FlatSpec with Matchers with MarshallerHelper {
     dataTypesMarshal(new VarLongMarshaller, -1L) shouldBe "ffffffffffffffffff01"
     dataTypesMarshal(new VarLongMarshaller, Long.MinValue) shouldBe "80808080808080808001"
     dataTypesMarshal(new VarLongMarshaller, Long.MaxValue) shouldBe "ffffffffffffffff7f"
+  }
+
+  "A position marshaller" should "serialize correct values" in {
+    dataTypesMarshal(new PositionMarshaller, Position(0, 0, 0)) shouldBe "0000000000000000"
+    dataTypesMarshal(new PositionMarshaller, Position(1, 1, 1)) shouldBe "0000004004000001"
+    dataTypesMarshal(new PositionMarshaller, Position(-1, -1, -1)) shouldBe "ffffffffffffffff"
+    dataTypesMarshal(new PositionMarshaller, Position(-33554432, -2048, -33554432)) shouldBe "8000002002000000"
+    dataTypesMarshal(new PositionMarshaller, Position(33554431, 2047, 33554431)) shouldBe "7fffffdffdffffff"
+  }
+
+  "An UUID marshaller" should "serialize correct values" in {
+    dataTypesMarshal(new UUIDMarshaller, UUID.fromString("4ff36fa0-dddb-43b1-abf7-8261824e37e2"))
+      .shouldBe("4ff36fa0dddb43b1abf78261824e37e2")
+  }
+
+  "An optional marshaller" should "serialize correct values" in {
+    dataTypesMarshal(new OptionalMarshaller(new IntMarshaller), None) shouldBe "00"
+    dataTypesMarshal(new OptionalMarshaller(new IntMarshaller), Option(0x42)) shouldBe "0100000042"
+    // the condition is not written to output
+    dataTypesMarshal(new OptionalMarshaller(new IntMarshaller, Some(new IntMarshaller)), Option(0x42)) shouldBe "00000042"
+  }
+
+  "An array marshaller" should "serialize correct values" in {
+    dataTypesMarshal(new ArrayMarshaller(new IntMarshaller, None, classOf[Array[Int]]), Array())
+      .shouldBe("")
+    dataTypesMarshal(new ArrayMarshaller(new IntMarshaller, Some(new IntMarshaller), classOf[Array[Int]]), Array())
+      .shouldBe("00000000")
+    dataTypesMarshal(new ArrayMarshaller(new IntMarshaller, None, classOf[Array[Int]]), Array(1, 2, 3))
+      .shouldBe("000000010000000200000003")
+    dataTypesMarshal(new ArrayMarshaller(new IntMarshaller, Some(new IntMarshaller), classOf[Array[Int]]), Array(1, 2, 3))
+      .shouldBe("00000003000000010000000200000003")
+  }
+
+  // Non sense but exists in protocol..
+
+  "An array of optional marshaller" should "serialize correct values" in {
+    val optionalMarshaller = new OptionalMarshaller(new IntMarshaller)
+    dataTypesMarshal(new ArrayMarshaller(optionalMarshaller, None, classOf[Option[Array[Int]]]), Array())
+      .shouldBe("")
+    dataTypesMarshal(new ArrayMarshaller(optionalMarshaller, Some(new IntMarshaller), classOf[Option[Array[Int]]]), Array())
+      .shouldBe("00000000")
+    dataTypesMarshal(new ArrayMarshaller(optionalMarshaller, None, classOf[Option[Array[Int]]]), Array(Some(1), None, Some(3)))
+      .shouldBe("0100000001000100000003")
+    dataTypesMarshal(new ArrayMarshaller(optionalMarshaller, Some(new IntMarshaller), classOf[Option[Array[Int]]]), Array(Some(1), None, Some(3)))
+      .shouldBe("000000030100000001000100000003")
+  }
+
+  "An optional of array marshaller" should "serialize correct values" in {
+    val arrayMarshaller = new ArrayMarshaller(new IntMarshaller, None, classOf[Int])
+    dataTypesMarshal(new OptionalMarshaller(arrayMarshaller), None) shouldBe "00"
+    dataTypesMarshal(new OptionalMarshaller(arrayMarshaller), Some(Array(1, 3))) shouldBe "010000000100000003"
+    dataTypesMarshal(new OptionalMarshaller(arrayMarshaller, Some(new IntMarshaller)), Some(Array(1, 3)))
+      .shouldBe("0000000100000003")
   }
 
 }

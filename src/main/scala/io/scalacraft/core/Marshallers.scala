@@ -7,6 +7,7 @@ import java.util.UUID
 import io.scalacraft.core.DataTypes.{Nbt, Position}
 import io.scalacraft.core.nbt.Io
 
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
@@ -40,7 +41,7 @@ object Marshallers {
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val b = inStream.readIfIsAvailable()
       context.addField(b)
-      b
+      b.toByte
     }
   }
 
@@ -54,7 +55,7 @@ object Marshallers {
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val s = (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
       context.addField(s)
-      s
+      s.toShort
     }
   }
 
@@ -115,12 +116,12 @@ object Marshallers {
   class DoubleMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case d: Double =>
-        val bytes = java.lang.Double.doubleToRawLongBits(d)
+        val bytes = java.lang.Double.doubleToLongBits(d)
         new LongMarshaller().marshal(bytes)
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      val d = java.lang.Double.doubleToRawLongBits(new LongMarshaller().unmarshal().asInstanceOf[Double])
+      val d = java.lang.Double.longBitsToDouble(new LongMarshaller().unmarshal().asInstanceOf[Long])
       context.addField(d)
       d
     }
@@ -192,9 +193,9 @@ object Marshallers {
   }
 
   class PositionMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
-    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match{
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case Position(x,y,z) =>
-        val position:Long = ((x.toLong & 0x3FFFFFF) << 38) | ((y.toLong & 0xFFF) << 26) | (z.toLong & 0x3FFFFFF)
+        val position: Long = ((x.toLong & 0x3FFFFFF) << 38) | ((y.toLong & 0xFFF) << 26) | (z.toLong & 0x3FFFFFF)
         new LongMarshaller().marshal(position)
     }
 
@@ -295,27 +296,38 @@ object Marshallers {
   class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller], runtimeClass: RuntimeClass,
                         val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case array: Array[Any] =>
-        if(lengthMarshaller.isDefined) lengthMarshaller.get.marshal(array.length)
+      case array: Array[_] =>
+        if (lengthMarshaller.isDefined) {
+          lengthMarshaller.get.marshal(array.length)
+        }
         for (elem <- array) {
           paramMarshaller.marshal(elem)
         }
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      val length = if (lengthMarshaller.isDefined) {
-        lengthMarshaller.get.unmarshal().asInstanceOf[Int]
-      } else {
-        inStream.available()
-      }
-      val array = ClassTag(runtimeClass).newArray(length).asInstanceOf[Array[Any]]
       val newContext = Context.create
-      for (i <- 0 until length) {
-        array(i) = paramMarshaller.unmarshal()(newContext, inStream)
-      }
-
       context.addField(newContext)
-      array
+
+      if (lengthMarshaller.isDefined) {
+        val length = lengthMarshaller.get.unmarshal().asInstanceOf[Int]
+        val array = ClassTag(runtimeClass).newArray(length).asInstanceOf[Array[Any]]
+        for (i <- 0 until length) {
+          array(i) = paramMarshaller.unmarshal()(newContext, inStream)
+        }
+        array
+      } else {
+        val temp = mutable.Buffer[Any]()
+        var stop = false
+        while (!stop) {
+          try temp.append(paramMarshaller.unmarshal()(newContext, inStream))
+          catch {
+            case _: EOFException => stop = true
+          }
+        }
+
+        temp.toArray
+      }
     }
   }
 

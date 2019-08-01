@@ -1,6 +1,6 @@
 package io.scalacraft.core
 
-import java.io.{BufferedOutputStream, ByteArrayOutputStream}
+import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, ByteArrayOutputStream}
 
 trait MarshallerHelper {
 
@@ -11,6 +11,15 @@ trait MarshallerHelper {
     outStream.close()
 
     Helpers.bytes2hex(serializedPacket.toByteArray)
+  }
+
+  def dataTypesUnmarshal(marshaller: Marshaller, hexInput: String)(implicit context: Context = Context.create): Any = {
+    val byteArray = new ByteArrayInputStream(Helpers.hex2bytes(hexInput))
+    implicit val inStream: BufferedInputStream = new BufferedInputStream(byteArray)
+    val result = marshaller.unmarshal()
+    inStream.close()
+
+    result
   }
 
 }
