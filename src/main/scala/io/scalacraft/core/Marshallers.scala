@@ -331,7 +331,7 @@ object Marshallers {
   class StructureMarshaller(fieldsMarshaller: List[Marshaller], constructorMirror: MethodMirror,
                             val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case str: Structure =>
+      case str: Product =>
         str.productIterator.zip(fieldsMarshaller.toIterator) foreach {
           case (obj, marshaller) => marshaller.marshal(obj)
         }
@@ -351,17 +351,26 @@ object Marshallers {
                          valuesTypes: Map[RuntimeClass, Any],
                          val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = {
-      val key = valuesTypes(obj.getClass)
-      if (contextFieldIndex.isEmpty) {
-        keyMarshaller.marshal(key)
+      obj match {
+        case list: List[_] if list.nonEmpty => marshalClass(valuesTypes(list.head.getClass), obj)
+        case Some(value) => marshalClass(valuesTypes(value.getClass), obj)
+        case None | _: List[_] => marshalClass(valuesTypes.head._2, obj)
+        case obj => marshalClass(valuesTypes(obj.getClass), obj)
       }
-      valuesMarshaller(key).marshal(obj)
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val key = keyMarshaller.unmarshal()
       valuesMarshaller(key).unmarshal()
     }
+
+    private def marshalClass(key: Any, obj: Any)(implicit outStream: BufferedOutputStream): Unit = {
+      if (contextFieldIndex.isEmpty) {
+        keyMarshaller.marshal(key)
+      }
+      valuesMarshaller(key).marshal(obj)
+    }
+
   }
 
   class EnumMarshaller(valueMarshaller: Marshaller,
