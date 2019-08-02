@@ -2,7 +2,7 @@ package io.scalacraft.core
 
 import java.util.UUID
 
-import io.scalacraft.core.PacketAnnotations.{boxed, byte, enumType, enumValue, particle, switchType}
+import io.scalacraft.core.PacketAnnotations.{boxed, byte, enumType, enumValue, particle, switchKey, switchType}
 import io.scalacraft.core.nbt.Tags.TagCompound
 
 object DataTypes {
@@ -46,5 +46,12 @@ object DataTypes {
                                   field12: Option[UUID],
                                   @boxed field13: Option[Int],
                                   field14: Nbt,
-                                  @switchType[VarInt] field15: Particle) extends Structure
+                                  @switchType[VarInt] field15: ParticleData) extends Structure
+
+  sealed trait ParticleData extends Structure
+  @switchKey(3)
+  case class Block(@boxed blockState: Int) extends ParticleData
+  @switchKey(12)
+  case class Effect() extends ParticleData
+
 }

@@ -37,10 +37,10 @@ class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMars
       .shouldBe("00000001020200420043")
   }
 
-//  "A structure with metadata " should "serialize correct values" in {
-//    val metadata = new AreaEffectCloud()
-//    val packet = StructureWithMetadata(metadata)
-//    structureMarshal(packet) shouldBe ""
-//  }
+  "A structure with metadata " should "serialize correct values" in {
+    val metadata = new AreaEffectCloud()
+    val packet = StructureWithMetadata(0, metadata)
+   structureMarshal(packet) shouldBe "000000000101ac0202050003070004070005070006023f000000070100080700090f0cff"
+  }
 
 }

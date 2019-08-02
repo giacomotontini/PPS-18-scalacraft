@@ -1,8 +1,7 @@
 package io.scalacraft.core
 
-import io.scalacraft.core.DataTypes.{Chat, Position, Slot}
+import io.scalacraft.core.DataTypes.{Chat, Effect, ParticleData, Position, Slot}
 import io.scalacraft.core.PacketAnnotations._
-import io.scalacraft.core.serverbound.PlayPackets.{ParticleData, minecraftEffect}
 
 
 object Entities {
@@ -42,7 +41,7 @@ object Entities {
   class AreaEffectCloud extends Entity with MobEntity{
     @indexType(index = 2) val radius: Float = 0.5f
     @indexType(index = 1) @boxed val color: Int = 0
-    @indexType(index = 7) val ignoreRadiusAndShowEffectAtSinglePoint = false
-    @indexType(index = 15) val particle: ParticleData = minecraftEffect()
+    @indexType(index = 7) val ignoreRadiusAndShowEffectAtSinglePoint: Boolean = false
+    @indexType(index = 15) val particle: ParticleData = Effect()
   }
 }

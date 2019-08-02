@@ -2,7 +2,7 @@ package io.scalacraft.core.serverbound
 
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.VarInt
+import io.scalacraft.core.DataTypes.{ParticleData, VarInt}
 import io.scalacraft.core.PacketAnnotations._
 import io.scalacraft.core.Structure
 
@@ -44,15 +44,8 @@ object PlayPackets {
 //  @packet(0x01)
 //  case class TestPacket2(@byte column: Int, @fromContext(0) option: Option[Int]) extends Structure
 
-
-  sealed trait ParticleData extends Structure
-  case class minecraftEffect() extends ParticleData
-
   @packet(0x24)
   case class Particle(particleId: Int, particleData: Float, particleCount: Int, @fromContext(0) @switchType[Int] data: ParticleData) extends Structure
-
-  @switchKey(3)
-  case class Block(@boxed blockState: Int) extends ParticleData
 
 
 }

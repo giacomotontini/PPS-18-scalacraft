@@ -409,21 +409,21 @@ object Marshallers {
 
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case obj:EntityMetadata =>
-        for(i <- 0 to obj.values.size) {
-          val indexBytes = if(i != obj.values.size - 1) i else 0xff //End of array metadata
-          byteMarshaller.marshal(indexBytes)
-          varIntMarshaller.marshal(obj.indexes(i))
-          typesMarshallers(i).marshal(obj.values(i))
+        for(index <- 0 until obj.values.size) {
+          byteMarshaller.marshal(index)
+          varIntMarshaller.marshal(obj.indexes(index))
+          typesMarshallers(obj.indexes(index)).marshal(obj.values(index))
         }
+        byteMarshaller.marshal(0xff) //end of metadata
     }
 
     override protected[this] def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       var fieldSeq: List[Any] = List()
-      var index: Byte = 0x00
+      var index = 0x00
       var indexToBeReaded = 0
-      while ({index = byteMarshaller.unmarshal().asInstanceOf[Byte]; index} != 0xff) {
+      while ({index = byteMarshaller.unmarshal().asInstanceOf[Int].toByte; index} != -1) {
         if(index != indexToBeReaded) {
-          fieldSeq :+ null
+          fieldSeq :+= null
         } else {
           val typeIndex = varIntMarshaller.unmarshal().asInstanceOf[Int]
           fieldSeq :+= typesMarshallers(typeIndex).unmarshal()

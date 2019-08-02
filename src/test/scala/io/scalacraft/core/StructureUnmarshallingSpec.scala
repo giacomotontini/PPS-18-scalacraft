@@ -1,7 +1,8 @@
 package io.scalacraft.core
 
+import io.scalacraft.core.Entities.AreaEffectCloud
 import io.scalacraft.core.TestStructures.EnumInterface.{EnumOption1, EnumOption2}
-import io.scalacraft.core.TestStructures.{BaseOptional, IntTypeEnum, OptionalEnum, VarIntTypeEnum, VarIntTypeFromContextEnum}
+import io.scalacraft.core.TestStructures.{BaseOptional, IntTypeEnum, OptionalEnum, StructureWithMetadata, VarIntTypeEnum, VarIntTypeFromContextEnum}
 import org.scalatest.{FlatSpec, Matchers}
 
 class StructureUnmarshallingSpec extends FlatSpec with Matchers with StructureMarshallerHelper[TestStructures.type]{
@@ -26,4 +27,10 @@ class StructureUnmarshallingSpec extends FlatSpec with Matchers with StructureMa
     structureUnmarshal(0x14, "0102").shouldBe(OptionalEnum(Some(EnumOption2)))
   }
 
+  "A structured data with metadata field" should "deserialize the correct value" in {
+    val metadata = new AreaEffectCloud()
+    val packet = StructureWithMetadata(0, metadata)
+
+    structureUnmarshal(0x30, "000000000101ac0202050003070004070005070006023f000000070100080700090f0cff").shouldBe(packet)
+  }
 }

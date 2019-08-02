@@ -23,4 +23,11 @@ class EntityMetadata {
 
   private[scalacraft] val indexes: List[Int] = fields map( _.getDeclaredAnnotation(classOf[indexType]).index())
   private[scalacraft] def values: List[Any] = fields map { _.get(this) }
+
+  //for test purpose: needed because every unmarshalled packet is constructed via reflection throw a class constructor and instance references are different
+  override def equals(o: Any): Boolean = o match {
+    case other: EntityMetadata => other.values equals this.values
+    case _ => false
+  }
+
 }

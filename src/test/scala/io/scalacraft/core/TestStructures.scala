@@ -60,6 +60,6 @@ object TestStructures {
   case class OptionalEnum( @enumType[VarInt] value: Option[EnumInterface]) extends Structure
 
   @packet(id=0x30)
-  case class StructureWithMetadata(@fromContext(0) metadata: MobEntity) extends Structure
+  case class StructureWithMetadata(@boxed val tpe: Int, @fromContext(0) metadata: MobEntity) extends Structure
 
 }
