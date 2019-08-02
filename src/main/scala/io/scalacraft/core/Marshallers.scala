@@ -411,7 +411,7 @@ object Marshallers {
     }
 
     override protected[this] def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      var fieldSeq = Seq()
+      var fieldSeq: List[Any] = List()
       var index: Byte = 0x00
       var indexToBeReaded = 0
       while ({index = byteMarshaller.unmarshal().asInstanceOf[Byte]; index} != 0xff) {
@@ -423,7 +423,7 @@ object Marshallers {
         }
         indexToBeReaded += 1
       }
-      constructorMirrors(typeMarshaller.unmarshal())(fieldSeq:_*)
+      constructorMirrors(typeMarshaller.unmarshal().asInstanceOf[Int])(fieldSeq:_*)
     }
   }
 

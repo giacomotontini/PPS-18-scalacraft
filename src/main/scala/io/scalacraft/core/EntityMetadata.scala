@@ -2,6 +2,8 @@ package io.scalacraft.core
 
 import java.lang.reflect.Field
 
+import io.scalacraft.core.Entities.Entity
+
 class EntityMetadata {
 
   // TODO: change visibility
@@ -17,10 +19,21 @@ class EntityMetadata {
     _fields
   }
 
+  private val _indexes: List[_] = {
+    fields.foreach(f  => println(f.getDeclaredAnnotations.toList))
+    null
+  }
+
   private[scalacraft] def setValues(values: List[Any]): Unit = for (i <- values.indices) {
     fields(i).set(this, values(i))
   }
 
   private[scalacraft] def values: List[Any] = fields map { _.get(this) }
+  private[scalacraft] def indexes: List[_] = _indexes
 
+
+}
+
+object l extends App {
+  println(new Entity().indexes.toList)
 }

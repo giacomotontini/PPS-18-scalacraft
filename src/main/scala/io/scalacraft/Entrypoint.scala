@@ -2,10 +2,7 @@ package io.scalacraft
 
 import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, ByteArrayOutputStream}
 
-import io.scalacraft.core.Marshallers.VarIntMarshaller
-import io.scalacraft.core.serverbound.PlayPackets
-import io.scalacraft.core.serverbound.PlayPackets.{AddPlayer, Direction, PlayerInfo, TestPacket}
-import io.scalacraft.core.{Helpers, PacketManager}
+
 
 import scala.language.postfixOps
 
