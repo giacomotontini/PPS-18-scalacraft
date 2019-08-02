@@ -2,7 +2,7 @@ package io.scalacraft.core
 
 import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, ByteArrayOutputStream}
 
-trait MarshallerHelper {
+trait DataTypesMarshallerHelper {
 
   def dataTypesMarshal(marshaller: Marshaller, obj: Any): String = {
     val serializedPacket = new ByteArrayOutputStream()

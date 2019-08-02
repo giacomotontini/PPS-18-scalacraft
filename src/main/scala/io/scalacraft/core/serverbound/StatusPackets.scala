@@ -1,6 +1,6 @@
 package io.scalacraft.core.serverbound
 
-import io.scalacraft.core.PacketAnnotations.{maxLength, packet}
+import io.scalacraft.core.PacketAnnotations.packet
 
 object StatusPackets {
 

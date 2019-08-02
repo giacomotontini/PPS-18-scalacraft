@@ -15,7 +15,8 @@ lazy val root = Project(
     name := projectName,
     scalaVersion := projectScalaVersion,
     version := projectVersion,
-    organization := projectOrganization
+    organization := projectOrganization,
+    coverageEnabled := true
   )
 
 lazy val dependencies = Seq(

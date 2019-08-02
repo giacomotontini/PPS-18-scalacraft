@@ -33,7 +33,7 @@ object Marshallers {
     }
   }
 
-  class ByteMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
+  class ByteMarshaller(val isUnsigned: Boolean = false, val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Int => outStream.write(i & 0xFF)
     }
@@ -41,11 +41,11 @@ object Marshallers {
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val b = inStream.readIfIsAvailable()
       context.addField(b)
-      b.toByte
+      if (isUnsigned) b else b.toByte
     }
   }
 
-  class ShortMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
+  class ShortMarshaller(val isUnsigned: Boolean = false, val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
       case i: Int =>
         outStream.write((i >> 8) & 0xFF)
@@ -55,7 +55,7 @@ object Marshallers {
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val s = (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
       context.addField(s)
-      s.toShort
+      if (isUnsigned) s else s.toShort
     }
   }
 
@@ -293,41 +293,38 @@ object Marshallers {
     }
   }
 
-  class ArrayMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller], runtimeClass: RuntimeClass,
-                        val contextFieldIndex: Option[Int] = None) extends Marshaller {
+  class ListMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller],
+                       val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case array: Array[_] =>
+      case list: List[_] =>
         if (lengthMarshaller.isDefined) {
-          lengthMarshaller.get.marshal(array.length)
+          lengthMarshaller.get.marshal(list.length)
         }
-        for (elem <- array) {
-          paramMarshaller.marshal(elem)
-        }
+        list.foreach { paramMarshaller.marshal }
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val newContext = Context.create
       context.addField(newContext)
+      val buffer = mutable.Buffer[Any]()
 
       if (lengthMarshaller.isDefined) {
         val length = lengthMarshaller.get.unmarshal().asInstanceOf[Int]
-        val array = ClassTag(runtimeClass).newArray(length).asInstanceOf[Array[Any]]
-        for (i <- 0 until length) {
-          array(i) = paramMarshaller.unmarshal()(newContext, inStream)
+
+        for (_ <- 0 until length) {
+          buffer.append(paramMarshaller.unmarshal()(newContext, inStream))
         }
-        array
       } else {
-        val temp = mutable.Buffer[Any]()
         var stop = false
         while (!stop) {
-          try temp.append(paramMarshaller.unmarshal()(newContext, inStream))
+          try buffer.append(paramMarshaller.unmarshal()(newContext, inStream))
           catch {
             case _: EOFException => stop = true
           }
         }
-
-        temp.toArray
       }
+
+      buffer.toList
     }
   }
 

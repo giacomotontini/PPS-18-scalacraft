@@ -20,7 +20,7 @@ object PlayPackets {
   case class AddPlayer(
                         uuid: UUID,
                         @maxLength(16) name: String,
-                        @precededBy[VarInt] property: Array[AddPlayerProperty],
+                        @precededBy[VarInt] property: List[AddPlayerProperty],
                         @boxed gameMode: Int,
                         @boxed ping: Int,
                         @maxLength(32767) chat: Option[String]

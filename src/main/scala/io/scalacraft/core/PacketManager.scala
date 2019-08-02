@@ -3,7 +3,7 @@ package io.scalacraft.core
 import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Nbt, Slot, SlotData, VarInt}
+import io.scalacraft.core.DataTypes.{Nbt, Slot, SlotData, VarInt, Position}
 import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.PacketAnnotations._
 
@@ -15,7 +15,7 @@ class PacketManager[T: TypeTag] {
 
   private val mirror = runtimeMirror(getClass.getClassLoader)
 
-  private val classTypes: List[ClassSymbol] = loadClassTypes[T]() ++ loadClassTypes[DataTypes.type ]()
+  private val classTypes: List[ClassSymbol] = loadClassTypes[T]() ++ loadClassTypes[DataTypes.type]()
 
   private def loadClassTypes[U: TypeTag](): List[ClassSymbol] = {
     typeOf[U].decls.collect {
@@ -39,9 +39,9 @@ class PacketManager[T: TypeTag] {
     case (packetId, tpe) => packetId -> createMarshaller(tpe)
   }
 
-  def marshal[U <: Structure: TypeTag](packet: U)(implicit outStream: BufferedOutputStream): Unit = {
+  def marshal[U <: Structure](packet: U)(implicit outStream: BufferedOutputStream): Unit = {
     val packetId = packetTypes.collectFirst {
-      case (packetId, tpe) if tpe =:= Helpers.runtimeType[U](packet) => packetId
+      case (packetId, tpe) if tpe =:= mirror.classSymbol(packet.getClass).toType => packetId
     } get
 
     packetMarshallers(packetId).marshal(packet)
@@ -107,7 +107,7 @@ class PacketManager[T: TypeTag] {
           valuesMarshaller = valuesMarshaller map {
             case (keyId, marshaller) =>
               val runtimeClass = mirror.runtimeClass(valuesType(keyId).typeSymbol.asClass)
-              keyId -> new ArrayMarshaller(marshaller, Some(precededByMarshaller), runtimeClass)
+              keyId -> new ListMarshaller(marshaller, Some(precededByMarshaller))
           }
 
           valuesType = valuesWithArrayType
@@ -133,13 +133,19 @@ class PacketManager[T: TypeTag] {
         new EnumMarshaller(valueMarshaller, valuesInstances, contextFieldIndex)
       case sym if isSymType[Int](sym) && checkAnnotations =>
         if (hasAnnotation[byte](symAnnotations.get)) {
-          new ByteMarshaller(contextFieldIndex)
+          new ByteMarshaller(false, contextFieldIndex)
         } else if (hasAnnotation[short](symAnnotations.get)) {
-          new ShortMarshaller(contextFieldIndex)
+          new ShortMarshaller(false, contextFieldIndex)
         } else if (hasAnnotation[boxed](symAnnotations.get)) {
           new VarIntMarshaller(contextFieldIndex)
         } else {
           new IntMarshaller(contextFieldIndex)
+        }
+      case sym if isSymType[Long](sym) && checkAnnotations =>
+        if (hasAnnotation[boxed](symAnnotations.get)) {
+          new VarLongMarshaller(contextFieldIndex)
+        } else {
+          new LongMarshaller(contextFieldIndex)
         }
       case sym if isSymType[Int](sym) => new IntMarshaller(contextFieldIndex)
       case sym if isSymType[Boolean](sym) => new BooleanMarshaller(contextFieldIndex)
@@ -158,12 +164,11 @@ class PacketManager[T: TypeTag] {
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(argType)
         val conditionMarshaller = contextFieldIndex map { i => new BooleanMarshaller(Some(i)) }
         new OptionalMarshaller(paramMarshaller, conditionMarshaller)
-      case sym if isSymType[Array[_]](sym) && checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get) =>
+      case sym if isSymType[List[_]](sym) && checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get) =>
         val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
         val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
-        val runtimeClass = mirror.runtimeClass(sym.info.typeArgs.head.typeSymbol.asClass)
-        new ArrayMarshaller(paramMarshaller, Some(precededByMarshaller), runtimeClass, contextFieldIndex)
+        new ListMarshaller(paramMarshaller, Some(precededByMarshaller), contextFieldIndex)
       case sym => createMarshaller(sym.asType.toType)
     }
   }

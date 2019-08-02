@@ -6,7 +6,7 @@ import io.scalacraft.core.DataTypes.Position
 import io.scalacraft.core.Marshallers._
 import org.scalatest._
 
-class BaseTypesUnmarshallingSpec extends FlatSpec with Matchers with MarshallerHelper {
+class BaseTypesUnmarshallingSpec extends FlatSpec with Matchers with DataTypesMarshallerHelper {
 
   "A boolean marshaller" should "deserialize correct values" in {
     dataTypesUnmarshal(new BooleanMarshaller, "00") shouldBe false
@@ -30,23 +30,23 @@ class BaseTypesUnmarshallingSpec extends FlatSpec with Matchers with MarshallerH
   }
 
   "An unsigned byte marshaller" should "deserialize correct values" in {
-    dataTypesUnmarshal(new ByteMarshaller, "00") shouldBe 0
-    dataTypesUnmarshal(new ByteMarshaller, "01") shouldBe 1
-    dataTypesUnmarshal(new ByteMarshaller, "ff") shouldBe 255
+    dataTypesUnmarshal(new ByteMarshaller(true), "00") shouldBe 0
+    dataTypesUnmarshal(new ByteMarshaller(true), "01") shouldBe 1
+    dataTypesUnmarshal(new ByteMarshaller(true), "ff") shouldBe 255
   }
 
   "A short marshaller" should "deserialize correct values" in {
     dataTypesUnmarshal(new ShortMarshaller, "0000") shouldBe 0
     dataTypesUnmarshal(new ShortMarshaller, "0001") shouldBe 1
     dataTypesUnmarshal(new ShortMarshaller, "ffff") shouldBe -1
-    dataTypesUnmarshal(new ShortMarshaller, "8000") shouldBe Short.MinValue.toInt
-    dataTypesUnmarshal(new ShortMarshaller, "7fff") shouldBe Short.MaxValue.toInt
+    dataTypesUnmarshal(new ShortMarshaller, "8000") shouldBe Short.MinValue
+    dataTypesUnmarshal(new ShortMarshaller, "7fff") shouldBe Short.MaxValue
   }
 
   "An unsigned short marshaller" should "deserialize correct values" in {
-    dataTypesUnmarshal(new ShortMarshaller, "0000") shouldBe 0
-    dataTypesUnmarshal(new ShortMarshaller, "0001") shouldBe 1
-    dataTypesUnmarshal(new ShortMarshaller, "ffff") shouldBe 65535
+    dataTypesUnmarshal(new ShortMarshaller(true), "0000") shouldBe 0
+    dataTypesUnmarshal(new ShortMarshaller(true), "0001") shouldBe 1
+    dataTypesUnmarshal(new ShortMarshaller(true), "ffff") shouldBe 65535
   }
 
   "A long marshaller" should "deserialize correct values" in {
@@ -117,36 +117,35 @@ class BaseTypesUnmarshallingSpec extends FlatSpec with Matchers with MarshallerH
       .shouldBe(Option(0x42))
   }
 
-  "An array marshaller" should "deserialize correct values" in {
-//    dataTypesUnmarshal(new ArrayMarshaller(new IntMarshaller, None, classOf[Int]), "")
-//      .shouldBe(Array())
-//    dataTypesUnmarshal(new ArrayMarshaller(new IntMarshaller, Some(new IntMarshaller), classOf[Int]), "00000000")
-//      .shouldBe(Array())
-    dataTypesUnmarshal(new ArrayMarshaller(new IntMarshaller, None, classOf[Int]), "000000010000000200000003")
-      .shouldBe(Array(1, 2, 3))
-    dataTypesUnmarshal(new ArrayMarshaller(new IntMarshaller, Some(new IntMarshaller), classOf[Int]), "00000003000000010000000200000003")
-      .shouldBe(Array(1, 2, 3))
+  "A list marshaller" should "deserialize correct values" in {
+    dataTypesUnmarshal(new ListMarshaller(new IntMarshaller, None), "") shouldBe List()
+    dataTypesUnmarshal(new ListMarshaller(new IntMarshaller, Some(new IntMarshaller)), "00000000")
+      .shouldBe(List())
+    dataTypesUnmarshal(new ListMarshaller(new IntMarshaller, None), "000000010000000200000003")
+      .shouldBe(List(1, 2, 3))
+    dataTypesUnmarshal(new ListMarshaller(new IntMarshaller, Some(new IntMarshaller)), "00000003000000010000000200000003")
+      .shouldBe(List(1, 2, 3))
   }
 
   // Non sense but exists in protocol..
 
-  "An array of optional marshaller" should "deserialize correct values" in {
+  "A list of optional marshaller" should "deserialize correct values" in {
     val optionalMarshaller = new OptionalMarshaller(new IntMarshaller)
-    dataTypesMarshal(new ArrayMarshaller(optionalMarshaller, None, classOf[Option[Array[Int]]]), Array())
+    dataTypesMarshal(new ListMarshaller(optionalMarshaller, None), List())
       .shouldBe("")
-    dataTypesMarshal(new ArrayMarshaller(optionalMarshaller, Some(new IntMarshaller), classOf[Option[Array[Int]]]), Array())
+    dataTypesMarshal(new ListMarshaller(optionalMarshaller, Some(new IntMarshaller)), List())
       .shouldBe("00000000")
-    dataTypesMarshal(new ArrayMarshaller(optionalMarshaller, None, classOf[Option[Array[Int]]]), Array(Some(1), None, Some(3)))
+    dataTypesMarshal(new ListMarshaller(optionalMarshaller, None), List(Some(1), None, Some(3)))
       .shouldBe("0100000001000100000003")
-    dataTypesMarshal(new ArrayMarshaller(optionalMarshaller, Some(new IntMarshaller), classOf[Option[Array[Int]]]), Array(Some(1), None, Some(3)))
+    dataTypesMarshal(new ListMarshaller(optionalMarshaller, Some(new IntMarshaller)), List(Some(1), None, Some(3)))
       .shouldBe("000000030100000001000100000003")
   }
 
-  "An optional of array marshaller" should "deserialize correct values" in {
-    val arrayMarshaller = new ArrayMarshaller(new IntMarshaller, None, classOf[Int])
+  "An optional list of marshaller" should "deserialize correct values" in {
+    val arrayMarshaller = new ListMarshaller(new IntMarshaller, None)
     dataTypesMarshal(new OptionalMarshaller(arrayMarshaller), None) shouldBe "00"
-    dataTypesMarshal(new OptionalMarshaller(arrayMarshaller), Some(Array(1, 3))) shouldBe "010000000100000003"
-    dataTypesMarshal(new OptionalMarshaller(arrayMarshaller, Some(new IntMarshaller)), Some(Array(1, 3)))
+    dataTypesMarshal(new OptionalMarshaller(arrayMarshaller), Some(List(1, 3))) shouldBe "010000000100000003"
+    dataTypesMarshal(new OptionalMarshaller(arrayMarshaller, Some(new IntMarshaller)), Some(List(1, 3)))
       .shouldBe("0000000100000003")
   }
 
