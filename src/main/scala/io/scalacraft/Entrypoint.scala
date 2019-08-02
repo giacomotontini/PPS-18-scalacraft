@@ -10,7 +10,7 @@ import io.scalacraft.core.{Helpers, PacketManager}
 import scala.language.postfixOps
 
 object Entrypoint extends App {
-  val pm = new PacketManager[PlayPackets.type]
+  /*val pm = new PacketManager[PlayPackets.type]
   val originalPacket = Helpers.hex2bytes("57407268196e69a5a240514000")
   val serializedPacket = new ByteArrayOutputStream()
   implicit val inStream: BufferedInputStream = new BufferedInputStream(new ByteArrayInputStream(originalPacket))
@@ -22,6 +22,6 @@ object Entrypoint extends App {
   //inStream.close()
   outStream.close()
   // println(serializedPacket.toByteArray.toList)
-  //assert(originalPacket.toList sameElements serializedPacket.toByteArray)
+  //assert(originalPacket.toList sameElements serializedPacket.toByteArray)*/
 
 }

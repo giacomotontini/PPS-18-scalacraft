@@ -396,6 +396,36 @@ object Marshallers {
     }
   }
 
+  class EntityMarshaller(constructorMirrors: Map[Int, MethodMirror], typeMarshaller: Marshaller, typesMarshallers: Seq[Marshaller], val contextFieldIndex: Option[Int] = None) extends Marshaller {
+    val byteMarshaller = new ByteMarshaller(true)
+    val varIntMarshaller = new VarIntMarshaller()
+
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case obj:EntityMetadata =>
+        for(i <- 0 to obj.values.size) {
+          val indexBytes = if(i != obj.values.size - 1) i else 0xff //End of array metadata
+          byteMarshaller.marshal(indexBytes)
+          varIntMarshaller.marshal(obj.indexes(i))
+          typesMarshallers(i).marshal(obj.values(i))
+        }
+    }
+
+    override protected[this] def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      var fieldSeq = Seq()
+      var index: Byte = 0x00
+      var indexToBeReaded = 0
+      while ({index = byteMarshaller.unmarshal().asInstanceOf[Byte]; index} != 0xff) {
+        if(index != indexToBeReaded) {
+          fieldSeq :+ null
+        } else {
+          val typeIndex = varIntMarshaller.unmarshal().asInstanceOf[Int]
+          fieldSeq :+= typesMarshallers(typeIndex).unmarshal()
+        }
+        indexToBeReaded += 1
+      }
+      constructorMirrors(typeMarshaller.unmarshal())(fieldSeq:_*)
+    }
+  }
 
 //  class ParticleMarshaller(dataTypes: Map[RuntimeClass, Int], dataMarshaller: Map[Int, Marshaller], val contextFieldIndex: Option[Int] = None) extends Marshaller {
 //    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
