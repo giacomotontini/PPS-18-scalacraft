@@ -83,11 +83,11 @@ class PacketManager[T: TypeTag] {
           subTypesMarshaller(checkAnnotations = false)(keyType)
         }
 
-        val switchTrait = if (isSymType[Array[_]](sym)) {
+        val switchTrait = if (isSymType[List[_]](sym) || isSymType[Option[_]](sym)) {
           sym.info.typeArgs.head.typeSymbol
         } else sym.info.typeSymbol
 
-        var valuesType = classTypes collect {
+        val valuesType = classTypes collect {
           case sym if hasAnnotation[switchKey](sym) && sym.baseClasses.contains(switchTrait) =>
             val ann = annotation[switchKey](sym)
             annotationParam[Any](ann, 0) -> sym.toType
@@ -98,23 +98,19 @@ class PacketManager[T: TypeTag] {
             keyId -> createMarshaller(tpe)
         }
 
-        if (isSymType[Array[_]](sym)) {
+        if (isSymType[List[_]](sym)) {
           val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
           val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
 
-          val valuesWithArrayType = valuesType.map {
-            case (key, tpe) => key -> (sym.info match {
-              case TypeRef(p, sym, _) => TypeRef(p, sym, List(tpe))
-            })
-          }
-
           valuesMarshaller = valuesMarshaller map {
             case (keyId, marshaller) =>
-              val runtimeClass = mirror.runtimeClass(valuesType(keyId).typeSymbol.asClass)
               keyId -> new ListMarshaller(marshaller, Some(precededByMarshaller))
           }
-
-          valuesType = valuesWithArrayType
+        } else if (isSymType[Option[_]](sym)) {
+          valuesMarshaller = valuesMarshaller map {
+            case (keyId, marshaller) =>
+              keyId -> new OptionalMarshaller(marshaller)
+          }
         }
 
         val valuesClazzes: Map[RuntimeClass, Any] = valuesType.map {
@@ -164,13 +160,15 @@ class PacketManager[T: TypeTag] {
         new StringMarshaller(annotationParam[Int](annotation[maxLength](symAnnotations.get), 0), contextFieldIndex)
       case sym if isSymType[String](sym) => new StringMarshaller(MaxStringLength, contextFieldIndex)
       case sym if isSymType[Option[_]](sym) =>
-        val argType = if(isSymType[Slot](sym)) typeOf[SlotData].typeSymbol else sym.info.typeArgs.head.typeSymbol
+        val argType = if (isSymType[Slot](sym)) typeOf[SlotData].typeSymbol else sym.info.typeArgs.head.typeSymbol
+        println(argType)
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(argType)
         val conditionMarshaller = contextFieldIndex map { i => new BooleanMarshaller(Some(i)) }
         new OptionalMarshaller(paramMarshaller, conditionMarshaller)
       case sym if isSymType[List[_]](sym) && checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get) =>
         val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
         val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
+        val aaa = sym.info
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
         new ListMarshaller(paramMarshaller, Some(precededByMarshaller), contextFieldIndex)
       case sym if isSymType[EntityMetadata](sym) =>

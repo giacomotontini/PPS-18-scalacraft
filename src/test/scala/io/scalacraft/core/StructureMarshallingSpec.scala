@@ -3,7 +3,6 @@ package io.scalacraft.core
 import java.util.UUID
 
 import io.scalacraft.core.DataTypes.Position
-import io.scalacraft.core.Marshallers._
 import org.scalatest._
 
 class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMarshallerHelper[TestStructures.type] {
@@ -23,6 +22,18 @@ class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMars
 //    structureMarshal(AllDataTypes4(Some(1), List(1, 2, 3), Some(List(1, 2, 3)), List(Option(1), None, Option(3))))
 //      .shouldBe("010000000103000000011")
 
+  }
+
+  "A switch field" should "serialize the correct values" in {
+    structureMarshal(BasicSwitch(2, SwitchOption1(0x42))) shouldBe "000000020000000142"
+    structureMarshal(BasicSwitchWithContext(2, SwitchOption2(0x42))) shouldBe "000000020042"
+    structureMarshal(SwitchList(1, List())) shouldBe "000000010000000100000000"
+    structureMarshal(SwitchList(1, List(SwitchOption2(0x42), SwitchOption2(0x43))))
+      .shouldBe("00000001000000020000000200420043")
+    structureMarshal(SwitchOption(1, None)).shouldBe("000000010000000100")
+    structureMarshal(SwitchOption(1, Some(SwitchOption2(0x42)))).shouldBe("0000000100000002010042")
+    structureMarshal(RichSwitchList(1, List(SwitchOption2(0x42), SwitchOption2(0x43))))
+      .shouldBe("00000001020200420043")
   }
 
 
