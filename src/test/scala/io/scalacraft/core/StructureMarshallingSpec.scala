@@ -35,7 +35,9 @@ class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMars
     structureMarshal(RichSwitchList(1, List(SwitchOption2(0x42), SwitchOption2(0x43))))
       .shouldBe("00000001020200420043")
   }
+  "A structure with metadata " should "serialize correct values in" {
 
+  }
 
 
 }

@@ -1,7 +1,8 @@
 package io.scalacraft.core
 
-import io.scalacraft.core.DataTypes.{Chat, Slot}
+import io.scalacraft.core.DataTypes.{Chat, Position, Slot}
 import io.scalacraft.core.PacketAnnotations._
+import io.scalacraft.core.serverbound.PlayPackets.{Particle, ParticleData, minecraftEffect}
 
 
 object Entities {
@@ -27,7 +28,20 @@ object Entities {
 
   class Snowball extends Throwable
 
-  class Position extends Throwable {
-    var positionWhichIsThrown: Slot = None
+  class Potion extends Throwable {
+    var potionWhichIsThrown: Slot = None
+  }
+
+  class EyeOfEnder extends Entity
+
+  class FallingBlock extends Entity {
+    @indexType(index = 9) val spawnPosition: Position = Position(0,0,0)
+  }
+
+  class AreaEffectCloud extends Entity {
+    @indexType() val radius: Float = 0.5f
+    @indexType() @boxed val color: Int = 0
+    @indexType() val ignoreRadiusAndShowEffectAtSinglePoint = false
+    @indexType() val particle: ParticleData = minecraftEffect()
   }
 }

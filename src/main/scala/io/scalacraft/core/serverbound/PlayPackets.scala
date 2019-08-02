@@ -46,8 +46,10 @@ object PlayPackets {
 
 
   sealed trait ParticleData extends Structure
+  case class minecraftEffect() extends ParticleData
+
   @packet(0x24)
-  case class Particle(particleId: Int, particleData2: Float, particleCount: Int, @fromContext(0) @switchType[Int] data: ParticleData) extends Structure
+  case class Particle(particleId: Int, particleData: Float, particleCount: Int, @fromContext(0) @switchType[Int] data: ParticleData) extends Structure
 
   @switchKey(3)
   case class Block(@boxed blockState: Int) extends ParticleData

@@ -2,7 +2,12 @@ package io.scalacraft.core
 
 import java.util.UUID
 
+<<<<<<< Updated upstream
 import io.scalacraft.core.DataTypes.{Position, VarInt}
+=======
+import io.scalacraft.core.DataTypes.Position
+import io.scalacraft.core.Entities.Entity
+>>>>>>> Stashed changes
 
 object TestStructures {
 
@@ -57,4 +62,8 @@ object TestStructures {
   case class BaseOptional(@boxed value: Option[Int]) extends Structure
   @packet(0x14)
   case class OptionalEnum( @enumType[VarInt] value: Option[EnumInterface]) extends Structure
+
+
+  @packet(id=0x30)
+  case class StructureWithMetadata(@boxed tpe: Int, @fromContext(0) metadata: Entity) extends Structure
 }
