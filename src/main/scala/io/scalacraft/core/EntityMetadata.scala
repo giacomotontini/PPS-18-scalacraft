@@ -17,14 +17,11 @@ class EntityMetadata {
     _fields
   }
 
-  private val _indexes: List[Int] = fields map (_.getDeclaredAnnotation(classOf[indexType]).index())
-
   private[scalacraft] def setValues(values: List[Any]): Unit = for (i <- values.indices) {
     fields(i).set(this, values(i))
   }
 
   private[scalacraft] val indexes: List[Int] = fields map( _.getDeclaredAnnotation(classOf[indexType]).index())
   private[scalacraft] def values: List[Any] = fields map { _.get(this) }
-  private[scalacraft] def indexes: List[Int] = _indexes
 
 }

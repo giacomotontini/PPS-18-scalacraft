@@ -3,6 +3,7 @@ package io.scalacraft.core
 import java.util.UUID
 
 import io.scalacraft.core.DataTypes.Position
+import io.scalacraft.core.Entities.AreaEffectCloud
 import org.scalatest._
 
 class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMarshallerHelper[TestStructures.type] {
@@ -35,7 +36,11 @@ class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMars
     structureMarshal(RichSwitchList(1, List(SwitchOption2(0x42), SwitchOption2(0x43))))
       .shouldBe("00000001020200420043")
   }
-  "A structure with metadata " should "serialize correct values in" {
+
+  "A structure with metadata " should "serialize correct values" in {
+    val metadata = new AreaEffectCloud()
+    val packet = StructureWithMetadata(0, metadata)
+    structureMarshal(packet) shouldBe ""
 
   }
 

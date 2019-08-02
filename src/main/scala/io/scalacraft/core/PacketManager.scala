@@ -7,6 +7,7 @@ import io.scalacraft.core.DataTypes.{Nbt, Position, Slot, SlotData, VarInt, enti
 import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.PacketAnnotations._
 import MobsAndObjectsTypeMapping._
+import io.scalacraft.core.Entities.Entity
 import io.scalacraft.core.clientbound.PlayPackets.{MobEntity, ObjectEntity}
 
 import scala.language.postfixOps
@@ -17,7 +18,7 @@ class PacketManager[T: TypeTag] {
 
   private val mirror = runtimeMirror(getClass.getClassLoader)
 
-  private val classTypes: List[ClassSymbol] = loadClassTypes[T]() ++ loadClassTypes[DataTypes.type]()
+  private val classTypes: List[ClassSymbol] = loadClassTypes[T]() ++ loadClassTypes[DataTypes.type]() ++ loadClassTypes[Entities.type]()
 
   private def loadClassTypes[U: TypeTag](): List[ClassSymbol] = {
     typeOf[U].decls.collect {
@@ -69,6 +70,8 @@ class PacketManager[T: TypeTag] {
                                  symAnnotations: Option[Symbol] = None,
                                  contextAnnotation: Option[Symbol] = None)
                                 (symbol: Symbol): Marshaller = {
+
+    println(symbol.info)
 
     val contextFieldIndex = if (contextAnnotation.isDefined && hasAnnotation[fromContext](contextAnnotation.get)) {
       Some(annotationParam[Int](annotation[fromContext](contextAnnotation.get), 0))
@@ -171,7 +174,7 @@ class PacketManager[T: TypeTag] {
         val aaa = sym.info
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
         new ListMarshaller(paramMarshaller, Some(precededByMarshaller), contextFieldIndex)
-      case sym if isSymType[EntityMetadata](sym) =>
+      case sym if isSymType[Entity](sym) =>
         def getTypeToEntityConstructorMap(typeToEntityClass: Map[Int, Class[_]]): Map[Int, MethodMirror] = {
           typeToEntityClass map{
             case (index, clazz) => index -> classConstructors(mirror.classSymbol(clazz).toType)

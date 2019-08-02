@@ -2,12 +2,10 @@ package io.scalacraft.core
 
 import java.util.UUID
 
-<<<<<<< Updated upstream
 import io.scalacraft.core.DataTypes.{Position, VarInt}
-=======
 import io.scalacraft.core.DataTypes.Position
 import io.scalacraft.core.Entities.Entity
->>>>>>> Stashed changes
+import io.scalacraft.core.clientbound.PlayPackets.MobEntity
 
 object TestStructures {
 
@@ -65,5 +63,5 @@ object TestStructures {
 
 
   @packet(id=0x30)
-  case class StructureWithMetadata(@boxed tpe: Int, @fromContext(0) metadata: Entity) extends Structure
+  case class StructureWithMetadata(@boxed tpe: Int, @fromContext(0) metadata: MobEntity) extends Structure
 }
