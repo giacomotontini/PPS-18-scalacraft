@@ -3,9 +3,12 @@ package io.scalacraft.core
 import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Nbt, Slot, SlotData, VarInt, Position}
+import io.scalacraft.core.DataTypes.{Nbt, Position, Slot, SlotData, VarInt}
 import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.PacketAnnotations._
+import MobsAndObjectsTypeMapping._
+import DataTypes._
+import io.scalacraft.core.clientbound.PlayPackets.{MobEntity, ObjectEntity}
 
 import scala.language.postfixOps
 import scala.reflect.runtime.universe._
@@ -50,11 +53,13 @@ class PacketManager[T: TypeTag] {
   def unmarshal(packetId: Int)(implicit inStream: BufferedInputStream): Structure =
     packetMarshallers(packetId).unmarshal()(Context.create, inStream).asInstanceOf[Structure]
 
+  private def getParamMarshallers(tpe: Type): List[Marshaller] = {
+    val paramSymbols = tpe.decl(termNames.CONSTRUCTOR).asMethod.paramLists.head
+    paramSymbols map subTypesMarshaller
+  }
   private def createMarshaller(tpe: Type): Marshaller = {
     // 0 is to take the first curring arguments list
-    val paramSymbols = tpe.decl(termNames.CONSTRUCTOR).asMethod.paramLists.head
-    val paramMarshallers = paramSymbols map subTypesMarshaller
-    new StructureMarshaller(paramMarshallers, classConstructors(tpe))
+    new StructureMarshaller(getParamMarshallers(tpe), classConstructors(tpe))
   }
 
   private def subTypesMarshaller: PartialFunction[Symbol, Marshaller] = {
@@ -169,6 +174,21 @@ class PacketManager[T: TypeTag] {
         val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
         new ListMarshaller(paramMarshaller, Some(precededByMarshaller), contextFieldIndex)
+      case sym if isSymType[EntityMetadata](sym) =>
+        def getTypeToEntityConstructorMap(typeToEntityClass: Map[Int, Class[_]]): Map[Int, MethodMirror] = {
+          typeToEntityClass map{
+            case (index, clazz) => index -> classConstructors(mirror.classSymbol(clazz).toType)
+          }
+        }
+        var typeToEntityClassConstructor: Map[Int, MethodMirror] = Map()
+        val typesMarshaller = getParamMarshallers(typeOf[entityMetadataTypes])
+        val typeMarshaller = new VarIntMarshaller(contextFieldIndex)
+        if (isSymType[MobEntity](sym)){
+          typeToEntityClassConstructor = getTypeToEntityConstructorMap(typeToMobEntityClass)
+        } else if(isSymType[ObjectEntity](sym)){
+          typeToEntityClassConstructor = getTypeToEntityConstructorMap(typeToObjectEntityClass)
+        }
+        new EntityMarshaller(typeToEntityClassConstructor, typeMarshaller, typesMarshaller)
       case sym => createMarshaller(sym.asType.toType)
     }
   }
