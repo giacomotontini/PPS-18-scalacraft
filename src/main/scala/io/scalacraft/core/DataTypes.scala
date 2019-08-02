@@ -2,7 +2,7 @@ package io.scalacraft.core
 
 import java.util.UUID
 
-import io.scalacraft.core.PacketAnnotations.{boxed, byte, enumType, enumValue, particle}
+import io.scalacraft.core.PacketAnnotations.{boxed, byte, enumType, enumValue, particle, switchType}
 import io.scalacraft.core.nbt.Tags.TagCompound
 
 object DataTypes {
@@ -12,9 +12,9 @@ object DataTypes {
   type Slot = Option[SlotData]
 
   case class VarInt(value: Int) extends AnyVal
-  case class Position(x: Int, y: Int, z:Int)
-  case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt) extends Structure
-  case class Rotation(x: Float, y: Float, z: Float) extends Structure
+  case class Position(x: Int, y: Int, z: Int)
+  case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt)
+  case class Rotation(x: Float, y: Float, z: Float)
   case class Nbt(name: String, compound: TagCompound)
 
   sealed trait Direction
@@ -27,7 +27,7 @@ object DataTypes {
     @enumValue(5) case object East extends Direction
 }
 
-  trait Particle
+  sealed trait Particle
 
   //Map each index of entity metadata to correspondent type
   case class entityMetadataTypes(
@@ -46,5 +46,5 @@ object DataTypes {
                                   field12: Option[UUID],
                                   @boxed field13: Option[Int],
                                   field14: Nbt,
-                                  field15: Particle) extends Structure
+                                  @switchType[VarInt] field15: Particle) extends Structure
 }

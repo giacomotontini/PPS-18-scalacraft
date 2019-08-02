@@ -3,22 +3,21 @@ package io.scalacraft.core
 import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Nbt, Position, Slot, SlotData, VarInt, entityMetadataTypes}
+import io.scalacraft.core.DataTypes.{Position => _, _}
+import io.scalacraft.core.Entities.{Entity, MobEntity, ObjectEntity}
 import io.scalacraft.core.Marshallers._
+import io.scalacraft.core.MobsAndObjectsTypeMapping._
 import io.scalacraft.core.PacketAnnotations._
-import MobsAndObjectsTypeMapping._
-import io.scalacraft.core.Entities.Entity
-import io.scalacraft.core.clientbound.PlayPackets.{MobEntity, ObjectEntity}
 
 import scala.language.postfixOps
 import scala.reflect.runtime.universe._
-import scala.reflect.runtime.universe.compat.token
 
 class PacketManager[T: TypeTag] {
 
   private val mirror = runtimeMirror(getClass.getClassLoader)
 
-  private val classTypes: List[ClassSymbol] = loadClassTypes[T]() ++ loadClassTypes[DataTypes.type]() ++ loadClassTypes[Entities.type]()
+  private val classTypes: List[ClassSymbol] = loadClassTypes[T]() ++ loadClassTypes[DataTypes.type]() ++
+    loadClassTypes[Entities.type]()
 
   private def loadClassTypes[U: TypeTag](): List[ClassSymbol] = {
     typeOf[U].decls.collect {
@@ -71,7 +70,10 @@ class PacketManager[T: TypeTag] {
                                  contextAnnotation: Option[Symbol] = None)
                                 (symbol: Symbol): Marshaller = {
 
-    println(symbol.info)
+    val info = symbol.info
+    // val tpe = symbol.asType.toType
+
+
 
     val contextFieldIndex = if (contextAnnotation.isDefined && hasAnnotation[fromContext](contextAnnotation.get)) {
       Some(annotationParam[Int](annotation[fromContext](contextAnnotation.get), 0))
@@ -155,7 +157,7 @@ class PacketManager[T: TypeTag] {
       case sym if isSymType[Long](sym) => new LongMarshaller(contextFieldIndex)
       case sym if isSymType[Float](sym) => new FloatMarshaller(contextFieldIndex)
       case sym if isSymType[Double](sym) => new DoubleMarshaller(contextFieldIndex)
-      case sym if isSymType[Position](sym) => new PositionMarshaller(contextFieldIndex)
+      case sym if isSymType[DataTypes.Position](sym) => new PositionMarshaller(contextFieldIndex)
       case sym if isSymType[UUID](sym) => new UUIDMarshaller(contextFieldIndex)
       case sym if isSymType[VarInt](sym) => new VarIntMarshaller(contextFieldIndex)
       case sym if isSymType[Nbt](sym) => new NbtMarshaller(contextFieldIndex)
@@ -164,14 +166,12 @@ class PacketManager[T: TypeTag] {
       case sym if isSymType[String](sym) => new StringMarshaller(MaxStringLength, contextFieldIndex)
       case sym if isSymType[Option[_]](sym) =>
         val argType = if (isSymType[Slot](sym)) typeOf[SlotData].typeSymbol else sym.info.typeArgs.head.typeSymbol
-        println(argType)
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(argType)
         val conditionMarshaller = contextFieldIndex map { i => new BooleanMarshaller(Some(i)) }
         new OptionalMarshaller(paramMarshaller, conditionMarshaller)
       case sym if isSymType[List[_]](sym) && checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get) =>
         val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
         val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
-        val aaa = sym.info
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
         new ListMarshaller(paramMarshaller, Some(precededByMarshaller), contextFieldIndex)
       case sym if isSymType[Entity](sym) =>
@@ -189,7 +189,7 @@ class PacketManager[T: TypeTag] {
           typeToEntityClassConstructor = getTypeToEntityConstructorMap(typeToObjectEntityClass)
         }
         new EntityMarshaller(typeToEntityClassConstructor, typeMarshaller, typesMarshaller)
-      case sym => createMarshaller(sym.asType.toType)
+      case sym => createMarshaller(if (sym.isType) sym.asType.toType else sym.info)
     }
   }
 

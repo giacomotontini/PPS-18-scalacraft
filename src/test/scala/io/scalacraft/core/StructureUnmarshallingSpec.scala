@@ -22,7 +22,8 @@ class StructureUnmarshallingSpec extends FlatSpec with Matchers with StructureMa
     structureUnmarshal(0x13, "0102").shouldBe(BaseOptional(Some(2)))
   }
 
-  "An optional enum of varint field" should "deserialize the correct values" in {
-    structureUnmarshal(0x14, "0102").shouldBe(OptionalEnum(Some(EnumOption2)))
-  }
+//  "An optional enum of varint field" should "deserialize the correct values" in {
+//    structureUnmarshal(0x14, "0102").shouldBe(OptionalEnum(Some(EnumOption2)))
+//  }
+
 }

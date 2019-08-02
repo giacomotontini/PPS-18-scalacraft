@@ -2,13 +2,13 @@ package io.scalacraft.core
 
 import io.scalacraft.core.DataTypes.{Chat, Position, Slot}
 import io.scalacraft.core.PacketAnnotations._
-import io.scalacraft.core.clientbound.PlayPackets.{MobEntity, ObjectEntity}
-import io.scalacraft.core.serverbound.PlayPackets.{Particle, ParticleData, minecraftEffect}
+import io.scalacraft.core.serverbound.PlayPackets.{ParticleData, minecraftEffect}
 
 
 object Entities {
 
-  //class typeIndex(index: Int) extends StaticAnnotation
+  trait MobEntity extends Entity
+  trait ObjectEntity extends Entity
 
   class Entity extends EntityMetadata {
     @indexType(index = 0) @byte var status: Int = 0

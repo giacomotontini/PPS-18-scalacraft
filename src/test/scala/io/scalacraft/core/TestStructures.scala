@@ -3,9 +3,7 @@ package io.scalacraft.core
 import java.util.UUID
 
 import io.scalacraft.core.DataTypes.{Position, VarInt}
-import io.scalacraft.core.DataTypes.Position
-import io.scalacraft.core.Entities.Entity
-import io.scalacraft.core.clientbound.PlayPackets.MobEntity
+import io.scalacraft.core.Entities.MobEntity
 
 object TestStructures {
 
@@ -61,7 +59,7 @@ object TestStructures {
   @packet(0x14)
   case class OptionalEnum( @enumType[VarInt] value: Option[EnumInterface]) extends Structure
 
-
   @packet(id=0x30)
-  case class StructureWithMetadata(@boxed tpe: Int, @fromContext(0) metadata: MobEntity) extends Structure
+  case class StructureWithMetadata(@fromContext(0) metadata: MobEntity) extends Structure
+
 }

@@ -201,9 +201,8 @@ object Marshallers {
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val longPosition = new LongMarshaller().unmarshal().asInstanceOf[Long]
-      println(longPosition.toHexString)
       val x = (longPosition >> 38).toInt
-      var y = ((longPosition >> 26) & 0xFFF).toInt
+      val y = ((longPosition >> 26) & 0xFFF).toInt
       val z = (longPosition << 38 >> 38).toInt
       val p = Position(x,y,z)
       context.addField(p)
