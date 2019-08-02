@@ -128,22 +128,6 @@ class PacketManager[T: TypeTag] {
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(argType)
         val conditionMarshaller = contextFieldIndex map { i => new BooleanMarshaller(Some(i)) }
         new OptionalMarshaller(paramMarshaller, conditionMarshaller)
-      case sym if checkAnnotations && hasAnnotation[enumType[_]](symAnnotations.get) =>
-        val valueType = annotationTypeArg(annotation[enumType[_]](symAnnotations.get), 0)
-        val valueMarshaller = subTypesMarshaller(checkAnnotations = false, contextAnnotation=Some(sym))(valueType)
-        val companionSymbol = if(isSymType[Option[_]](sym)) {
-          sym.info.typeArgs.head.typeSymbol.companion
-        }else sym.info.typeSymbol.companion
-
-        val valuesInstances = companionSymbol.info.decls collect {
-          case memberSymbol if memberSymbol.isModule => memberSymbol.asModule
-        } collect {
-          case sym if hasAnnotation[enumValue](sym) && sym.alternatives.contains(sym) =>
-            val ann = annotation[enumValue](sym)
-            annotationParam[Any](ann, 0) -> moduleInstance(sym.info)
-        } toMap
-
-        new EnumMarshaller(valueMarshaller, valuesInstances)
       case sym if isSymType[Int](sym) && checkAnnotations =>
         if (hasAnnotation[byte](symAnnotations.get)) {
           new ByteMarshaller(false, contextFieldIndex)
@@ -192,6 +176,22 @@ class PacketManager[T: TypeTag] {
           typeToEntityClassConstructor = getTypeToEntityConstructorMap(typeToObjectEntityClass)
         }
         new EntityMarshaller(typeToEntityClassConstructor, typeMarshaller, typesMarshaller)
+      case sym if checkAnnotations && hasAnnotation[enumType[_]](symAnnotations.get) =>
+        val valueType = annotationTypeArg(annotation[enumType[_]](symAnnotations.get), 0)
+        val valueMarshaller = subTypesMarshaller(checkAnnotations = false, contextAnnotation=Some(sym))(valueType)
+        val companionSymbol = if(isSymType[Option[_]](sym)) {
+          sym.info.typeArgs.head.typeSymbol.companion
+        }else sym.info.typeSymbol.companion
+
+        val valuesInstances = companionSymbol.info.decls collect {
+          case memberSymbol if memberSymbol.isModule => memberSymbol.asModule
+        } collect {
+          case sym if hasAnnotation[enumValue](sym) && sym.alternatives.contains(sym) =>
+            val ann = annotation[enumValue](sym)
+            annotationParam[Any](ann, 0) -> moduleInstance(sym.info)
+        } toMap
+
+        new EnumMarshaller(valueMarshaller, valuesInstances)
       case sym => createMarshaller(if (sym.isType) sym.asType.toType else sym.info)
     }
   }
