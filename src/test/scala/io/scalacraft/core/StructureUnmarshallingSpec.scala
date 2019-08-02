@@ -2,7 +2,7 @@ package io.scalacraft.core
 
 import io.scalacraft.core.Entities.AreaEffectCloud
 import io.scalacraft.core.TestStructures.EnumInterface.{EnumOption1, EnumOption2}
-import io.scalacraft.core.TestStructures.{BaseOptional, IntTypeEnum, OptionalEnum, StructureWithMetadata, VarIntTypeEnum, VarIntTypeFromContextEnum}
+import io.scalacraft.core.TestStructures.{BaseOptional, IntTypeEnum, OptionalEnum, OptionalList, StructureWithMetadata, VarIntTypeEnum, VarIntTypeFromContextEnum}
 import org.scalatest.{FlatSpec, Matchers}
 
 class StructureUnmarshallingSpec extends FlatSpec with Matchers with StructureMarshallerHelper[TestStructures.type]{
