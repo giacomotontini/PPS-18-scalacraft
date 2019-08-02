@@ -3,11 +3,10 @@ package io.scalacraft.core
 import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Nbt, Position, Slot, SlotData, VarInt}
+import io.scalacraft.core.DataTypes.{Nbt, Position, Slot, SlotData, VarInt, entityMetadataTypes}
 import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.PacketAnnotations._
 import MobsAndObjectsTypeMapping._
-import DataTypes._
 import io.scalacraft.core.clientbound.PlayPackets.{MobEntity, ObjectEntity}
 
 import scala.language.postfixOps

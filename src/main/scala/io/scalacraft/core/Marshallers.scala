@@ -92,8 +92,8 @@ object Marshallers {
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val l = (inStream.readIfIsAvailable().toLong << 56) |(inStream.readIfIsAvailable().toLong << 48) |
         (inStream.readIfIsAvailable().toLong << 40) | (inStream.readIfIsAvailable().toLong << 32) |
-        (inStream.readIfIsAvailable() << 24) | (inStream.readIfIsAvailable() << 16) |
-        (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
+        (inStream.readIfIsAvailable().toLong << 24) | (inStream.readIfIsAvailable().toLong << 16) |
+        (inStream.readIfIsAvailable().toLong << 8) | inStream.readIfIsAvailable().toLong
       context.addField(l)
       l
     }
@@ -183,7 +183,7 @@ object Marshallers {
         result |= ((read & 0x7f) << (7 * numRead))
         numRead += 1
         if (numRead > 10) {
-          throw new IllegalArgumentException("VarInt is too big")
+          throw new IllegalArgumentException("VarLong is too big")
         }
       } while ((read & 0x80) != 0)
 
@@ -201,10 +201,10 @@ object Marshallers {
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val longPosition = new LongMarshaller().unmarshal().asInstanceOf[Long]
+      println(longPosition.toHexString)
       val x = (longPosition >> 38).toInt
-      val y = ((longPosition >> 26) & 0xFFF).toInt
+      var y = ((longPosition >> 26) & 0xFFF).toInt
       val z = (longPosition << 38 >> 38).toInt
-
       val p = Position(x,y,z)
       context.addField(p)
       p
