@@ -3,11 +3,10 @@ package io.scalacraft.core
 import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Nbt, Position, Slot, SlotData, VarInt}
+import io.scalacraft.core.DataTypes.{Nbt, Position, Slot, SlotData, VarInt, entityMetadataTypes}
 import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.PacketAnnotations._
 import MobsAndObjectsTypeMapping._
-import DataTypes._
 import io.scalacraft.core.clientbound.PlayPackets.{MobEntity, ObjectEntity}
 
 import scala.language.postfixOps
@@ -121,8 +120,8 @@ class PacketManager[T: TypeTag] {
         new SwitchMarshaller(keyMarshaller, valuesMarshaller, valuesClazzes, contextFieldIndex)
       case sym if checkAnnotations && hasAnnotation[enumType[_]](symAnnotations.get) =>
         val valueType = annotationTypeArg(annotation[enumType[_]](symAnnotations.get), 0)
-        val valueMarshaller = subTypesMarshaller(checkAnnotations = false)(valueType)
-        val companionSymbol = sym.info.typeSymbol.companionSymbol
+        val valueMarshaller = subTypesMarshaller(checkAnnotations = false, contextAnnotation=Some(sym))(valueType)
+        val companionSymbol = if(isSymType[Option[_]](sym)) sym.info.typeArgs(0).typeSymbol.companion else sym.info.typeSymbol.companion
         val valuesInstances = companionSymbol.info.decls collect {
           case memberSymbol if memberSymbol.isModule => memberSymbol.asModule
         } collect {
@@ -131,7 +130,7 @@ class PacketManager[T: TypeTag] {
             annotationParam[Any](ann, 0) -> moduleInstance(sym.info)
         } toMap
 
-        new EnumMarshaller(valueMarshaller, valuesInstances, contextFieldIndex)
+        new EnumMarshaller(valueMarshaller, valuesInstances)
       case sym if isSymType[Int](sym) && checkAnnotations =>
         if (hasAnnotation[byte](symAnnotations.get)) {
           new ByteMarshaller(false, contextFieldIndex)

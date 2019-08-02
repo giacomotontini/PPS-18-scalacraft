@@ -341,7 +341,6 @@ object Marshallers {
       val newContext = Context.create
       val fields = fieldsMarshaller map { _.unmarshal()(context, inStream) }
       context.addField(newContext)
-
       constructorMirror(fields :_*)
     }
   }

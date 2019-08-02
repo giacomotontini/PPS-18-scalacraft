@@ -19,11 +19,11 @@ object TestStructures {
   case class AllDataTypes3(@maxLength(12) string: String, uuid: UUID, position: Position)  extends Structure
   @packet(0x4)
   case class AllDataTypes4(optional: Option[Int], @precededBy[Int] list: List[Int])  extends Structure
-
+  
   sealed trait SwitchInterface
   @switchKey(1) case class SwitchOption1(@byte value: Int) extends SwitchInterface
   @switchKey(2) case class SwitchOption2(@short value: Int) extends SwitchInterface
-
+  
   @packet(0x5)
   case class BasicSwitch(someValue: Int, @switchType[Int] switch: SwitchInterface) extends Structure
 
@@ -39,8 +39,22 @@ object TestStructures {
   @packet(0x9)
   case class RichSwitchList(someValue: Int, @switchType[VarInt] @precededBy[VarInt] switch: List[SwitchInterface]) extends Structure
 
+  sealed trait EnumInterface
+  object EnumInterface {
+    @enumValue(1) case object EnumOption1 extends EnumInterface
+    @enumValue(2) case object EnumOption2 extends EnumInterface
+  }
 
+ 
+  @packet(0x10)
+  case class IntTypeEnum(@enumType[Int] enumOption: EnumInterface) extends Structure
+  @packet(0x11)
+  case class VarIntTypeEnum(@enumType[VarInt] enumOption: EnumInterface) extends Structure
+  @packet(0x12)
+  case class VarIntTypeFromContextEnum(@boxed enumOption: Int, someValue: Int, @enumType[VarInt] @fromContext(0) option: EnumInterface) extends Structure
 
-
-
+  @packet(0x13)
+  case class BaseOptional(@boxed value: Option[Int]) extends Structure
+  @packet(0x14)
+  case class OptionalEnum( @enumType[VarInt] value: Option[EnumInterface]) extends Structure
 }
