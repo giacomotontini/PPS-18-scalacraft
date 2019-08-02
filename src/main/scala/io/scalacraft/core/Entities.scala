@@ -36,7 +36,7 @@ object Entities {
   class EyeOfEnder extends Entity
 
   class FallingBlock extends Entity {
-    @indexType(index = 9) val spawnPosition: Position = Position(0,0,0)
+    //@indexType(index = 9) val spawnPosition: Position = Position(0,0,0)
   }
 
   class AreaEffectCloud extends Entity with MobEntity{

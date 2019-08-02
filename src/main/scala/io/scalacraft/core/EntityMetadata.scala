@@ -23,5 +23,4 @@ class EntityMetadata {
 
   private[scalacraft] val indexes: List[Int] = fields map( _.getDeclaredAnnotation(classOf[indexType]).index())
   private[scalacraft] def values: List[Any] = fields map { _.get(this) }
-
 }

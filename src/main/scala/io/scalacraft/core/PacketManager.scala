@@ -126,7 +126,7 @@ class PacketManager[T: TypeTag] {
       case sym if checkAnnotations && hasAnnotation[enumType[_]](symAnnotations.get) =>
         val valueType = annotationTypeArg(annotation[enumType[_]](symAnnotations.get), 0)
         val valueMarshaller = subTypesMarshaller(checkAnnotations = false, contextAnnotation=Some(sym))(valueType)
-        val companionSymbol = if(isSymType[Option[_]](sym)) sym.info.typeArgs(0).typeSymbol.companion else sym.info.typeSymbol.companion
+        val companionSymbol = if(isSymType[Option[_]](sym)) sym.info.typeArgs.head.typeSymbol.companion else sym.info.typeSymbol.companion
         val valuesInstances = companionSymbol.info.decls collect {
           case memberSymbol if memberSymbol.isModule => memberSymbol.asModule
         } collect {
