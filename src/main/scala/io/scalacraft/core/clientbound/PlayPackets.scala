@@ -486,7 +486,8 @@ object PlayPackets {
   case class ChangeGameState(@enumType[Byte] @byte reason: Int, @fromContext(0) @switchType[Byte]  body: ReasonCode )  extends Structure
 
   @packet(id= 0x21)
-
+  case class KeepAlive(keepAliveId: Long) extends Structure
+  
   @packet(id = 0x22)
   case class ChunkData(chunkX: Int,
                        chunkZ: Int,
