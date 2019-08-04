@@ -9,7 +9,6 @@ import io.scalacraft.core.PacketAnnotations.{short, _}
 import io.scalacraft.core.Structure
 
 object PlayPackets {
-
   @packet(id = 0x00)
   case class SpawnObject(@boxed entityId: Int,
                          objectUUID: UUID,
@@ -471,7 +470,7 @@ object PlayPackets {
   @switchKey(14) case class EnchantedHit() extends ParticleStructure
   @switchKey(15) case class Enchant() extends ParticleStructure
   @switchKey(16) case class EndRod() extends ParticleStructure
-  @switchKey(17) case class EntityEffect() extends ParticleStructure
+  @switchKey(17) case class EntityEffectParticle() extends ParticleStructure
   @switchKey(18) case class ExplosionEmitter() extends ParticleStructure
   @switchKey(19) case class ExplosionParticle() extends ParticleStructure
   @switchKey(20) case class FallingDust(@boxed blockState: Int) extends ParticleStructure
@@ -620,5 +619,141 @@ object PlayPackets {
   @packet(id = 0x2F)
   case class CombatEvent(@boxed event: Int,
                          @fromContext(0) @switchType[VarInt] body: CombatEventType) extends Structure
+
+  //TODO: check
+  @packet(0x48)
+  case class UpdateScore(@maxLength(40) entityName: String, @byte action: Int, @maxLength(16) objectiveName: String, @fromContext(1) value: Option[VarInt]) extends Structure
+  @packet(0x49)
+  case class SpawnPosition(location: Position) extends Structure
+  @packet(0x4A)
+  case class TimeUpdate(worldAge: Long, timeOfDay: Long) extends Structure
+
+  sealed trait ActionPacket4B
+
+  @switchKey(0) case class SetTitle(titleText: Chat) extends ActionPacket4B
+
+  @switchKey(1) case class SetSubtitle(subtitleText: Chat) extends ActionPacket4B
+
+  @switchKey(2) case class SetActionbar(actionBarText: Chat) extends ActionPacket4B
+
+  @switchKey(3) case class SetTimesAndDisplay(fadeIn: Int, stay: Int, fadeOut: Int) extends ActionPacket4B
+
+  @switchKey(4) case class SetHide() extends ActionPacket4B
+
+  @switchKey(5) case class SetReset() extends ActionPacket4B
+
+  @packet(0x4B)
+  case class Title(@switchType[VarInt] action: ActionPacket4B) extends Structure
+
+  @packet(0x4C)
+  case class StopSound(flags: Byte, @enumType[VarInt] source: SoundCategory, sound: Option[Identifier]) extends Structure
+
+  @packet(0x4D)
+  case class SoundEffect(@boxed soundId: Int, @enumType[VarInt] soundCategory: SoundCategory, effectPositionX: Int,
+                         effectPositionY: Int, effectPositionZ: Int, volume: Float, pitch: Float) extends Structure
+
+  @packet(0x4E)
+  case class PlayerListHeaderAndFooter(header: Chat, footer: Chat) extends Structure
+
+  @packet(0x4F)
+  case class CollectItem(@boxed collectEntityId: Int, @boxed collectorEntityId: Int, @boxed pickUpItemCount: Int) extends Structure
+
+  @packet(0x50)
+  case class EntityTeleport(@boxed entityId: Int, x: Double, y: Double, z: Double, yaw: Angle, pitch: Angle, onGround: Boolean) extends Structure
+
+  sealed trait FrameType
+
+  object FrameType {
+
+    @enumValue(0) case object Task extends FrameType
+
+    @enumValue(1) case object Challenge extends FrameType
+
+    @enumValue(2) case object Goal extends FrameType
+
+  }
+
+  //TODO: Check void meaning in the packet structures
+  case class Criteria(key: Identifier, value: Void) extends Structure
+
+  case class Requirement(@precededBy[VarInt] requirement: List[String]) extends Structure
+
+  case class AdvancedDisplay(title: Chat, description: Chat, icon: Slot, @enumType[VarInt] frame: FrameType, flags: Int,
+                             backgroundTexture: Option[Identifier], xCoord: Float, yCoord: Float) extends Structure
+
+  case class Advancement(parentId: Option[Identifier], displayData: Option[AdvancedDisplay],
+                         @precededBy[VarInt] criterias: List[Criteria],
+                         @precededBy[VarInt] requirments: List[Requirement]) extends Structure
+
+  case class Criterion(criterionIdentifier: Identifier, dateOfAchieving: Option[Long]) extends Structure
+
+  case class Progress(@precededBy[VarInt] criterions: List[Criterion]) extends Structure
+
+  @packet(0x51)
+  case class Advancements(resetOrClear: Boolean, @precededBy[VarInt] advancements: List[Advancement],
+                          @precededBy[VarInt] identifiers: List[Identifier],
+                          @precededBy[VarInt] progresses: List[Progress]) extends Structure
+
+  sealed trait Property //TODO: Model property
+  @packet(0x52)
+  case class EntityProperties(@boxed entityId: Int, @precededBy[Int] properties: List[Property]) extends Structure
+
+  @packet(0x53)
+  case class EntityEffect(@boxed entityId: Int, @byte effectId: Int, @byte amplifier: Int, @boxed duration: Int,
+                          @byte flags: Int) extends Structure
+
+
+  case class Ingredient(@precededBy[VarInt] items: List[Slot]) extends Structure
+
+  sealed trait RecipeType
+
+  @switchKey("crafting_shapeless") case class CraftingShapless(group: String,
+                                                               @precededBy[VarInt] ingredients: List[Ingredient],
+                                                               result: Slot) extends RecipeType
+
+  //TODO: 	Length of ingredient is width * height. Indexed by x + (y * width)
+  @switchKey("crafting_shaped") case class CraftingShaped(@boxed width: Int, @boxed height: Int, group: String,
+                                                          ingredients: List[Ingredient], result: Slot) extends RecipeType
+
+  @switchKey("crafting_special_armordye") case class CraftingSpecialArmordye() extends RecipeType
+
+  @switchKey("crafting_special_bookcloning") case class CraftingSpecialBookcloning() extends RecipeType
+
+  @switchKey("crafting_special_mapcloning") case class CraftingSpecialMapcloning() extends RecipeType
+
+  @switchKey("crafting_special_mapextending") case class CraftingSpecialMapextending() extends RecipeType
+
+  @switchKey("crafting_special_firework_rocket") case class CraftingSpecialFireworkRocket() extends RecipeType
+
+  @switchKey("crafting_special_firework_star") case class CraftingSpecialFireworkStar() extends RecipeType
+
+  @switchKey("crafting_special_firework_star_fade") case class CraftingSpecialFireworkStarFade() extends RecipeType
+
+  @switchKey("crafting_special_repairitem") case class CraftingSpecialRepairitem() extends RecipeType
+
+  @switchKey("crafting_special_tippedarrow") case class CraftingSpecialTippedarrow() extends RecipeType
+
+  @switchKey("crafting_special_bannerduplicate") case class CraftingSpecialBannerduplicate() extends RecipeType
+
+  @switchKey("crafting_special_banneraddpattern") case class CraftingSpecialBanneraddpattern() extends RecipeType
+
+  @switchKey("crafting_special_shielddecoration") case class CraftingSpecialShielddecoration() extends RecipeType
+
+  @switchKey("crafting_special_shulkerboxcoloring") case class CraftingSpecialShulkerboxcoloring() extends RecipeType
+
+  @switchKey("smelting") case class Smelting(group: String, ingredient: Ingredient, result: Slot,
+                                             experience: Float, @boxed cookingTime: Int) extends RecipeType
+
+  //TODO: check
+  case class Recipe(recipeId: Identifier, tpe: String, @fromContext(1) @switchType[String] data: RecipeType) extends Structure
+
+  @packet(0x54)
+  case class DeclareRecipes(@precededBy[VarInt] recipes: List[Recipe]) extends Structure
+
+  case class Tag(tagName: Identifier, @precededBy[VarInt] entries: List[VarInt]) extends Structure
+
+  @packet(0x55)
+  case class Tags(@precededBy[VarInt] blockTags: List[Tag], @precededBy[VarInt] itemsTags: List[Tag],
+                  @precededBy[VarInt] fluidTags: List[Tag]) extends Structure
 
 }
