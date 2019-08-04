@@ -5,7 +5,7 @@ import java.util.UUID
 
 import io.scalacraft.core.DataTypes.{Angle, Chat, Direction, Identifier, Nbt, Position, Slot, VarInt}
 import io.scalacraft.core.Entities.{Entity, MobEntity, Player}
-import io.scalacraft.core.PacketAnnotations._
+import io.scalacraft.core.PacketAnnotations.{short, _}
 import io.scalacraft.core.Structure
 
 object PlayPackets {
@@ -466,14 +466,14 @@ object PlayPackets {
                                         green: Float,
                                         blue: Float,
                                         scale: Float)	extends ParticleStructure
-  @switchKey(12) case class Effect() extends ParticleStructure
+  @switchKey(12) case class EffectParticle() extends ParticleStructure
   @switchKey(13) case class ElderGuardian() extends ParticleStructure
   @switchKey(14) case class EnchantedHit() extends ParticleStructure
   @switchKey(15) case class Enchant() extends ParticleStructure
   @switchKey(16) case class EndRod() extends ParticleStructure
   @switchKey(17) case class EntityEffect() extends ParticleStructure
   @switchKey(18) case class ExplosionEmitter() extends ParticleStructure
-  @switchKey(19) case class Explosion() extends ParticleStructure
+  @switchKey(19) case class ExplosionParticle() extends ParticleStructure
   @switchKey(20) case class FallingDust(@boxed blockState: Int) extends ParticleStructure
   @switchKey(21) case class Firework() extends ParticleStructure
   @switchKey(22) case class Fishing() extends ParticleStructure
@@ -517,5 +517,108 @@ object PlayPackets {
                       particleData: Float,
                       particleCount: Int,
                       @switchType[Int] @fromContext(0) data: ParticleStructure)
+
+
+  sealed trait WorldDimension
+  case object WordDimension {
+    @enumValue(-1) case class Nether() extends WorldDimension
+    @enumValue(0) case class Overworld() extends WorldDimension
+    @enumValue(1) case class End() extends WorldDimension
+  }
+
+  sealed trait LevelType
+  case object LevelType {
+    @enumValue("default") case class Default() extends LevelType
+    @enumValue("flat") case class Flat() extends LevelType
+    @enumValue("largeBiomes") case class LargeBiomes() extends LevelType
+    @enumValue("amplified") case class Amplified() extends LevelType
+    @enumValue("custom") case class Custom() extends LevelType
+    @enumValue("buffet") case class Buffet() extends LevelType
+  }
+
+  @packet(id = 0x25)
+  case class JoinGame(entityId: Int,
+                      gameMode: Byte,
+                      @enumType[Int] dimension: WorldDimension,
+                      difficulty: ServerDifficulties,
+                      @byte maxPlayers: Int,
+                      @enumType[String] levelType: LevelType,
+                      reducedDebugInfo: Boolean)
+
+  case class Icon(@byte x: Int,
+                  @byte z: Int,
+                  @byte direction: Int,
+                  //hasDisplayName: Boolean,
+                  displayName: Option[Chat]
+                 ) extends Structure
+
+  @packet(id = 0x26)
+  case class MapData(@boxed mapId: Int,
+                     @byte scale: Int,
+                     trackingPosition: Boolean,
+                     @boxed iconCount: Int,
+                     @precededBy[VarInt] icons: List[Icon],
+                     @byte columns: Int,
+                     @fromContext(5) @byte row: Option[Int],
+                     @fromContext(5) @byte x: Option[Int],
+                     @fromContext(5) @byte z: Option[Int],
+                     @fromContext(5) @boxed length: Option[Int],
+                     @fromContext(5) @byte data: List[Int] //TODO check
+                    )
+
+  @packet(id = 0x27)
+  case class Entity(@boxed entityId: Int) extends Structure
+
+  @packet(id = 0x28)
+  case class EntityRelativeMove(@boxed entityId: Int,
+                                @short deltaX: Int,
+                                @short deltaY: Int,
+                                @short deltaZ: Int,
+                                onGround: Boolean)
+
+  @packet(id = 0x29)
+  case class EntityLockAndRelativeMove(@boxed entityId: Int,
+                                       @short deltaX: Int,
+                                       @short deltaY: Int,
+                                       @short deltaZ: Int,
+                                       yaw: Angle,
+                                       pitch: Angle,
+                                       onGround: Boolean)
+
+  @packet(id = 0x2A)
+  case class EntityLook(@boxed entityId: Int,
+                        yaw: Angle,
+                        pitch: Angle,
+                        onGround: Boolean)
+
+  @packet(id = 0x2B)
+  case class VehicleMove(x: Double,
+                         y: Double,
+                         z: Double,
+                         yaw: Float,
+                         pitch: Float)
+
+  @packet(id = 0x2C)
+  case class OpenSignEditor(location: Position)
+
+  @packet(id = 0x2D)
+  case class CraftRecipeResponse(@byte windowId: Int, recipe: Identifier)
+
+  @packet(id = 0x2E)
+  case class PlayerAbilities(@byte flags: Int,
+                             flyingSpeed: Float = 0.05f,
+                             fieldOfViewModifier: Float = 0.1f) extends Structure
+
+  sealed trait CombatEventType
+  @switchKey(0) case class CombatEventEnterCombat() extends CombatEventType
+  @switchKey(1) case class CombatEventEndCombat(@boxed duration: Int,
+                                  entityId: Int) extends CombatEventType
+  @switchKey(2) case class CombatEventEntityDead(@boxed playerId: Int,
+                                   entityId: Int,
+                                   message: Chat) extends CombatEventType
+
+  @packet(id = 0x2F)
+  case class CombatEvent(@boxed event: Int,
+                         @fromContext(0) @switchType[VarInt] body: CombatEventType) extends Structure
 
 }
