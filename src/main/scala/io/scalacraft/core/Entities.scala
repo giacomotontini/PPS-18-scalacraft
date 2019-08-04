@@ -52,7 +52,7 @@ object Entities {
     @indexType(index = 1) @boxed val hookedEntity: Int = 0
   }
 
-  abstract class Arrow extends Entity with MobEntity {
+  class Arrow extends Entity with MobEntity {
     @indexType(index = 0) @byte val arrowStatus: Int = 0
     @indexType(index = 12) val shooterUUID: Option[UUID]= None
   }
@@ -80,7 +80,7 @@ object Entities {
     @indexType(index = 7) val showBottom: Boolean = true
   }
 
-  abstract class AbstractFireball extends Entity
+  class AbstractFireball extends Entity
 
   class DragonFireball extends AbstractFireball with MobEntity with ObjectEntity
 
@@ -175,7 +175,7 @@ object Entities {
 
   class Animal extends Ageable
 
-  abstract class AbstractHorse extends Animal {
+  class AbstractHorse extends Animal {
     @indexType(index = 0) @byte val animalStatus: Int = 0
     @indexType(index = 12) val owner: Option[UUID] = None
   }
@@ -300,7 +300,7 @@ object Entities {
 
   class Silverfish extends Monster with MobEntity
 
-  abstract class AbstractIllager extends Monster {
+  class AbstractIllager extends Monster {
     @indexType(index = 0) @byte val illagerStatus: Int = 0
   }
 
@@ -320,7 +320,7 @@ object Entities {
 
   class EvocationFangs extends Entity with MobEntity with ObjectEntity
 
-  abstract class AbstractSkeleton extends Monster {
+  class AbstractSkeleton extends Monster {
     @indexType(index = 7) val isSwingingArms: Boolean = false
   }
 
