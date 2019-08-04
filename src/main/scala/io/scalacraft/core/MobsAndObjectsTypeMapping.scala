@@ -10,7 +10,7 @@ protected object MobsAndObjectsTypeMapping {
       3 -> classOf[Bat],
       4 -> classOf[Blaze],
       5 -> classOf[Boat],
-      6 -> classOf[Spider], //cave spider
+      // 6 -> classOf[CaveSpider],
       7 -> classOf[Chicken],
       8 -> classOf[Cod],
       9 -> classOf[Cow],
@@ -44,7 +44,7 @@ protected object MobsAndObjectsTypeMapping {
       37 -> classOf[LlamaSpit],
       // 38 -> classOf[LavaSlime],
       39 -> classOf[MinecartRideable],
-      40 -> classOf[MinecartChest	],
+      40 -> classOf[MinecartChest],
       41 -> classOf[MinecartCommandBlock],
       42 -> classOf[MinecartFurnace],
       43 -> classOf[MinecartHopper],
