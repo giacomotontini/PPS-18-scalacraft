@@ -201,7 +201,7 @@ object PlayPackets {
   @packet(0x1A)
   case class SteerVehicle(sideways: Float, forward: Float, flags: Byte) extends Structure
 
-  //TOCHECK
+  //TODO: check
   sealed trait SwitchInterface
 
   @switchKey(0) case class DisplayedRecipe(recipeId: Identifier) extends SwitchInterface
