@@ -23,32 +23,32 @@ object Entities {
 
   class Throwable extends Entity
 
-  class Egg extends  Throwable with MobEntity
+  class Egg extends  Throwable with MobEntity with ObjectEntity
 
-  class EnderPearl extends Throwable with MobEntity
+  class EnderPearl extends Throwable with MobEntity with ObjectEntity
 
-  class ExperienceBottle extends Throwable with MobEntity
+  class ExperienceBottle extends Throwable with MobEntity with ObjectEntity
 
-  class Snowball extends Throwable with MobEntity
+  class Snowball extends Throwable with MobEntity with ObjectEntity
 
-  class Potion extends Throwable with MobEntity {
+  class Potion extends Throwable with MobEntity with ObjectEntity {
     var potionWhichIsThrown: Slot = None
   }
 
-  class EyeOfEnder extends Entity
+  class EyeOfEnder extends Entity with ObjectEntity
 
-  class FallingBlock extends Entity {
+  class FallingBlock extends Entity with ObjectEntity {
     @indexType(index = 9) val spawnPosition: Position = Position(0,0,0)
   }
 
-  class AreaEffectCloud extends Entity with MobEntity {
+  class AreaEffectCloud extends Entity with MobEntity with ObjectEntity {
     @indexType(index = 2) val radius: Float = 0.5f
     @indexType(index = 1) @boxed val color: Int = 0
     @indexType(index = 7) val ignoreRadiusAndShowEffectAtSinglePoint: Boolean = false
     @indexType(index = 15) val particle: ParticleData = Effect()
   }
 
-  class FishingHook extends Entity {
+  class FishingHook extends Entity with ObjectEntity {
     @indexType(index = 1) @boxed val hookedEntity: Int = 0
   }
 
@@ -57,15 +57,15 @@ object Entities {
     @indexType(index = 12) val shooterUUID: Option[UUID]= None
   }
 
-  class TippedArrow extends Arrow {
+  class TippedArrow extends Arrow with ObjectEntity {
     @indexType(index = 1) @boxed val color: Int = -1
   }
 
-  class Trident extends Arrow with MobEntity {
+  class Trident extends Arrow with MobEntity with ObjectEntity {
     @indexType(index = 1) @boxed val loyaltyLevel: Int = 0
   }
 
-  class Boat extends Entity with MobEntity {
+  class Boat extends Entity with MobEntity with ObjectEntity {
     @indexType(index = 1) @boxed val timeSinceLastHit: Int = 0
     @indexType(index = 1) @boxed val forwardDirection: Int = 1
     @indexType(index = 2) val damageTaken: Float = 0.0f
@@ -75,31 +75,31 @@ object Entities {
     @indexType(index = 1) @boxed val splashTimer: Int = 0
   }
 
-  class EnderCrystal extends Entity with MobEntity {
+  class EnderCrystal extends Entity with MobEntity with ObjectEntity {
     @indexType(index = 10) val beamTarget: Option[Position] = None
     @indexType(index = 7) val showBottom: Boolean = true
   }
 
   abstract class AbstractFireball extends Entity
 
-  class DragonFireball extends AbstractFireball with MobEntity
+  class DragonFireball extends AbstractFireball with MobEntity with ObjectEntity
 
-  class Fireball extends AbstractFireball with MobEntity //This is the large fireball shot by ghasts.
+  class Fireball extends AbstractFireball with MobEntity with ObjectEntity //This is the large fireball shot by ghasts.
 
   class SmallFireball extends AbstractFireball with MobEntity //This is the fireball shot by blazes and dispensers with fire charges.
 
-  class WitherSkull extends AbstractFireball with MobEntity {
+  class WitherSkull extends AbstractFireball with MobEntity with ObjectEntity {
     @indexType(index = 7) val invulnerable: Boolean = false
   }
 
-  class Firework extends Entity {
+  class Firework extends Entity with ObjectEntity {
     @indexType(index = 6) val fireworkInfo: Slot = None
     @indexType(index = 1) @boxed val entityIdOrEntityWhichUsedFirework: Int = 0
   }
 
   class Hanging extends Entity
 
-  class ItemFrame extends Hanging with MobEntity {
+  class ItemFrame extends Hanging with MobEntity with ObjectEntity {
     @indexType(index = 6) val item: Slot = None
     @indexType(index = 1) @boxed val rotation: Int = 0
   }
@@ -121,7 +121,7 @@ object Entities {
     @indexType(index = 14) val rightShoulderEntityData : Nbt = Nbt("", TagCompound(("ShoulderEntityRight" , None)))
   }
 
-  class ArmorStand extends Living  with MobEntity {
+  class ArmorStand extends Living  with MobEntity with ObjectEntity {
     @indexType(index = 0) @byte val armorStatus = 0
     @indexType(index = 8) val headRotation: Rotation = Rotation(0.0f, 0.0f, 0.0f)
     @indexType(index = 8) val bodyRotation: Rotation = Rotation(0.0f, 0.0f, 0.0f)
@@ -268,7 +268,7 @@ object Entities {
     @indexType(index = 0) @byte val snowmanStatus: Int = 0x10
   }
 
-  class Shulker extends Golem with MobEntity {
+  class Shulker extends Golem with MobEntity with ObjectEntity {
     @indexType(index = 11) val attachFace: Direction = Direction.Down
     @indexType(index = 10) val attachmentPosition: Option[Position] = None
     @indexType(index = 0) @byte val shieldHeight: Int = 0
@@ -277,7 +277,7 @@ object Entities {
 
   class Monster extends Creature
 
-  class Blaze extends Monster with MobEntity {
+  class Blaze extends Monster with MobEntity with ObjectEntity {
     @indexType(index = 0) @byte val blazeStatus: Int = 0
   }
 
@@ -318,7 +318,7 @@ object Entities {
     @indexType(index = 0) @byte val vexStatus: Int = 0
   }
 
-  class EvocationFangs extends Entity with MobEntity
+  class EvocationFangs extends Entity with MobEntity with ObjectEntity
 
   abstract class AbstractSkeleton extends Monster {
     @indexType(index = 7) val isSwingingArms: Boolean = false
@@ -369,9 +369,9 @@ object Entities {
   class EnderDragon extends Insentient with MobEntity {
     @indexType(index = 1) @boxed val dragonPhase: Int = 10
   }
-  
+
   class Flying extends Insentient
-  
+
   class Ghast extends Flying with MobEntity {
     @indexType(index = 7) val isAttacking: Boolean = false
   }
@@ -384,9 +384,9 @@ object Entities {
     @indexType(index = 1)  @boxed val size: Int = 1
   }
 
-  class LlamaSpit extends Entity
+  class LlamaSpit extends Entity with ObjectEntity
 
-  class Minecart extends Entity {
+  class Minecart extends Entity with ObjectEntity {
     @indexType(index = 1) @boxed val shakingPower:Int = 0
     @indexType(index = 1) @boxed val shakingDirection:Int = 1
     @indexType(index = 2) val shakingMultiplier:Float = 0.0f
