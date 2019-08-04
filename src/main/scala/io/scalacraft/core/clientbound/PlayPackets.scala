@@ -9,8 +9,6 @@ import io.scalacraft.core.PacketAnnotations._
 import io.scalacraft.core.Structure
 
 object PlayPackets {
-  
-
   @packet(id = 0x00)
   case class SpawnObject(@boxed entityId: Int,
                          objectUUID: UUID,
@@ -467,14 +465,14 @@ object PlayPackets {
                                         green: Float,
                                         blue: Float,
                                         scale: Float)	extends ParticleStructure
-  @switchKey(12) case class Effect() extends ParticleStructure
+  @switchKey(12) case class EffectParticle() extends ParticleStructure
   @switchKey(13) case class ElderGuardian() extends ParticleStructure
   @switchKey(14) case class EnchantedHit() extends ParticleStructure
   @switchKey(15) case class Enchant() extends ParticleStructure
   @switchKey(16) case class EndRod() extends ParticleStructure
-  @switchKey(17) case class EntityEffect() extends ParticleStructure
+  @switchKey(17) case class EntityEffectParticle() extends ParticleStructure
   @switchKey(18) case class ExplosionEmitter() extends ParticleStructure
-  @switchKey(19) case class Explosion() extends ParticleStructure
+  @switchKey(19) case class ExplosionParticle() extends ParticleStructure
   @switchKey(20) case class FallingDust(@boxed blockState: Int) extends ParticleStructure
   @switchKey(21) case class Firework() extends ParticleStructure
   @switchKey(22) case class Fishing() extends ParticleStructure
