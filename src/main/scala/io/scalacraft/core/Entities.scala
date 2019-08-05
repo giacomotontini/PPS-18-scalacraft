@@ -4,7 +4,7 @@ import java.util.UUID
 
 import io.scalacraft.core.DataTypes._
 import io.scalacraft.core.PacketAnnotations._
-import io.scalacraft.core.nbt.NbtTags.TagCompound
+import net.querz.nbt.{CompoundTag, NBTUtil, TagFactory}
 
 
 object Entities {
@@ -117,8 +117,19 @@ object Entities {
     @indexType(index = 1) @boxed var score: Int = 0
     @indexType(index = 0) @byte var displayedSkinParts: Int = 0
     @indexType(index = 0) @byte var mainHand = 1 //0 left 1 right
-    @indexType(index = 14) var leftShoulderEntityData : Nbt = Nbt("", TagCompound(("ShoulderEntityLeft" , None)))
-    @indexType(index = 14) var rightShoulderEntityData : Nbt = Nbt("", TagCompound(("ShoulderEntityRight" , None)))
+
+    @indexType(index = 14) var leftShoulderEntityData : Nbt = {
+      val tag: CompoundTag  = new CompoundTag()
+      tag.put("ShoulderEntityLeft", new CompoundTag())
+      tag
+      //Nbt("", TagCompound(("ShoulderEntityLeft" , None)))
+    }
+    @indexType(index = 14) var rightShoulderEntityData : Nbt = {
+      val tag: CompoundTag  = new CompoundTag()
+      tag.put("ShoulderEntityRight", new CompoundTag())
+      tag
+      //Nbt("", TagCompound(("ShoulderEntityRight" , None)))
+    }
   }
 
   class ArmorStand extends Living  with MobEntity with ObjectEntity {

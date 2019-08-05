@@ -15,12 +15,15 @@ object LoginPackets {
                                @precededBy[VarInt] @byte verifyTokenLength: List[Int]) extends Structure
 
   @packet(0x02)
-  case class LoginSuccess(@maxLength(36) uuid: String, @maxLength(16) username: String) extends Structure
+  case class LoginSuccess(@maxLength(36) uuid: String,
+                          @maxLength(16) username: String) extends Structure
 
   @packet(0x03)
   case class SetCompression(@boxed threshold: Int) extends Structure
 
   @packet(0x04)
-  case class LoginPluginRequest(@boxed messageID: Int, channel: Identifier, @byte data: List[Int]) extends Structure
+  case class LoginPluginRequest(@boxed messageID: Int,
+                                channel: Identifier,
+                                @byte data: List[Int]) extends Structure
 
 }

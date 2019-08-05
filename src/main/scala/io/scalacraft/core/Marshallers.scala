@@ -1,11 +1,11 @@
 package io.scalacraft.core
 
-import java.io.{BufferedInputStream, BufferedOutputStream, EOFException}
+import java.io.{BufferedInputStream, BufferedOutputStream, DataInputStream, EOFException}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 import io.scalacraft.core.DataTypes.{Nbt, Position}
-import io.scalacraft.core.nbt.NbtParser
+import net.querz.nbt.{CompoundTag, NBTUtil, Tag}
 
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -405,15 +405,22 @@ object Marshallers {
 
   class NbtMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
-      case Nbt(name, compoundTag) => NbtParser.writeNBT(outStream)((name, compoundTag))
+      /*case Nbt(name, compoundTag) => NbtParser.writeNBT(outStream)((name, compoundTag))*/
+      case _ => obj
     }
 
-    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any =
-      NbtParser.readNBT(inStream) match {
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val content = new CompoundTag()
+      content.deserializeValue(new DataInputStream(inStream), Tag.DEFAULT_MAX_DEPTH)
+      context.addField(content)
+      content
+      /*NbtParser.readNBT(inStream) match {
         case (name, compoundTag) =>
+          new CompoundTag().ser
           val content = Nbt(name, compoundTag)
           context.addField(content)
           content
+      */
       }
   }
 

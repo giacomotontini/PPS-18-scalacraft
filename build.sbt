@@ -17,11 +17,13 @@ lazy val root = Project(
     version := projectVersion,
     organization := projectOrganization,
     coverageEnabled := true,
-    parallelExecution := false
+    parallelExecution := false,
+      resolvers += "jitpack" at "https://jitpack.io"
   )
 
 lazy val dependencies = Seq(
   "org.scala-lang" % "scala-reflect" % projectScalaVersion,
   "org.scalactic" %% "scalactic" % scalaTestVersion,
-  "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+  "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+  "com.github.Querz" % "NBT" % "4.1"
 )

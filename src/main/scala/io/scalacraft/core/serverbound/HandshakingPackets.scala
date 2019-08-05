@@ -13,7 +13,10 @@ object HandshakingPackets {
   }
 
   @packet(0x00)
-  case class Handshake(@boxed protocolVersion: Int, @maxLength(255) serverAddress: String, @short serverPort:Int, @enumType[VarInt] nextState: NextState) extends Structure
+  case class Handshake(@boxed protocolVersion: Int,
+                       @maxLength(255) serverAddress: String,
+                       @short serverPort:Int,
+                       @enumType[VarInt] nextState: NextState) extends Structure
 
   //payload should be always 0x01
   @packet(0xFE)
