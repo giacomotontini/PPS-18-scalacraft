@@ -389,7 +389,7 @@ object Marshallers {
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val key = valueMarshaller.unmarshal()
       val content = valuesInstances(key)
-      context.addField(content)
+      context.addField(key)
       content
     }
   }

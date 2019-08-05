@@ -66,21 +66,15 @@ object PlayPackets {
   @packet(0x07)
   case class EnchantItem(@byte enchantItem: Int, @byte windowId: Int) extends Structure
 
-  sealed trait ModePacket8
-
-  object ModePacket8 {
-    //TODO
-  }
-
   @packet(0x08)
   case class ClickWindow(@byte windowId: Int, @short slot: Int, @byte button: Int, @short actionNumber: Int,
-                         @enumType[VarInt] mode: ModePacket8, clickedItem: Slot)
+                         @boxed mode: Int, clickedItem: Slot)
 
   @packet(0x09)
   case class CloseWindow(@byte windowId: Int) extends Structure
 
   @packet(0x0A)
-  case class PluginMessage(channel: Identifier, @byte data: List[Int]) extends Structure //length of the list need to be inferred from the packet length
+  case class PluginMessage(channel: Identifier, @byte data: List[Int]) extends Structure
   sealed trait Hand
 
   object Hand {
@@ -165,7 +159,12 @@ object PlayPackets {
   sealed trait Face
 
   object Face {
-    //TODO
+    @enumValue(0) case object Bottom  extends Face
+    @enumValue(1) case object Top extends Face
+    @enumValue(2) case object North extends Face
+    @enumValue(3) case object South extends Face
+    @enumValue(4) case object West extends Face
+    @enumValue(5) case object East extends Face
   }
 
   @packet(0x18)
@@ -201,7 +200,6 @@ object PlayPackets {
   @packet(0x1A)
   case class SteerVehicle(sideways: Float, forward: Float, flags: Byte) extends Structure
 
-  //TODO: check
   sealed trait SwitchInterface
 
   @switchKey(0) case class DisplayedRecipe(recipeId: Identifier) extends SwitchInterface
@@ -212,7 +210,7 @@ object PlayPackets {
                                             smeltingRecipeFilterActive: Boolean) extends SwitchInterface
 
   @packet(0x1B)
-  case class RecipeBookData(@boxed tpe: Int, @fromContext(0) @switchType[VarInt] restOfPacket: SwitchInterface) extends Structure
+  case class RecipeBookData(@switchType[VarInt] restOfPacket: SwitchInterface) extends Structure
 
   @packet(0x1C)
   case class NameItem(itemName: String) extends Structure

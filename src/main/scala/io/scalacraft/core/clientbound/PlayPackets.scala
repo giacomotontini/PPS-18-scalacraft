@@ -76,7 +76,7 @@ object PlayPackets {
                          z: Double,
                          yaw: Angle,
                          pitch: Angle,
-                         metadata: Player) extends Structure //TODO: we do not have type, should be handled
+                         metadata: Player) extends Structure 
 
   sealed trait AnimationType
 
@@ -98,7 +98,7 @@ object PlayPackets {
 
   @packet(id = 0x06)
   case class Animation(@boxed entityId: Int,
-                       @enumType[Byte] animation: Animation)  extends Structure
+                       @enumType[Byte] animation: Animation) extends Structure
 
   case class CategoryStatistic(@enumType[VarInt] categoryId: CategoriesType,
                                @boxed statisticId: Int) extends Structure
@@ -122,7 +122,9 @@ object PlayPackets {
     @enumValue(value = 6) case object Killed extends CategoriesType
 
     @enumValue(value = 7) case object KilledBy extends CategoriesType
+
     @enumValue(value = 8) case object Custom extends CategoriesType
+
   }
 
   @packet(id = 0x07)
@@ -133,10 +135,10 @@ object PlayPackets {
   @packet(id = 0x08)
   case class BlockBreakAnimation(@boxed entityId: Int,
                                  location: Position,
-                                @byte destroyStage: Int) extends Structure //0-9 normal-bad stage, > 9 destroyed
+                                 @byte destroyStage: Int) extends Structure //0-9 normal-bad stage, > 9 destroyed
 
   @packet(id = 0x09)
-  case class UpdateBlockEntity(location: Position, action: Int, nbtData: Nbt) extends Structure //TODO: see protocol to understabd action data meaning
+  case class UpdateBlockEntity(location: Position, @byte action: Int, nbtData: Nbt) extends Structure //TODO: use enum
 
   @packet(id = 0x0A)
   case class BlockAction(location: Position,
@@ -278,50 +280,60 @@ object PlayPackets {
 
   sealed trait WindowType
 
-  case object WindowsType {
+  @switchKey("minecraft:container") case class Container(windowTitle: Chat,
+                                                         @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:container") case object Container extends WindowType
+  @switchKey("minecraft:chest") case class Chest(windowTitle: Chat,
+                                                 @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:chest") case object Chest extends WindowType
+  @switchKey("minecraft:crafting_table") case class CraftingTable(windowTitle: Chat,
+                                                                  @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:crafting_table") case object CraftingTable extends WindowType
+  @switchKey("minecraft:furnace") case class Furnace(windowTitle: Chat,
+                                                     @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:furnace") case object Furnace extends WindowType
+  @switchKey("minecraft:dispenser") case class Dispenser(windowTitle: Chat,
+                                                         @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:dispenser") case object Dispenser extends WindowType
+  @switchKey("minecraft:enchanting_table") case class EnchantingTable(windowTitle: Chat,
+                                                                      @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:enchanting_table") case object EnchantingTable extends WindowType
+  @switchKey("minecraft:brewing_stand") case class BrewingStand(windowTitle: Chat,
+                                                                @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:brewing_stand") case object BrewingStand extends WindowType
+  @switchKey("minecraft:villager") case class Villager(windowTitle: Chat,
+                                                       @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:villager") case object Villager extends WindowType
+  @switchKey("minecraft:beacon") case class Beacon(windowTitle: Chat,
+                                                   @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:beacon") case object Beacon extends WindowType
+  @switchKey("minecraft:anvil") case class Anvil(windowTitle: Chat,
+                                                 @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:anvil") case object Anvil extends WindowType
+  @switchKey("minecraft:hopper") case class Hopper(windowTitle: Chat,
+                                                   @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:hopper") case object Hopper extends WindowType
+  @switchKey("minecraft:dropper") case class Dropper(windowTitle: Chat,
+                                                     @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:dropper") case object Dropper extends WindowType
+  @switchKey("minecraft:shulker_box") case class ShulkerBox(windowTitle: Chat,
+                                                            @byte numberOfSlots: Int) extends WindowType
 
-    @enumValue("minecraft:shulker_box") case object ShulkerBox extends WindowType
+  @switchKey("EntityHorse") case class EntityHorse(windowTitle: Chat,
+                                                   @byte numberOfSlots: Int,
+                                                   entityId: Int) extends WindowType
 
-    @enumValue("EntityHorse") case object EntityHorse extends WindowType
-
-  }
 
   @packet(id = 0x14)
   case class OpenWindows(@byte windowId: Int,
-                         @enumType[String] windowType: WindowType,
-                         windowTitle: Chat,
-                         @byte numberOfSlots: Int,
-                         @fromContext(2) entityId: Option[Int]) extends Structure //TODO: the option presence is determined by a string value => how we handle that?
+                         @switchType[String] windowType: WindowType) extends Structure
 
   @packet(id = 0x15)
   case class WindowItems(@byte windowId: Int,
                          @precededBy[Short] slot: List[Slot]) extends Structure
 
-  //TODO: 0x16 Packet unclear
+  @packet(0x16)
+  case class WindowProperty(@byte windowId: Int, @short property: Int, @short value: Int)
 
   @packet(id = 0x17)
   case class SetSlot(@byte windowId: Int,
@@ -368,20 +380,12 @@ object PlayPackets {
                               effectPositionZ: Int,
                               volume: Float,
                               pitch: Float) extends Structure
+
   @packet(id = 0x1B)
   case class Disconnect(reason: Chat) extends Structure
 
-  sealed trait EntityStatusEnum
-
-  case object EntityStatusEnum {
-
-    @enumValue(1) case object p1 extends EntityStatusEnum
-
-    //TODO: need to be handled
-  }
-
   @packet(id = 0x1C)
-  case class EntityStatus(entityId: Int, @enumType[Byte] entityStatus: EntityStatusEnum) extends Structure
+  case class EntityStatus(entityId: Int, @byte entityStatus: Int) extends Structure
 
   @packet(id = 0x1D)
   case class NbtQueryResponse(@boxed transactionId: Int, nbt: Nbt) extends Structure
@@ -399,7 +403,7 @@ object PlayPackets {
                        playerMotionZ: Float) extends Structure
 
   @packet(id = 0x1F)
-  case class UnloadChunk(chunkX : Int, chunkY : Int) extends Structure // Block coordinate divided by 16, rounded down
+  case class UnloadChunk(chunkX: Int, chunkY: Int) extends Structure // Block coordinate divided by 16, rounded down
 
 
   sealed trait GameModeValue
@@ -449,24 +453,24 @@ object PlayPackets {
 
 
   sealed trait ReasonValue
-  @switchKey(0) case class InvalidBed(value: Float) extends ReasonValue
-  @switchKey(1) case class EndRaining(value: Float) extends ReasonValue
-  @switchKey(2) case class BeginRaining(value: Float) extends ReasonValue
-  @switchKey(3) case class ChangeGameMode(@enumType[Float] value: GameModeValue) extends ReasonValue
-  @switchKey(4) case class ExitEnd(@enumType[Float] value: ExitModeValue) extends ReasonValue
-  @switchKey(5) case class DemoMessage(@enumType[Float] value: DemoMessage) extends ReasonValue
-  @switchKey(6) case class ArrowHittingPlayer(value: Float) extends ReasonValue
-  @switchKey(7) case class FadeValues(@enumType[Float] value: FadeValue) extends ReasonValue
-  @switchKey(8) case class FadeTime(value: Float) extends ReasonValue
-  @switchKey(9) case class PlayPufferFishStingSound(value: Float) extends ReasonValue
-  @switchKey(value = 10) case class PlayElderGuardianMob(value: Float) extends ReasonValue
+  @switchKey(0) case class InvalidBed(value: Int) extends ReasonValue
+  @switchKey(1) case class EndRaining(value: Int) extends ReasonValue
+  @switchKey(2) case class BeginRaining(value: Int) extends ReasonValue
+  @switchKey(3) case class ChangeGameMode(@enumType[Int] value: GameModeValue) extends ReasonValue
+  @switchKey(4) case class ExitEnd(@enumType[Int] value: ExitModeValue) extends ReasonValue
+  @switchKey(5) case class DemoMessage(@enumType[Int] value: DemoMessage) extends ReasonValue
+  @switchKey(6) case class ArrowHittingPlayer(value: Int) extends ReasonValue
+  @switchKey(7) case class FadeValues(@enumType[Int] value: FadeValue) extends ReasonValue
+  @switchKey(8) case class FadeTime(value: Int) extends ReasonValue
+  @switchKey(9) case class PlayPufferFishStingSound(value: Int) extends ReasonValue
+  @switchKey(value = 10) case class PlayElderGuardianMob(value: Int) extends ReasonValue
 
   @packet(id = 0x20)
   case class ChangeGameState(@byte reason: Int, @fromContext(0) @switchType[Byte]  body: ReasonValue )  extends Structure
 
-  @packet(id= 0x21)
+  @packet(id = 0x21)
   case class KeepAlive(keepAliveId: Long) extends Structure
-  
+
   @packet(id = 0x22)
   case class ChunkData(chunkX: Int,
                        chunkZ: Int,
@@ -704,20 +708,33 @@ object PlayPackets {
 
 
   sealed trait WorldDimension
+
   case object WordDimension {
+
     @enumValue(-1) case class Nether() extends WorldDimension
+
     @enumValue(0) case class Overworld() extends WorldDimension
+
     @enumValue(1) case class End() extends WorldDimension
+
   }
 
   sealed trait LevelType
+
   case object LevelType {
+
     @enumValue("default") case class Default() extends LevelType
+
     @enumValue("flat") case class Flat() extends LevelType
+
     @enumValue("largeBiomes") case class LargeBiomes() extends LevelType
+
     @enumValue("amplified") case class Amplified() extends LevelType
+
     @enumValue("custom") case class Custom() extends LevelType
+
     @enumValue("buffet") case class Buffet() extends LevelType
+
   }
 
   @packet(id = 0x25)
@@ -729,10 +746,18 @@ object PlayPackets {
                       @enumType[String] levelType: LevelType,
                       reducedDebugInfo: Boolean) extends Structure
 
-  case class Icon(@byte x: Int,
+  case class MapDataContent(@precededBy[VarInt] @byte data: List[Int]) extends Structure
+
+  sealed trait IconType
+
+  object IconType {
+    //TODO: Implement enumerator
+  }
+
+  case class Icon(@enumType[VarInt] tpe: IconType,
+                  @byte x: Int,
                   @byte z: Int,
                   @byte direction: Int,
-                  //hasDisplayName: Boolean,
                   displayName: Option[Chat]
                  ) extends Structure
 
@@ -742,10 +767,10 @@ object PlayPackets {
                      trackingPosition: Boolean,
                      @precededBy[VarInt] icons: List[Icon],
                      @byte columns: Int,
-                     @fromContext(5) @byte row: Option[Int],
-                     @fromContext(5) @byte x: Option[Int],
-                     @fromContext(5) @byte z: Option[Int],
-                     @fromContext(5) @precededBy[VarInt] @byte data: List[Int] //TODO check
+                     @fromContext(4) @byte row: Option[Int],
+                     @fromContext(4) @byte x: Option[Int],
+                     @fromContext(4) @byte z: Option[Int],
+                     @fromContext(4) @byte data: MapDataContent
                     ) extends Structure
 
   @packet(id = 0x27)
@@ -756,7 +781,7 @@ object PlayPackets {
                                 @short deltaX: Int,
                                 @short deltaY: Int,
                                 @short deltaZ: Int,
-                                onGround: Boolean)  extends Structure
+                                onGround: Boolean) extends Structure
 
   @packet(id = 0x29)
   case class EntityLockAndRelativeMove(@boxed entityId: Int,
@@ -792,12 +817,15 @@ object PlayPackets {
                              fieldOfViewModifier: Float = 0.1f) extends Structure
 
   sealed trait CombatEventType
+
   @switchKey(0) case class CombatEventEnterCombat() extends CombatEventType
+
   @switchKey(1) case class CombatEventEndCombat(@boxed duration: Int,
-                                  entityId: Int) extends CombatEventType
+                                                entityId: Int) extends CombatEventType
+
   @switchKey(2) case class CombatEventEntityDead(@boxed playerId: Int,
-                                   entityId: Int,
-                                   message: Chat) extends CombatEventType
+                                                 entityId: Int,
+                                                 message: Chat) extends CombatEventType
 
   @packet(id = 0x2F)
   case class CombatEvent(@boxed event: Int,
@@ -865,6 +893,11 @@ object PlayPackets {
     @enumValue(2) case object UnlockRecipeActionRemove extends UnlockRecipeAction
   }
 
+  sealed trait UnlockRecipeOther
+  @switchKey(0) case class OtherInit(@precededBy[VarInt] reciperIds: List[Identifier]) extends UnlockRecipeOther
+  @switchKey(1) case class OtherAdd() extends UnlockRecipeOther
+  @switchKey(2) case class OtherRemove() extends UnlockRecipeOther
+
   @packet(id = 0x34)
   case class UnlockRecipes(@enumType[VarInt] action: UnlockRecipeAction,
                            craftingRecipeBookOpen: Boolean,
@@ -872,7 +905,7 @@ object PlayPackets {
                            smeltingRecipeBookOpen: Boolean,
                            smeltingRecipeBookFilterActive: Boolean,
                            @precededBy[VarInt] recipeIds: List[Identifier],
-                           @precededBy[VarInt] recipeIds2: List[Identifier]) extends Structure//TODO
+                           @fromContext(0) @switchType[VarInt] other: UnlockRecipeOther) extends Structure
 
   @packet(id = 0x35)
   case class DestroyEntities(@precededBy[VarInt] @boxed entityIds: List[Int]) extends Structure
@@ -983,68 +1016,100 @@ object PlayPackets {
                           @boxed food: Int,
                           foodSaturation: Float) extends Structure
 
-  sealed trait ScoreboardMode
-  case object ScoreboardMode {
-    @enumValue(0) case object CreateScoreboard extends ScoreboardMode
-    @enumValue(1) case object RemoveScoreboard extends ScoreboardMode
-    @enumValue(2) case object UpdateDisplayedText extends ScoreboardMode
-  }
-
   sealed trait ScoreboardType
   case object ScoreboardType {
     @enumValue(0) case object ScoreboardInteger extends ScoreboardType
     @enumValue(1) case object ScoreboardHearts extends ScoreboardType
   }
+  sealed trait ScoreboardMode
+  @switchKey(0) case class CreateScoreboard(objectiveValue: Chat, @enumType[VarInt] scoreboardType: ScoreboardType) extends ScoreboardMode
+  @switchKey(1) case class RemoveScoreboard() extends ScoreboardMode
+  @switchKey(2) case class UpdateDisplayedText(objectiveValue: Chat, @enumType[VarInt] scoreboardType: ScoreboardType) extends ScoreboardMode
 
   @packet(id = 0x45)
   case class ScoreboardObjective(@maxLength(16) objectiveName: String,
-                                 @enumType[Byte] mode: ScoreboardMode,
-                                 @fromContext(1) objectiveValue: Option[Chat],
-                                 @fromContext(1)  @enumType[VarInt] tpe: ScoreboardType) extends Structure //TODO Check
+                                 @switchType[Byte] mode: ScoreboardMode) extends Structure
 
   @packet(id = 0x46)
   case class SetPassengers(@boxed entityId: Int,
                            @precededBy[VarInt] @boxed passengersEIDs: List[Int]) extends Structure
 
   sealed trait TeamColor
+
   object TeamColor {
+
     @enumValue(0) case object Black extends TeamColor
+
     @enumValue(1) case object DarkBlue extends TeamColor
+
     @enumValue(2) case object DarkGreen extends TeamColor
+
     @enumValue(3) case object DarkCyan extends TeamColor
+
     @enumValue(4) case object DarkRed extends TeamColor
+
     @enumValue(5) case object Purple extends TeamColor
+
     @enumValue(6) case object Gold extends TeamColor
+
     @enumValue(7) case object Gray extends TeamColor
+
     @enumValue(8) case object DarkGray extends TeamColor
+
     @enumValue(9) case object Blue extends TeamColor
+
     @enumValue(10) case object BrightGreen extends TeamColor
+
     @enumValue(11) case object Cyan extends TeamColor
+
     @enumValue(12) case object Red extends TeamColor
+
     @enumValue(13) case object Pink extends TeamColor
+
     @enumValue(14) case object Yellow extends TeamColor
+
     @enumValue(15) case object White extends TeamColor
+
     @enumValue(16) case object Obfuscated extends TeamColor
+
     @enumValue(17) case object Bold extends TeamColor
+
     @enumValue(18) case object Strikethrough extends TeamColor
+
     @enumValue(19) case object Underlined extends TeamColor
+
     @enumValue(20) case object Itelic extends TeamColor
+
     @enumValue(21) case object Reset extends TeamColor
 
   }
+
   sealed trait NameTagVisibility
+
   object NameTagVisibility {
+
     @enumValue("always") case object Always extends NameTagVisibility
+
     @enumValue("hideForOtherTeams") case object HideForOtherTeams extends NameTagVisibility
+
     @enumValue("hideForOwnTeam") case object HideForOwnTeam extends NameTagVisibility
+
     @enumValue("never") case object Never extends NameTagVisibility
+
   }
+
   sealed trait CollisionRule
+
   object CollectRule {
+
     @enumValue("always") case object Always extends NameTagVisibility
+
     @enumValue("pushOtherTeams") case object PushOtherTeams extends NameTagVisibility
+
     @enumValue("pushOwnTeam") case object PushOwnTeam extends NameTagVisibility
+
     @enumValue("never") case object Never extends NameTagVisibility
+
   }
 
   case class TeamInfo(teamDisplayName: Chat,
@@ -1054,7 +1119,9 @@ object PlayPackets {
                       @enumType[VarInt] teamColor: TeamColor,
                       teamPrefix: Chat,
                       teamSuffix: Chat) extends Structure
+
   sealed trait ModePacket47
+
   @switchKey(0) case class CreateTeam(info: TeamInfo,
                                       @precededBy[VarInt] @maxLength(40) entities: List[String]
                                      ) extends ModePacket47
@@ -1070,12 +1137,18 @@ object PlayPackets {
   @packet(0x47)
   case class Teams(@maxLength(16) teamName: String, @switchType[Byte] mode: ModePacket47) extends Structure
 
-  //TODO: check
+  sealed trait Score
+
+  @switchKey(0) case class CreateUpdateItem(@boxed score: Int) extends Score
+
+  @switchKey(1) case class RemoveItem() extends Score
+
   @packet(0x48)
   case class UpdateScore(@maxLength(40) entityName: String,
                          @byte action: Int,
                          @maxLength(16) objectiveName: String,
-                         @fromContext(1) value: Option[VarInt]) extends Structure
+                         @fromContext(1) @switchType[Byte] value: Score) extends Structure
+
   @packet(0x49)
   case class SpawnPosition(location: Position) extends Structure
 
@@ -1140,16 +1213,23 @@ object PlayPackets {
 
   }
 
-  //TODO: Check void meaning in the packet structures
-  case class Criteria(key: Identifier, value: Void) extends Structure
+  sealed trait Flags
+
+  @switchKey(1) case class BackgroundTexture(identifier: Identifier) extends Flags
+
+  @switchKey(2) case class ShowToast() extends Flags
+
+  @switchKey(4) case class Hidden() extends Flags
+
 
   case class Requirement(@precededBy[VarInt] requirement: List[String]) extends Structure
 
-  case class AdvancedDisplay(title: Chat, description: Chat, icon: Slot, @enumType[VarInt] frame: FrameType, flags: Int,
-                             backgroundTexture: Option[Identifier], xCoord: Float, yCoord: Float) extends Structure
+
+  case class AdvancedDisplay(title: Chat, description: Chat, icon: Slot, @enumType[VarInt] frame: FrameType,
+                             @switchType[Int] flags: Flags, xCoord: Float, yCoord: Float) extends Structure
 
   case class Advancement(parentId: Option[Identifier], displayData: Option[AdvancedDisplay],
-                         @precededBy[VarInt] criterias: List[Criteria],
+                         @precededBy[VarInt] criterias: List[Identifier],
                          @precededBy[VarInt] requirments: List[Requirement]) extends Structure
 
   case class Criterion(criterionIdentifier: Identifier, dateOfAchieving: Option[Long]) extends Structure
@@ -1162,7 +1242,46 @@ object PlayPackets {
                           @precededBy[VarInt] identifiers: List[Identifier],
                           @precededBy[VarInt] progresses: List[Progress]) extends Structure
 
-  sealed trait Property //TODO: Model property
+  sealed trait AttributeModifier {
+    def default: Double
+
+    def min: Double
+
+    def max: Double
+  }
+
+  //TODO: Add all enumValues
+  object AttributeModifier {
+
+    @enumValue("generic.maxHealth") case object GenericMaxHealth extends AttributeModifier {
+      override val default: Double = 20.0
+
+      override val min: Double = 0.0
+
+      override val max: Double = 1024.0
+    }
+
+  }
+
+  sealed trait Operation
+
+  object Operation {
+
+    @enumValue(0) case object AddSubtract extends Operation
+
+    @enumValue(1) case object AddSubtractPercent extends Operation
+
+    @enumValue(2) case object MultiplyPercent extends Operation
+
+  }
+
+  case class ModifierData(uuid: UUID, amount: Double, @enumType[Byte] operation: Operation) extends Structure
+
+  case class Property(@enumType[String] attributeModifier: AttributeModifier,
+                      value: Double,
+                      @precededBy[VarInt] modifiers: List[ModifierData]
+                     ) extends Structure
+
   @packet(0x52)
   case class EntityProperties(@boxed entityId: Int,
                               @precededBy[Int] properties: List[Property]) extends Structure
@@ -1180,15 +1299,15 @@ object PlayPackets {
   sealed trait RecipeType
 
   @switchKey("crafting_shapeless") case class CraftingShapless(group: String,
-                                                                      @precededBy[VarInt] ingredients: List[Ingredient],
-                                                                      result: Slot) extends RecipeType
+                                                               @precededBy[VarInt] ingredients: List[Ingredient],
+                                                               result: Slot) extends RecipeType
 
-  //TODO: 	Length of ingredient is width * height. Indexed by x + (y * width)
+  //TODO: 	Length of ingredient is width * height. Indexed by x + (y * width) --> Need dedicated Marshaller
   @switchKey("crafting_shaped") case class CraftingShaped(@boxed width: Int,
-                                                                  @boxed height: Int,
-                                                                  group: String,
-                                                                  ingredients: List[Ingredient],
-                                                                  result: Slot) extends RecipeType
+                                                          @boxed height: Int,
+                                                          group: String,
+                                                          ingredients: List[Ingredient],
+                                                          result: Slot) extends RecipeType
 
   @switchKey("crafting_special_armordye") case class CraftingSpecialArmordye() extends RecipeType
 
@@ -1222,10 +1341,8 @@ object PlayPackets {
                                              experience: Float,
                                              @boxed cookingTime: Int) extends RecipeType
 
-  //TODO: check
   case class Recipe(recipeId: Identifier,
-                    tpe: String,
-                    @fromContext(1) @switchType[String] data: RecipeType) extends Structure
+                    @switchType[String] data: RecipeType) extends Structure
 
   @packet(0x54)
   case class DeclareRecipes(@precededBy[VarInt] recipes: List[Recipe]) extends Structure

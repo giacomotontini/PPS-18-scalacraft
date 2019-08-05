@@ -4,7 +4,7 @@ import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.util.UUID
 
 import io.scalacraft.core.DataTypes.{Position => _, _}
-import io.scalacraft.core.Entities.{Entity, MobEntity, ObjectEntity}
+import io.scalacraft.core.Entities.{Entity, MobEntity, ObjectEntity, Player}
 import io.scalacraft.core.Marshallers._
 import io.scalacraft.core.MobsAndObjectsTypeMapping._
 import io.scalacraft.core.PacketAnnotations._
@@ -151,11 +151,13 @@ class PacketManager[T: TypeTag] {
       case sym if isSymType[String](sym) && checkAnnotations && hasAnnotation[maxLength](symAnnotations.get) =>
         new StringMarshaller(annotationParam[Int](annotation[maxLength](symAnnotations.get), 0), contextFieldIndex)
       case sym if isSymType[String](sym) => new StringMarshaller(MaxStringLength, contextFieldIndex)
-      case sym if isSymType[List[_]](sym) && checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get) =>
-        val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
-        val precededByMarshaller = subTypesMarshaller(checkAnnotations = false)(precededByType)
+      case sym if isSymType[List[_]](sym) /*&& checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get)*/ =>
+        val precededByMarshaller = if( checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get)) {
+          val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
+          Some(subTypesMarshaller(checkAnnotations = false)(precededByType))
+        } else None
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
-        new ListMarshaller(paramMarshaller, Some(precededByMarshaller), contextFieldIndex)
+        new ListMarshaller(paramMarshaller, precededByMarshaller, contextFieldIndex)
       case sym if isSymType[Entity](sym) =>
         def getTypeToEntityConstructorMap(typeToEntityClass: Map[Int, Class[_]]): Map[Int, MethodMirror] = {
           typeToEntityClass map{

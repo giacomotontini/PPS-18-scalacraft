@@ -29,6 +29,11 @@ class StructureUnmarshallingSpec extends FlatSpec with Matchers with StructureMa
     structureUnmarshal(0x14, "0102") shouldBe OptionalEnum(Some(EnumOption2))
   }
 
+  "An optional list of byte field" should "deserialize the correct values" in {
+    structureUnmarshal(0x15, "01010102") shouldBe OptionalList(1, true, List(1,2))
+    structureUnmarshal(0x15, "0100") shouldBe OptionalList(1,false,List())
+  }
+
   "A basic switch" should "serialize the correct values" in {
     structureUnmarshal(0x05, "000000020000000142") shouldBe BasicSwitch(2, SwitchOption1(0x42))
   }
