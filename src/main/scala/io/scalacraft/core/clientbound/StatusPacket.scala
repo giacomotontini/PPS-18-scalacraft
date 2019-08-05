@@ -4,9 +4,10 @@ import io.scalacraft.core.Structure
 
 object StatusPacket {
 
-  @packet(id=0x00)
+  @packet(0x00)
   case class Response(@maxLength(32767) jsonResponse: String) extends Structure
 
-  @packet(id=0x01)
+  @packet(0x01)
   case class Pong(payload: Long) extends Structure
+
 }

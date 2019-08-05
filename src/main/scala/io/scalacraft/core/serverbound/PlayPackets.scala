@@ -19,7 +19,7 @@ object PlayPackets {
 
   sealed trait ActionPacket3
 
-  object Action {
+  object ActionPacket3 {
 
     @enumValue(0) case object PerformRespawn extends ActionPacket3
 
@@ -68,7 +68,7 @@ object PlayPackets {
 
   @packet(0x08)
   case class ClickWindow(@byte windowId: Int, @short slot: Int, @byte button: Int, @short actionNumber: Int,
-                         @boxed mode: Int, clickedItem: Slot)
+                         @boxed mode: Int, clickedItem: Slot) extends Structure
 
   @packet(0x09)
   case class CloseWindow(@byte windowId: Int) extends Structure
@@ -137,11 +137,13 @@ object PlayPackets {
 
   object Status {
 
-    @enumValue(1) case object StartedDigging extends Status
+    @enumValue(0) case object StartedDigging extends Status
 
-    @enumValue(2) case object CancelledDigging extends Status
+    @enumValue(1) case object CancelledDigging extends Status
 
-    @enumValue(3) case object FinishedDigging extends Status
+    @enumValue(2) case object FinishedDigging extends Status
+
+    @enumValue(3) case object DropItemStack extends Status
 
     @enumValue(4) case object DropItem extends Status
 

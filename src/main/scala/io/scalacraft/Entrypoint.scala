@@ -14,10 +14,25 @@ object Entrypoint extends App {
 
   val marshaller = new VarIntMarshaller()
 
-  val packetManager = if (args(0) == "server") {
-    new PacketManager[io.scalacraft.core.clientbound.PlayPackets.type]
+  val packetManager = if (args(0) == "clientbound") {
+    if (args(1) == "login") {
+      println("here")
+      new PacketManager[io.scalacraft.core.clientbound.LoginPackets.type]
+    } else if (args(1) == "status") {
+      new PacketManager[io.scalacraft.core.clientbound.StatusPacket.type]
+    } else {
+      new PacketManager[io.scalacraft.core.clientbound.PlayPackets.type]
+    }
   } else {
-    new PacketManager[io.scalacraft.core.serverbound.PlayPackets.type]
+    if (args(1) == "login") {
+      new PacketManager[io.scalacraft.core.serverbound.LoginPackets.type]
+    } else if (args(1) == "status") {
+      new PacketManager[io.scalacraft.core.serverbound.StatusPackets.type]
+    } else if (args(1) == "handshaking") {
+      new PacketManager[io.scalacraft.core.serverbound.HandshakingPackets.type]
+    } else {
+      new PacketManager[io.scalacraft.core.serverbound.PlayPackets.type]
+    }
   }
 
   while (true) {
