@@ -3,7 +3,7 @@ package io.scalacraft.core.clientbound
 import java.util.UUID
 
 import io.scalacraft.core.DataTypes._
-import io.scalacraft.core.Entities.{MobEntity, Player}
+import io.scalacraft.core.Entities.{MobEntity, ObjectEntity, Player}
 import io.scalacraft.core.PacketAnnotations.{short, _}
 import io.scalacraft.core.Structure
 
@@ -407,15 +407,14 @@ object PlayPackets {
 
 
   sealed trait GameModeValue
+  case object GameModeValue {
 
-  case object GameMode {
+    @enumValue(0) case object Survival extends GameModeValue
 
-    @enumValue(0.0f) case object Survival extends GameModeValue
+    @enumValue(1) case object Creative extends GameModeValue
 
-    @enumValue(1.0f) case object Creative extends GameModeValue
-
-    @enumValue(2.0f) case object Adventure extends GameModeValue
-    @enumValue(3.0f) case object Spectator extends GameModeValue
+    @enumValue(2) case object Adventure extends GameModeValue
+    @enumValue(3) case object Spectator extends GameModeValue
   }
 
   sealed trait ExitModeValue
@@ -811,6 +810,210 @@ object PlayPackets {
   @packet(id = 0x2F)
   case class CombatEvent(@boxed event: Int,
                          @fromContext(0) @switchType[VarInt] body: CombatEventType) extends Structure
+
+
+  case class PlayerInfoProperty(name: String,
+                      value: String,
+                      signature: Option[Boolean]) extends Structure
+
+  sealed trait PlayerInfoAction
+  case class PlayerInfoAddPlayer(uuid: UUID,
+                                 @maxLength(16) name: String,
+                                 @boxed numberOfProperties: Int,
+                                 @precededBy[VarInt] properties: List[PlayerInfoProperty],
+                                 @boxed gameMode: Int,
+                                 @boxed ping: Int,
+                                 @precededBy[Boolean] displayName: Option[Chat]) extends PlayerInfoAction
+
+  case class PlayerInfoUpdateGameMode(uuid: UUID,
+                                      @boxed gameMode: Int) extends PlayerInfoAction
+  case class PlayerInfoUpdateLatency(uuid: UUID,
+                                     @boxed ping: Int) extends PlayerInfoAction
+  case class PlayerInfoUpdateDisplayName(uuid: UUID,
+                                         @precededBy[Boolean] displayName: Option[Chat]) extends PlayerInfoAction
+  case class PlayerInfoRemovePlayer(uuid: UUID) extends PlayerInfoAction
+
+  @packet(id = 0x30)
+  case class PlayerInfo(@boxed action: Int,
+                        @boxed numberOfPlayers: Int,
+                        @fromContext(0) @switchType[VarInt] @precededBy[VarInt] body: List[PlayerInfoAction]
+                       ) extends Structure
+
+  sealed trait FeetEyes
+  case object FeetEyes{
+    @enumValue(0) case object Feet extends FeetEyes
+    @enumValue(1) case object Eyes extends FeetEyes
+  }
+
+  @packet(id = 0x31)
+  case class FacePlayer(@enumType[VarInt] feetEyes: FeetEyes,
+                        targetX: Double,
+                        targetY: Double,
+                        targetZ: Double,
+                        isEntity: Boolean,
+                        @fromContext(4)  @boxed entityId: Option[Int],
+                        @fromContext(4) @enumType[VarInt] entityFeetEyes: Option[FeetEyes]) extends Structure
+
+  @packet(id = 0x32)
+  case class PlayerInfoAndLook(x: Double,
+                               y: Double,
+                               z: Double,
+                               yaw: Float,
+                               pitch: Float,
+                               @byte flags: Int,
+                               @boxed teleportId: Int) extends Structure
+
+  @packet(id = 0x33)
+  case class UseBed(@boxed entityId: Int,
+                    location: Position) extends Structure
+
+  sealed trait UnlockRecipeAction
+  case object UnlockRecipeAction{
+    @enumValue(0) case object UnlockRecipeActionInit extends UnlockRecipeAction
+    @enumValue(1) case object UnlockRecipeActionAdd extends UnlockRecipeAction
+    @enumValue(2) case object UnlockRecipeActionRemove extends UnlockRecipeAction
+  }
+
+  @packet(id = 0x34)
+  case class UnlockRecipes(@enumType[VarInt] action: UnlockRecipeAction,
+                           craftingRecipeBookOpen: Boolean,
+                           craftingRecipeBookFilterActive: Boolean,
+                           smeltingRecipeBookOpen: Boolean,
+                           smeltingRecipeBookFilterActive: Boolean,
+                           @precededBy[VarInt] recipeIds: List[Identifier],
+                           @precededBy[VarInt] recipeIds2: List[Identifier]) extends Structure//TODO
+
+  @packet(id = 0x35)
+  case class DestroyEntities(@precededBy[VarInt] @boxed entityIds: List[Int]) extends Structure
+
+  @packet(id = 0x36)
+  case class RemoveEntityEffect(@boxed entityId: Int, @byte effectId: Int) extends Structure
+
+  @packet(id = 0x37)
+  case class ResourcePackSend(url: String, @maxLength(40) hash: String) extends Structure
+
+  @packet(id = 0x38)
+  case class Respawn(@enumType[Int] dimension: WorldDimension,
+                     @enumType[Byte] difficulty: ServerDifficulties,
+                     @enumType[Byte] gameMode: GameModeValue,
+                     @enumType[String] levelType: LevelType) extends Structure
+
+  @packet(id = 0x39)
+  case class EntityHeadLook(@boxed entityId: Int,
+                            headYaw: Angle) extends Structure
+
+  @packet(id = 0x3A)
+  case class SelectAdvancementTab(@precededBy[Boolean] identifier: Option[String]) extends Structure
+
+  sealed trait WorldBorderAction
+  @switchKey(0) case class WorldBorderActionSetSize(diameter: Double) extends WorldBorderAction
+
+  @switchKey(1)  case class WorldBorderActionLerpSize(oldDiameter: Double,
+                                      newDiameter: Double,
+                                      @boxed speed: Long) extends WorldBorderAction
+
+  @switchKey(2) case class WorldBorderActionSetCenter(x: Double,
+                                       z: Double) extends WorldBorderAction
+
+  @switchKey(3) case class WorldBorderActionInitialize(x: Double,
+                                        z: Double,
+                                        oldDiameter: Double,
+                                        newDiameter: Double,
+                                        @boxed speed: Long,
+                                        @boxed portalTeleportBoundary: Int,
+                                        @boxed warningTime: Int,
+                                        @boxed warningBlocks: Int) extends WorldBorderAction
+
+  @switchKey(4) case class WorldBorderActionSetWarningTime(@boxed warningTime: Int) extends WorldBorderAction
+
+  @switchKey(5) case class WorldBorderActionSetWarningBlocks(@boxed warningBlocks: Int) extends WorldBorderAction
+
+
+  @packet(id = 0x3B)
+  case class WorldBorder(@boxed action: Int,
+                         @fromContext(0) @switchType[VarInt] body: WorldBorderAction) extends Structure
+
+  @packet(id = 0x3C)
+  case class Camera(@boxed cameraId: Int) extends Structure
+
+  @packet(id= 0x3D)
+  case class HeldItemChange(@byte slot: Int) extends Structure
+
+
+  sealed trait ScoreboardPosition
+  case object ScoreboardPosition {
+    @enumValue(0) case object List extends ScoreboardPosition
+    @enumValue(1) case object Sidebar extends ScoreboardPosition
+    @enumValue(2) case object BelowName extends ScoreboardPosition
+    @enumValue(3) case object TeamSpecific extends ScoreboardPosition
+  }
+
+  @packet(id = 0x3E)
+  case class DisplayScoreboard(@switchType[Byte] position: ScoreboardPosition,
+                               @maxLength(16) scoreName: String)
+
+  @packet(id = 0x3F)
+  case class EntityMetadata(@boxed entityId: Int,
+                            @fromContext(0) entityMetadata: ObjectEntity) extends Structure //TODO: not sure if it's an object entity or a spawn entity
+
+  @packet(id = 0x40)
+  case class AttachEntity(attachedId: Int,
+                          holdingEntityId: Int //holdingEntityId = -1 to detach
+                         ) extends Structure
+
+  @packet(id = 0x41)
+  case class EntityVelocity(@boxed entityId: Int,
+                            @boxed velocityX: Int,
+                            @boxed velocityY: Int,
+                            @boxed velocityZ: Int) extends Structure
+
+  sealed trait EquipmentSlot
+  case object EquipmentSlot {
+    @enumValue(0) case object MainHand extends EquipmentSlot
+    @enumValue(1) case object OffHand extends EquipmentSlot
+    @enumValue(2) case object Boots extends EquipmentSlot
+    @enumValue(3) case object Leggings extends EquipmentSlot
+    @enumValue(4) case object Chestplate extends EquipmentSlot
+    @enumValue(5) case object Helmet extends EquipmentSlot
+  }
+
+  @packet(id = 0x42)
+  case class EntityEquipment(@boxed entityId: Int,
+                             @enumType[VarInt] slot: EquipmentSlot,
+                             item: Slot) extends Structure
+
+  @packet(id = 0x43)
+  case class SetExperience(experienceBar: Float,
+                           @boxed level: Int,
+                           @boxed totalExperience: Int) extends Structure
+
+  @packet(id = 0x44)
+  case class UpdateHealth(health: Float,
+                          @boxed food: Int,
+                          foodSaturation: Float) extends Structure
+
+  sealed trait ScoreboardMode
+  case object ScoreboardMode {
+    @enumValue(0) case object CreateScoreboard extends ScoreboardMode
+    @enumValue(1) case object RemoveScoreboard extends ScoreboardMode
+    @enumValue(2) case object UpdateDisplayedText extends ScoreboardMode
+  }
+
+  sealed trait ScoreboardType
+  case object ScoreboardType {
+    @enumValue(0) case object ScoreboardInteger extends ScoreboardType
+    @enumValue(1) case object ScoreboardHearts extends ScoreboardType
+  }
+
+  @packet(id = 0x45)
+  case class ScoreboardObjective(@maxLength(16) objectiveName: String,
+                                 @enumType[Byte] mode: ScoreboardMode,
+                                 @fromContext(1) objectiveValue: Option[Chat],
+                                 @fromContext(1)  @enumType[VarInt] tpe: ScoreboardType) extends Structure //TODO Check
+
+  @packet(id = 0x46)
+  case class SetPassengers(@boxed entityId: Int,
+                           @precededBy[VarInt] @boxed passengersEIDs: List[Int]) extends Structure
 
   sealed trait TeamColor
   object TeamColor {
