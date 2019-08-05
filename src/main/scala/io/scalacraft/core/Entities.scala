@@ -115,14 +115,14 @@ object Entities {
   class Player extends Living with MobEntity {
     @indexType(index = 2) var additionalHealth: Float = 0.0f
     @indexType(index = 1) @boxed var score: Int = 0
-    @indexType(index = 0) @byte var displayedSkinParts = 0
+    @indexType(index = 0) @byte var displayedSkinParts: Int = 0
     @indexType(index = 0) @byte var mainHand = 1 //0 left 1 right
     @indexType(index = 14) var leftShoulderEntityData : Nbt = Nbt("", TagCompound(("ShoulderEntityLeft" , None)))
     @indexType(index = 14) var rightShoulderEntityData : Nbt = Nbt("", TagCompound(("ShoulderEntityRight" , None)))
   }
 
   class ArmorStand extends Living  with MobEntity with ObjectEntity {
-    @indexType(index = 0) @byte var armorStatus = 0
+    @indexType(index = 0) @byte var armorStatus: Int = 0
     @indexType(index = 8) var headRotation: Rotation = Rotation(0.0f, 0.0f, 0.0f)
     @indexType(index = 8) var bodyRotation: Rotation = Rotation(0.0f, 0.0f, 0.0f)
     @indexType(index = 8) var leftArmRotation: Rotation = Rotation(-10.0f, 0.0f, -10.0f)
@@ -180,8 +180,8 @@ object Entities {
     @indexType(index = 12) var owner: Option[UUID] = None
   }
   class Horse extends AbstractHorse with MobEntity {
-    @indexType(index = 1) @boxed var variant = 0  //color & style
-    @indexType(index = 1) @boxed var armorMaterial = 0
+    @indexType(index = 1) @boxed var variant: Int = 0  //color & style
+    @indexType(index = 1) @boxed var armorMaterial: Int = 0
     @indexType(index = 6) var armorItem: Slot = None
   }
 
@@ -205,7 +205,7 @@ object Entities {
 
   class Pig extends Animal with MobEntity {
     @indexType(index = 7) var hasSaddle: Boolean = false
-    @indexType(index = 1) @boxed var timeToBoostWithCarrotOnAStrick  = 0
+    @indexType(index = 1) @boxed var timeToBoostWithCarrotOnAStrick: Int  = 0
   }
 
   class Rabbit extends Animal with MobEntity {
@@ -293,7 +293,7 @@ object Entities {
 
   class Guardian extends Monster with MobEntity {
     @indexType(index = 7) var isRetractingSpikes: Boolean = false
-    @indexType(index = 1) @boxed var targetEID = false;
+    @indexType(index = 1) @boxed var targetEID: Int = 0;
   }
 
   class ElderGuardian extends Guardian with MobEntity
@@ -339,10 +339,10 @@ object Entities {
   }
 
   class Wither extends Monster {
-    @indexType(index = 1) @boxed var centerHeadTarget = 0 //entity Id or 0 if no target
-    @indexType(index = 1) @boxed var leftHeadTarget = 0 //entity Id or 0 if no target
-    @indexType(index = 1) @boxed var rightHeadTarget = 0 //entity Id or 0 if no target
-    @indexType(index = 1) @boxed var invulnerableTime = 0
+    @indexType(index = 1) @boxed var centerHeadTarget: Int = 0 //entity Id or 0 if no target
+    @indexType(index = 1) @boxed var leftHeadTarget: Int = 0 //entity Id or 0 if no target
+    @indexType(index = 1) @boxed var rightHeadTarget: Int = 0 //entity Id or 0 if no target
+    @indexType(index = 1) @boxed var invulnerableTime: Int = 0
   }
 
   class Zombie extends Monster with MobEntity {
@@ -354,7 +354,7 @@ object Entities {
 
   class ZombieVillager extends Zombie with MobEntity {
     @indexType(index = 7) var isConverting: Boolean = false
-    @indexType(index = 1) @boxed var Profession = false
+    @indexType(index = 1) @boxed var Profession: Int = 0
   }
 
   class Husk extends Zombie with MobEntity
@@ -387,11 +387,11 @@ object Entities {
   class LlamaSpit extends Entity with ObjectEntity
 
   class Minecart extends Entity with ObjectEntity {
-    @indexType(index = 1) @boxed var shakingPower:Int = 0
-    @indexType(index = 1) @boxed var shakingDirection:Int = 1
-    @indexType(index = 2) var shakingMultiplier:Float = 0.0f
-    @indexType(index = 1) @boxed var customBlockIdAndDamage:Int = 0
-    @indexType(index = 1) @boxed var customBlockYposition:Int = 6
+    @indexType(index = 1) @boxed var shakingPower: Int = 0
+    @indexType(index = 1) @boxed var shakingDirection: Int = 1
+    @indexType(index = 2) var shakingMultiplier: Float = 0.0f
+    @indexType(index = 1) @boxed var customBlockIdAndDamage: Int = 0
+    @indexType(index = 1) @boxed var customBlockYposition: Int = 6
     @indexType(index = 7) var showCustomBlock: Boolean = false
   }
 
