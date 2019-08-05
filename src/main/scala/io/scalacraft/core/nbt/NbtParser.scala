@@ -1,16 +1,20 @@
 package io.scalacraft.core.nbt
 
 /**
- * @author https://github.com/drXor/ScalaNBT
+ * This source comes from ScalaNBT, a Scala library for manipulating NBT.
+ * All credits go to the main author, Miguel Young aka drXor
+ * The repository is present on GitHub at [[https://github.com/drXor/ScalaNBT]]
  */
 
 import java.io.{Console => _, _}
+import java.nio.charset.Charset
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
-import Tags._
 
-object Io {
+import io.scalacraft.core.nbt.NbtTags._
 
-  val UTF_8 = java.nio.charset.Charset.forName("UTF-8")
+object NbtParser {
+
+  val UTF_8: Charset = java.nio.charset.Charset.forName("UTF-8")
 
   def readNBT(in: DataInput): (String, TagCompound) = {
     import in._
@@ -86,7 +90,7 @@ object Io {
     (readStr(), parseCompound())
   }
 
-  def writeNBT(out: DataOutput)(tag: (String, TagCompound)) = {
+  def writeNBT(out: DataOutput)(tag: (String, TagCompound)): Unit = {
     import out._
 
     def writeTag(s: String, t: Tag): Unit = {

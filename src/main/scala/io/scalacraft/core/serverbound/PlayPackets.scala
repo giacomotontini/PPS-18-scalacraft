@@ -2,7 +2,7 @@ package io.scalacraft.core.serverbound
 
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Identifier, ParticleData, Position, Slot, VarInt}
+import io.scalacraft.core.DataTypes.{Identifier, Position, Slot, VarInt}
 import io.scalacraft.core.PacketAnnotations._
 import io.scalacraft.core.Structure
 

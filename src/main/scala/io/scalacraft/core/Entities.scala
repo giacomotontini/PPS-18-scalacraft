@@ -2,9 +2,9 @@ package io.scalacraft.core
 
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Block, Chat, Direction, Effect, Nbt, ParticleData, Position, Rotation, Slot}
+import io.scalacraft.core.DataTypes._
 import io.scalacraft.core.PacketAnnotations._
-import io.scalacraft.core.nbt.Tags.TagCompound
+import io.scalacraft.core.nbt.NbtTags.TagCompound
 
 
 object Entities {

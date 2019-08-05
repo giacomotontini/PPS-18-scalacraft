@@ -4,7 +4,7 @@ import java.io.{BufferedInputStream, BufferedOutputStream}
 
 trait Marshaller {
 
-  def contextFieldIndex: Option[Int]
+  protected[this] def contextFieldIndex: Option[Int]
 
   def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit
 

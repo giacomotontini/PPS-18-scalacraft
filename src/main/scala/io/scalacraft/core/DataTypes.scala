@@ -2,8 +2,8 @@ package io.scalacraft.core
 
 import java.util.UUID
 
-import io.scalacraft.core.PacketAnnotations.{boxed, byte, enumType, enumValue, particle, switchKey, switchType}
-import io.scalacraft.core.nbt.Tags.TagCompound
+import io.scalacraft.core.PacketAnnotations._
+import io.scalacraft.core.nbt.NbtTags.TagCompound
 
 object DataTypes {
   type Chat = String
@@ -25,9 +25,7 @@ object DataTypes {
     @enumValue(3) case object South extends Direction
     @enumValue(4) case object West extends Direction
     @enumValue(5) case object East extends Direction
-}
-
-  sealed trait Particle
+  }
 
   //Map each index of entity metadata to correspondent type
   case class entityMetadataTypes(
@@ -49,9 +47,7 @@ object DataTypes {
                                   @switchType[VarInt] field15: ParticleData) extends Structure
 
   sealed trait ParticleData extends Structure
-  @switchKey(3)
-  case class Block(@boxed blockState: Int) extends ParticleData
-  @switchKey(12)
-  case class Effect() extends ParticleData
+  @switchKey(3) case class Block(@boxed blockState: Int) extends ParticleData
+  @switchKey(12) case class Effect() extends ParticleData
 
 }

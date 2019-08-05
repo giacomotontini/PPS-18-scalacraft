@@ -2,6 +2,8 @@ package io.scalacraft.core
 
 import java.lang.reflect.Field
 
+import io.scalacraft.core.Entities.{MobEntity, ObjectEntity}
+
 class EntityMetadata {
 
   // TODO: change visibility
@@ -29,5 +31,14 @@ class EntityMetadata {
     case other: EntityMetadata => other.values equals this.values
     case _ => false
   }
+
+  override def toString: String = (new StringBuilder).append(getClass.getSimpleName)
+    .append("[type: ")
+    .append(if (this.isInstanceOf[ObjectEntity]) "ObjectEntity" else "")
+    .append(if (this.isInstanceOf[MobEntity]) "MobEntity" else "")
+    .append("] {")
+    .append(fields map { f => f.getName + ": " + f.get(this) } mkString ", ")
+    .append("}")
+    .toString
 
 }

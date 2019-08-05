@@ -70,11 +70,6 @@ class PacketManager[T: TypeTag] {
                                  contextAnnotation: Option[Symbol] = None)
                                 (symbol: Symbol): Marshaller = {
 
-    val info = symbol.info
-    // val tpe = symbol.asType.toType
-
-
-
     val contextFieldIndex = if (contextAnnotation.isDefined && hasAnnotation[fromContext](contextAnnotation.get)) {
       Some(annotationParam[Int](annotation[fromContext](contextAnnotation.get), 0))
     } else None
@@ -85,7 +80,7 @@ class PacketManager[T: TypeTag] {
         val keyMarshaller = if (contextFieldIndex.isDefined) {
           subTypesMarshaller(checkAnnotations = false, contextAnnotation = Some(sym))(keyType)
         } else {
-          subTypesMarshaller(checkAnnotations = false)(keyType)
+          subTypesMarshaller(checkAnnotations = false, contextAnnotation = Some(sym))(keyType)
         }
 
         val switchTrait = if (isSymType[List[_]](sym) || isSymType[Option[_]](sym)) {
@@ -122,7 +117,7 @@ class PacketManager[T: TypeTag] {
           case (key, tpe) => mirror.runtimeClass(tpe) -> key
         }.toMap // don't remove .toMap to avoid type mismatch error
 
-        new SwitchMarshaller(keyMarshaller, valuesMarshaller, valuesClazzes, contextFieldIndex)
+        new SwitchMarshaller(keyMarshaller, valuesMarshaller, valuesClazzes, contextFieldIndex.isDefined)
       case sym if isSymType[Option[_]](sym) =>
         val argType = if (isSymType[Slot](sym)) typeOf[SlotData].typeSymbol else sym.info.typeArgs.head.typeSymbol
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(argType)
@@ -179,9 +174,7 @@ class PacketManager[T: TypeTag] {
       case sym if checkAnnotations && hasAnnotation[enumType[_]](symAnnotations.get) =>
         val valueType = annotationTypeArg(annotation[enumType[_]](symAnnotations.get), 0)
         val valueMarshaller = subTypesMarshaller(checkAnnotations = false, contextAnnotation=Some(sym))(valueType)
-        val companionSymbol = if(isSymType[Option[_]](sym)) {
-          sym.info.typeArgs.head.typeSymbol.companion
-        }else sym.info.typeSymbol.companion
+        val companionSymbol = sym.info.typeSymbol.companion
 
         val valuesInstances = companionSymbol.info.decls collect {
           case memberSymbol if memberSymbol.isModule => memberSymbol.asModule

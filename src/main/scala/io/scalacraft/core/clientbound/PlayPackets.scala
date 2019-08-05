@@ -1,10 +1,9 @@
 package io.scalacraft.core.clientbound
 
-import java.util.Locale.Category
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Angle, Chat, Direction, Identifier, Nbt, Position, Slot, VarInt}
-import io.scalacraft.core.Entities.{Entity, MobEntity, Player}
+import io.scalacraft.core.DataTypes._
+import io.scalacraft.core.Entities.{MobEntity, Player}
 import io.scalacraft.core.PacketAnnotations.{short, _}
 import io.scalacraft.core.Structure
 

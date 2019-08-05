@@ -1,17 +1,18 @@
 package io.scalacraft.core.nbt
 
 /**
- * @author https://github.com/drXor/ScalaNBT
+ * This source comes from ScalaNBT, a Scala library for manipulating NBT.
+ * All credits go to the main author, Miguel Young aka drXor
+ * The repository is present on GitHub at [[https://github.com/drXor/ScalaNBT]]
  */
-
 
 import java.io.ByteArrayOutputStream
 
+import scala.Numeric.{DoubleAsIfIntegral, FloatAsIfIntegral}
+import scala.collection.mutable.{ArrayBuffer, HashMap => MHMap}
 import scala.reflect.{ClassTag, classTag}
-import collection.mutable.{ ArrayBuffer, HashMap => MHMap }
-import Numeric.{ FloatAsIfIntegral, DoubleAsIfIntegral }
 
-object Tags {
+object NbtTags {
 
   // this exists because the implicit resolver is dumb
   implicit val __fint: Integral[Float] = FloatAsIfIntegral
@@ -31,7 +32,7 @@ object Tags {
   // this tag doesn't actually exist; Compound and List will discard it
   sealed trait TagEndLike extends Tag
   object TagEnd extends TagCompanion("TAG_END", 0) with TagEndLike {
-    override def companion = this
+    override def companion: TagEnd.type = this
     override val name: String = super.name
     override val id: Int = super.id
     override def mojangson = "null"
@@ -111,7 +112,7 @@ object Tags {
 
     def toBytes: Array[Byte] = {
       val out = new ByteArrayOutputStream()
-      Io.writeNBT(out)(("", this))
+      NbtParser.writeNBT(out)(("", this))
       out.toByteArray
     }
 
@@ -138,7 +139,7 @@ object Tags {
         throw new IllegalArgumentException("TagList can contain only one type of tag!")
     }
 
-    def toSeq: Seq[Tag] = theList.toSeq
+    def toSeq: Seq[Tag] = theList
     def toArray(implicit ev: ClassTag[Tag]): Array[Tag] = theList.toArray
 
     def apply(i: Int): Tag = theList(i)
@@ -150,7 +151,7 @@ object Tags {
     def add(x: Any): this.type = {
       val t = Tag(x)
       if(t eq TagEnd) return this
-      if(theList.length > 0){
+      if(theList.nonEmpty) {
         val clazz = theList(0).getClass
         if(clazz ne t.getClass)
           throw new IllegalArgumentException("TagList can contain only one type of tag!")
@@ -177,7 +178,7 @@ object Tags {
 
     def filter(f: Tag => Boolean): TagList = new TagList(theList.filter(f))
 
-    override def companion = TagList
+    override def companion: TagList.type = TagList
 
     override def toString: String = theList.mkString("TagList(", ", ", ")")
 
@@ -323,11 +324,11 @@ object Tags {
 
     def foreach(f: A => Unit): Unit = super.get.foreach(f)
 
-    def map(f: A => A)(implicit ev: ClassTag[A]): Self = this.companion(super.get.map(f).toArray)
+    def map(f: A => A)(implicit ev: ClassTag[A]): Self = this.companion(super.get.map(f))
 
-    def flatMap(f: A => GenTraversableOnce[A])(implicit ev: ClassTag[A]): Self = this.companion(super.get.flatMap(f).toArray)
+    def flatMap(f: A => GenTraversableOnce[A])(implicit ev: ClassTag[A]): Self = this.companion(super.get.flatMap(f))
 
-    def filter(f: A => Boolean)(implicit ev: ClassTag[A]): Self = this.companion(super.get.filter(f).toArray)
+    def filter(f: A => Boolean)(implicit ev: ClassTag[A]): Self = this.companion(super.get.filter(f))
   }
 
   sealed trait ArrayValTagCompanion[A, Self <: ValTag[Array[A], Self]] extends ValTagCompanion[Array[A], Self] {
@@ -374,8 +375,8 @@ object Tags {
 
   final class TagByte(x: Byte)
     extends BitwiseValTag[Byte, TagByte](x) {
-    override def companion = TagByte
-    override def mojangson = x + "b"
+    override def companion: TagByte.type = TagByte
+    override def mojangson: String = x + "b"
   }
 
   implicit case object TagShort extends BitwiseValTagCompanion[Short, TagShort]("TAG_SHORT", 2) {
@@ -395,8 +396,8 @@ object Tags {
   }
 
   final class TagShort(x: Short) extends BitwiseValTag[Short, TagShort](x) {
-    override def companion = TagShort
-    override def mojangson = x + "s"
+    override def companion: TagShort.type = TagShort
+    override def mojangson: String = x + "s"
   }
 
   implicit case object TagInt extends BitwiseValTagCompanion[Int, TagInt]("TAG_INT", 3) {
@@ -416,8 +417,8 @@ object Tags {
   }
 
   final class TagInt(x: Int) extends BitwiseValTag[Int, TagInt](x) {
-    override def companion = TagInt
-    override def mojangson = x.toString
+    override def companion: TagInt.type = TagInt
+    override def mojangson: String = x.toString
   }
 
   implicit case object TagLong extends BitwiseValTagCompanion[Long, TagLong]("TAG_LONG", 4) {
@@ -437,8 +438,8 @@ object Tags {
   }
 
   final class TagLong(x: Long) extends BitwiseValTag[Long, TagLong](x) {
-    override def companion = TagLong
-    override def mojangson = x + "L"
+    override def companion: TagLong.type = TagLong
+    override def mojangson: String = x + "L"
   }
 
   implicit case object TagFloat extends NumericValTagCompanion[Float, TagFloat]("TAG_FLOAT", 5) {
@@ -448,8 +449,8 @@ object Tags {
   }
 
   final class TagFloat(x: Float) extends NumericValTag[Float, TagFloat](x) {
-    override def companion = TagFloat
-    override def mojangson = x + "f"
+    override def companion: TagFloat.type = TagFloat
+    override def mojangson: String = x + "f"
   }
 
   implicit case object TagDouble extends NumericValTagCompanion[Double, TagDouble]("TAG_DOUBLE", 6) {
@@ -459,8 +460,8 @@ object Tags {
   }
 
   final class TagDouble(x: Double) extends NumericValTag[Double, TagDouble](x) {
-    override def companion = TagDouble
-    override def mojangson = x + "d"
+    override def companion: TagDouble.type = TagDouble
+    override def mojangson: String = x + "d"
   }
 
   implicit case object TagString extends ValTagCompanion[String, TagString]("TAG_SRING", 8) {
@@ -471,8 +472,8 @@ object Tags {
   }
 
   final class TagString(x: String) extends ValTag[String, TagString](x) {
-    override def companion = TagString
-    override def mojangson = "\"" + x.replace("\"","\\\"") + "\""
+    override def companion: TagString.type = TagString
+    override def mojangson: String = "\"" + x.replace("\"","\\\"") + "\""
   }
 
   implicit case object TagByteArray extends ValTagCompanion[Array[Byte], TagByteArray]("TAG_BYTE_ARRAY", 7) {
@@ -481,7 +482,7 @@ object Tags {
 
   final class TagByteArray(x: Array[Byte]) extends ValTag[Array[Byte], TagByteArray](x)
     with ArrayValTag[Byte, TagByteArray] {
-    override def companion = TagByteArray
+    override def companion: TagByteArray.type = TagByteArray
     override def mojangson = s"[${x.length} bytes]"
   }
 
@@ -491,7 +492,7 @@ object Tags {
 
   final class TagIntArray(x: Array[Int]) extends ValTag[Array[Int], TagIntArray](x)
     with ArrayValTag[Int, TagIntArray] {
-    override def companion = TagIntArray
-    override def mojangson = x.mkString("[", ",", ",]")
+    override def companion: TagIntArray.type = TagIntArray
+    override def mojangson: String = x.mkString("[", ",", ",]")
   }
 }

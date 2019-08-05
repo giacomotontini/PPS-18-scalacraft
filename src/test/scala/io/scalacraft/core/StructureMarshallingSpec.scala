@@ -11,11 +11,11 @@ class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMars
 
   override def packetManager = new PacketManager[TestStructures.type]
 
-  "A structure marshaller" should "serialize correct values" in {
+  "An empty structure marshaller" should "serialize correct values" in {
     structureMarshal(EmptyField()) shouldBe ""
   }
 
-  "A structure with " should "serialize correct values" in {
+  "A structure " should "serialize correct values" in {
     structureMarshal(AllDataTypes1(bool = true, 1, 1, 1, 1)) shouldBe "01010001000000010000000000000001"
     structureMarshal(AllDataTypes2(1, 1, 1, 1)) shouldBe "01013f8000003ff0000000000000"
     structureMarshal(AllDataTypes3("ABC", UUID.fromString("4ff36fa0-dddb-43b1-abf7-8261824e37e2"), Position(1, 1, 1)))
@@ -25,14 +25,26 @@ class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMars
 
   }
 
-  "A switch field" should "serialize the correct values" in {
+  "A basic switch" should "serialize the correct values" in {
     structureMarshal(BasicSwitch(2, SwitchOption1(0x42))) shouldBe "000000020000000142"
+  }
+
+  "A basic switch which take key from context" should "serialize the correct values" in {
     structureMarshal(BasicSwitchWithContext(2, SwitchOption2(0x42))) shouldBe "000000020042"
+  }
+
+  "A switch of list" should "serialize the correct values" in {
     structureMarshal(SwitchList(1, List())) shouldBe "000000010000000100000000"
     structureMarshal(SwitchList(1, List(SwitchOption2(0x42), SwitchOption2(0x43))))
       .shouldBe("00000001000000020000000200420043")
+  }
+
+  "A switch of option" should "serialize the correct values" in {
     structureMarshal(SwitchOption(1, None)).shouldBe("000000010000000100")
     structureMarshal(SwitchOption(1, Some(SwitchOption2(0x42)))).shouldBe("0000000100000002010042")
+  }
+
+  "A switch of list with custom key" should "serialize the correct values" in {
     structureMarshal(RichSwitchList(1, List(SwitchOption2(0x42), SwitchOption2(0x43))))
       .shouldBe("00000001020200420043")
   }

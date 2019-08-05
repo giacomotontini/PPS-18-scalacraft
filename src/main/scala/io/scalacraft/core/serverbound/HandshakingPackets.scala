@@ -1,7 +1,7 @@
 package io.scalacraft.core.serverbound
 
 import io.scalacraft.core.DataTypes.VarInt
-import io.scalacraft.core.PacketAnnotations.{boxed, byte, enumType, enumValue, maxLength, packet, short}
+import io.scalacraft.core.PacketAnnotations._
 import io.scalacraft.core.Structure
 
 object HandshakingPackets {
