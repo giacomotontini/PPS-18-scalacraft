@@ -120,7 +120,7 @@ object Marshallers {
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      val d = java.lang.Double.longBitsToDouble(new LongMarshaller().unmarshal().asInstanceOf[Long])
+      val d = java.lang.Double.longBitsToDouble(new LongMarshaller().unmarshal()(Context.trash, inStream).asInstanceOf[Long])
       context.addField(d)
       d
     }
@@ -199,7 +199,7 @@ object Marshallers {
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      val longPosition = new LongMarshaller().unmarshal().asInstanceOf[Long]
+      val longPosition = new LongMarshaller().unmarshal()(Context.trash, inStream).asInstanceOf[Long]
       val x = (longPosition >> 38).toInt
       val y = ((longPosition >> 26) & 0xFFF).toInt
       val z = (longPosition << 38 >> 38).toInt
@@ -223,7 +223,7 @@ object Marshallers {
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      val length = new VarIntMarshaller().unmarshal().asInstanceOf[Int]
+      val length = new VarIntMarshaller().unmarshal()(Context.trash, inStream).asInstanceOf[Int]
       val buffer = new Array[Byte](length)
       for (i <- 0 until length) {
         buffer(i) = inStream.readIfIsAvailable().toByte
@@ -252,8 +252,8 @@ object Marshallers {
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
       val longMarshaller = new LongMarshaller()
-      val leastSignificantBits = longMarshaller.unmarshal().asInstanceOf[Long]
-      val mostSignificantBits = longMarshaller.unmarshal().asInstanceOf[Long]
+      val leastSignificantBits = longMarshaller.unmarshal()(Context.trash, inStream).asInstanceOf[Long]
+      val mostSignificantBits = longMarshaller.unmarshal()(Context.trash, inStream).asInstanceOf[Long]
 
       val u = new UUID(leastSignificantBits, mostSignificantBits)
       context.addField(u)
@@ -273,8 +273,8 @@ object Marshallers {
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      if ((conditionMarshaller.isEmpty && new BooleanMarshaller().unmarshal().asInstanceOf[Boolean]) ||
-        (conditionMarshaller.isDefined && checkIfTrue(conditionMarshaller.get.unmarshal()))) {
+      if ((conditionMarshaller.isEmpty && new BooleanMarshaller().unmarshal()(Context.trash, inStream).asInstanceOf[Boolean]) ||
+        (conditionMarshaller.isDefined && checkIfTrue(conditionMarshaller.get.unmarshal()(Context.trash, inStream)))) {
         val content = paramMarshaller.unmarshal()
         Some(content)
       } else {
@@ -309,7 +309,7 @@ object Marshallers {
       val buffer = mutable.Buffer[Any]()
 
       if (lengthMarshaller.isDefined) {
-        val length = lengthMarshaller.get.unmarshal().asInstanceOf[Int]
+        val length = lengthMarshaller.get.unmarshal()(Context.trash, inStream).asInstanceOf[Int]
 
         for (_ <- 0 until length) {
           buffer.append(paramMarshaller.unmarshal()(newContext, inStream))
@@ -363,7 +363,11 @@ object Marshallers {
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      val key = keyMarshaller.unmarshal()
+      val key = if (takeKeyFromContext) {
+        keyMarshaller.unmarshal()
+      } else {
+        keyMarshaller.unmarshal()(Context.trash, inStream)
+      }
       valuesMarshaller(key).unmarshal()
     }
 
@@ -376,7 +380,8 @@ object Marshallers {
   }
 
   class EnumMarshaller(valueMarshaller: Marshaller,
-                       valuesInstances: Map[Any, Any]) extends Marshaller {
+                       valuesInstances: Map[Any, Any],
+                       takeKeyFromContext: Boolean = false) extends Marshaller {
     val contextFieldIndex: Option[Int] = None
 
     override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = {
@@ -387,7 +392,11 @@ object Marshallers {
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
-      val key = valueMarshaller.unmarshal()
+      val key = if (takeKeyFromContext) {
+        valueMarshaller.unmarshal()
+      } else {
+        valueMarshaller.unmarshal()(Context.trash, inStream)
+      }
       val content = valuesInstances(key)
       context.addField(key)
       content
@@ -423,22 +432,24 @@ object Marshallers {
     }
 
     def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val trashContext = Context.trash
       var fieldSeq: List[Any] = List()
       var index = 0x00
       var indexToBeReaded = 0
       while ( {
-        index = byteMarshaller.unmarshal().asInstanceOf[Int].toByte; index
+        index = byteMarshaller.unmarshal()(trashContext, inStream).asInstanceOf[Int].toByte; index
       } != -1) {
         if (index != indexToBeReaded) {
           fieldSeq :+= null
         } else {
-          val typeIndex = varIntMarshaller.unmarshal().asInstanceOf[Int]
-          fieldSeq :+= typesMarshallers(typeIndex).unmarshal()
+          val typeIndex = varIntMarshaller.unmarshal()(trashContext, inStream).asInstanceOf[Int]
+          fieldSeq :+= typesMarshallers(typeIndex).unmarshal()(trashContext, inStream)
         }
         indexToBeReaded += 1
       }
       val obj = constructorMirrors(typeMarshaller.unmarshal().asInstanceOf[Int])().asInstanceOf[EntityMetadata]
       obj.setValues(fieldSeq)
+      context.addField(obj)
       obj
     }
   }

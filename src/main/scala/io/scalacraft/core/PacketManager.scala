@@ -140,6 +140,8 @@ class PacketManager[T: TypeTag] {
           new LongMarshaller(contextFieldIndex)
         }
       case sym if isSymType[Int](sym) => new IntMarshaller(contextFieldIndex)
+      case sym if isSymType[Byte](sym) => new ByteMarshaller(false)
+      case sym if isSymType[Short](sym) => new ShortMarshaller(false)
       case sym if isSymType[Boolean](sym) => new BooleanMarshaller(contextFieldIndex)
       case sym if isSymType[Long](sym) => new LongMarshaller(contextFieldIndex)
       case sym if isSymType[Float](sym) => new FloatMarshaller(contextFieldIndex)
@@ -186,7 +188,8 @@ class PacketManager[T: TypeTag] {
             annotationParam[Any](ann, 0) -> moduleInstance(sym.info)
         } toMap
 
-        new EnumMarshaller(valueMarshaller, valuesInstances)
+        val takeFromContext = contextAnnotation.isDefined && hasAnnotation[fromContext](contextAnnotation.get)
+        new EnumMarshaller(valueMarshaller, valuesInstances, takeFromContext)
       case sym => createMarshaller(if (sym.isType) sym.asType.toType else sym.info)
     }
   }

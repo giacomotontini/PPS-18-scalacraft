@@ -93,19 +93,14 @@ object PlayPackets {
 
   sealed trait Tpe
 
-  object Tpe {
+  @switchKey(0) case class Interact(@enumType[VarInt] hand: Hand) extends Tpe
 
-    @enumValue(0) case object Interract extends Tpe
+  @switchKey(1) case class Attack() extends Tpe
 
-    @enumValue(1) case object Attack extends Tpe
-
-    @enumValue(2) case object InterractAt extends Tpe
-
-  }
+  @switchKey(2) case class InteractAt(targetX: Float, targetY: Float, targetZ: Float, @enumType[VarInt] hand: Hand) extends Tpe
 
   @packet(0x0D)
-  case class UseEntity(@boxed target: Int, @enumType[VarInt] tpe: Tpe, targetX: Option[Float], targetY: Option[Float],
-                       targetZ: Option[Float], hand: Option[Hand]) extends Structure
+  case class UseEntity(@boxed target: Int, @switchType[VarInt] tpe: Tpe) extends Structure
 
   @packet(0x0E)
   case class KeepAlive(keepAliveId: Long) extends Structure
@@ -354,5 +349,5 @@ object PlayPackets {
                                   cursorPosiontZ: Float) extends Structure
 
   @packet(0x2A)
-  case class UseItem(@enumType[VarInt] hand: Hand)
+  case class UseItem(@enumType[VarInt] hand: Hand) extends Structure
 }

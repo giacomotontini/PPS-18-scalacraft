@@ -86,8 +86,11 @@ object NbtParser {
         val list = TagList((for(_ <- 0 until len) yield parseFunc()): _*)
         if(id == 0) TagList() else list
     }
-    readByte()
-    (readStr(), parseCompound())
+    if (readByte() != 0) {
+      (readStr(), parseCompound())
+    } else {
+      ("", TagCompound())
+    }
   }
 
   def writeNBT(out: DataOutput)(tag: (String, TagCompound)): Unit = {

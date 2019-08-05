@@ -33,7 +33,7 @@ object PlayPackets {
 
   sealed trait GlobalEntityType
 
-  case object GlobalEntityType {
+  object GlobalEntityType {
 
     @enumValue(1) case object Thunderbolt extends GlobalEntityType
 
@@ -80,7 +80,7 @@ object PlayPackets {
 
   sealed trait AnimationType
 
-  case object AnimationType {
+  object AnimationType {
 
     @enumValue(value = 0) case object SwingMainArm extends AnimationType
 
@@ -105,7 +105,7 @@ object PlayPackets {
 
   sealed trait CategoriesType
 
-  case object CategoriesType {
+  object CategoriesType {
 
     @enumValue(value = 0) case object Mined extends CategoriesType
 
@@ -152,7 +152,7 @@ object PlayPackets {
 
   sealed trait BossBarColor
 
-  case object BossBarColor {
+  object BossBarColor {
 
     @enumValue(0) case object Pink extends BossBarColor
 
@@ -172,7 +172,7 @@ object PlayPackets {
 
   sealed trait BossBarDivision
 
-  case object BossBarDivision {
+  object BossBarDivision {
 
     @enumValue(0) case object NoDivision extends BossBarDivision
 
@@ -216,7 +216,7 @@ object PlayPackets {
 
   sealed trait ServerDifficulties
 
-  case object ServerDifficulties {
+  object ServerDifficulties {
 
     @enumValue(0) case object Peaceful extends ServerDifficulties
 
@@ -233,7 +233,7 @@ object PlayPackets {
 
   sealed trait ChatPosition
 
-  case object ChatPosition {
+  object ChatPosition {
 
     @enumValue(0) case object ChatBox extends ChatPosition
 
@@ -328,9 +328,11 @@ object PlayPackets {
   case class OpenWindows(@byte windowId: Int,
                          @switchType[String] windowType: WindowType) extends Structure
 
+  case class WindowsItemsSlot(slot: Slot) extends Structure
+
   @packet(id = 0x15)
   case class WindowItems(@byte windowId: Int,
-                         @precededBy[Short] slot: List[Slot]) extends Structure
+                         @precededBy[Short] slot: List[WindowsItemsSlot]) extends Structure
 
   @packet(0x16)
   case class WindowProperty(@byte windowId: Int, @short property: Int, @short value: Int)
@@ -348,7 +350,7 @@ object PlayPackets {
 
   sealed trait SoundCategory
 
-  case object SoundCategory {
+  object SoundCategory {
 
     @enumValue(0) case object Master extends SoundCategory
 
@@ -407,7 +409,7 @@ object PlayPackets {
 
 
   sealed trait GameModeValue
-  case object GameModeValue {
+  object GameModeValue {
 
     @enumValue(0) case object Survival extends GameModeValue
 
@@ -419,7 +421,7 @@ object PlayPackets {
 
   sealed trait ExitModeValue
 
-  case object ExitMode {
+  object ExitMode {
 
     @enumValue(0.0f) case object RespawnWithoutShowAndCredits extends ExitModeValue
 
@@ -429,7 +431,7 @@ object PlayPackets {
 
   sealed trait DemoMessageValue
 
-  case object DemoMessage {
+  object DemoMessage {
 
     @enumValue(0.0f) case object ShowWelcomeToDemoScreen extends DemoMessageValue
 
@@ -443,7 +445,7 @@ object PlayPackets {
 
   sealed trait FadeValue
 
-  case object FadeValue {
+  object FadeValue {
 
     @enumValue(0.0f) case object Dark extends FadeValue
 
@@ -452,21 +454,21 @@ object PlayPackets {
   }
 
 
-  sealed trait ReasonValue
-  @switchKey(0) case class InvalidBed(value: Int) extends ReasonValue
-  @switchKey(1) case class EndRaining(value: Int) extends ReasonValue
-  @switchKey(2) case class BeginRaining(value: Int) extends ReasonValue
-  @switchKey(3) case class ChangeGameMode(@enumType[Int] value: GameModeValue) extends ReasonValue
-  @switchKey(4) case class ExitEnd(@enumType[Int] value: ExitModeValue) extends ReasonValue
-  @switchKey(5) case class DemoMessage(@enumType[Int] value: DemoMessage) extends ReasonValue
-  @switchKey(6) case class ArrowHittingPlayer(value: Int) extends ReasonValue
-  @switchKey(7) case class FadeValues(@enumType[Int] value: FadeValue) extends ReasonValue
-  @switchKey(8) case class FadeTime(value: Int) extends ReasonValue
-  @switchKey(9) case class PlayPufferFishStingSound(value: Int) extends ReasonValue
-  @switchKey(value = 10) case class PlayElderGuardianMob(value: Int) extends ReasonValue
+  sealed trait Reason
+  @switchKey(0) case class InvalidBed(value: Int) extends Reason
+  @switchKey(1) case class EndRaining(value: Int) extends Reason
+  @switchKey(2) case class BeginRaining(value: Int) extends Reason
+  @switchKey(3) case class ChangeGameMode(@enumType[Int] value: GameModeValue) extends Reason
+  @switchKey(4) case class ExitEnd(@enumType[Int] value: ExitModeValue) extends Reason
+  @switchKey(5) case class DemoMessage(@enumType[Int] value: DemoMessage) extends Reason
+  @switchKey(6) case class ArrowHittingPlayer(value: Int) extends Reason
+  @switchKey(7) case class FadeValues(@enumType[Int] value: FadeValue) extends Reason
+  @switchKey(8) case class FadeTime(value: Float) extends Reason
+  @switchKey(9) case class PlayPufferFishStingSound(value: Int) extends Reason
+  @switchKey(value = 10) case class PlayElderGuardianMob(value: Int) extends Reason
 
   @packet(id = 0x20)
-  case class ChangeGameState(@byte reason: Int, @fromContext(0) @switchType[Byte]  body: ReasonValue )  extends Structure
+  case class ChangeGameState(@switchType[Byte] body: Reason) extends Structure
 
   @packet(id = 0x21)
   case class KeepAlive(keepAliveId: Long) extends Structure
@@ -476,12 +478,12 @@ object PlayPackets {
                        chunkZ: Int,
                        fullChunk: Boolean,
                        @boxed primaryBitMask: Int,
-                       @precededBy[VarInt] @boxed data: List[Int],
+                       @precededBy[VarInt] @byte data: List[Int],
                        @precededBy[VarInt] blockEntities: List[Nbt]) extends Structure
 
   sealed trait EffectId
 
-  case object EffectId {
+  object EffectId {
 
     //Sound Effects
     @enumValue(1000) case object DispenserDispenses extends EffectId
@@ -560,25 +562,25 @@ object PlayPackets {
     @enumValue(1037) case object IronTrapdoorClosed extends EffectId
 
     // Particles Effects
-    @enumValue(2000) case object SpawnsTenSmokeParticles
+    @enumValue(2000) case object SpawnsTenSmokeParticles extends EffectId
 
-    @enumValue(2001) case object BlockBreakWithSound
+    @enumValue(2001) case object BlockBreakWithSound extends EffectId
 
-    @enumValue(2002) case object SplashPotion
+    @enumValue(2002) case object SplashPotion extends EffectId
 
-    @enumValue(2003) case object EyeOfEnderEntityBreakAnimation
+    @enumValue(2003) case object EyeOfEnderEntityBreakAnimation extends EffectId
 
-    @enumValue(2004) case object MobSpawnParticleSmokeAndFlames
+    @enumValue(2004) case object MobSpawnParticleSmokeAndFlames extends EffectId
 
-    @enumValue(2005) case object BonemealParticles
+    @enumValue(2005) case object BonemealParticles extends EffectId
 
-    @enumValue(2006) case object DragonBreath
+    @enumValue(2006) case object DragonBreath extends EffectId
 
-    @enumValue(2007) case object InstantSplashPotion
+    @enumValue(2007) case object InstantSplashPotion extends EffectId
 
-    @enumValue(3000) case object EndGatewaySpawn
+    @enumValue(3000) case object EndGatewaySpawn extends EffectId
 
-    @enumValue(3001) case object EnderdragonGrowl
+    @enumValue(3001) case object EnderdragonGrowl extends EffectId
 
   }
 
@@ -709,39 +711,39 @@ object PlayPackets {
 
   sealed trait WorldDimension
 
-  case object WordDimension {
+  object WordDimension {
 
-    @enumValue(-1) case class Nether() extends WorldDimension
+    @enumValue(-1) case object Nether extends WorldDimension
 
-    @enumValue(0) case class Overworld() extends WorldDimension
+    @enumValue(0) case object Overworld extends WorldDimension
 
-    @enumValue(1) case class End() extends WorldDimension
+    @enumValue(1) case object End extends WorldDimension
 
   }
 
   sealed trait LevelType
 
-  case object LevelType {
+  object LevelType {
 
-    @enumValue("default") case class Default() extends LevelType
+    @enumValue("default") case object Default extends LevelType
 
-    @enumValue("flat") case class Flat() extends LevelType
+    @enumValue("flat") case object Flat extends LevelType
 
-    @enumValue("largeBiomes") case class LargeBiomes() extends LevelType
+    @enumValue("largeBiomes") case object LargeBiomes extends LevelType
 
-    @enumValue("amplified") case class Amplified() extends LevelType
+    @enumValue("amplified") case object Amplified extends LevelType
 
-    @enumValue("custom") case class Custom() extends LevelType
+    @enumValue("custom") case object Custom extends LevelType
 
-    @enumValue("buffet") case class Buffet() extends LevelType
+    @enumValue("buffet") case object Buffet extends LevelType
 
   }
 
   @packet(id = 0x25)
   case class JoinGame(entityId: Int,
-                      gameMode: Byte,
+                      @byte gameMode: Int,
                       @enumType[Int] dimension: WorldDimension,
-                      difficulty: ServerDifficulties,
+                      @enumType[Byte] difficulty: ServerDifficulties,
                       @byte maxPlayers: Int,
                       @enumType[String] levelType: LevelType,
                       reducedDebugInfo: Boolean) extends Structure
@@ -837,7 +839,7 @@ object PlayPackets {
                       signature: Option[Boolean]) extends Structure
 
   sealed trait PlayerInfoAction
-  case class PlayerInfoAddPlayer(uuid: UUID,
+  @switchKey(0) case class PlayerInfoAddPlayer(uuid: UUID,
                                  @maxLength(16) name: String,
                                  @boxed numberOfProperties: Int,
                                  @precededBy[VarInt] properties: List[PlayerInfoProperty],
@@ -845,13 +847,13 @@ object PlayPackets {
                                  @boxed ping: Int,
                                  @precededBy[Boolean] displayName: Option[Chat]) extends PlayerInfoAction
 
-  case class PlayerInfoUpdateGameMode(uuid: UUID,
+  @switchKey(1) case class PlayerInfoUpdateGameMode(uuid: UUID,
                                       @boxed gameMode: Int) extends PlayerInfoAction
-  case class PlayerInfoUpdateLatency(uuid: UUID,
+  @switchKey(2) case class PlayerInfoUpdateLatency(uuid: UUID,
                                      @boxed ping: Int) extends PlayerInfoAction
-  case class PlayerInfoUpdateDisplayName(uuid: UUID,
+  @switchKey(3) case class PlayerInfoUpdateDisplayName(uuid: UUID,
                                          @precededBy[Boolean] displayName: Option[Chat]) extends PlayerInfoAction
-  case class PlayerInfoRemovePlayer(uuid: UUID) extends PlayerInfoAction
+  @switchKey(4) case class PlayerInfoRemovePlayer(uuid: UUID) extends PlayerInfoAction
 
   @packet(id = 0x30)
   case class PlayerInfo(@boxed action: Int,
@@ -859,7 +861,7 @@ object PlayPackets {
                        ) extends Structure
 
   sealed trait FeetEyes
-  case object FeetEyes{
+  object FeetEyes{
     @enumValue(0) case object Feet extends FeetEyes
     @enumValue(1) case object Eyes extends FeetEyes
   }
@@ -887,7 +889,7 @@ object PlayPackets {
                     location: Position) extends Structure
 
   sealed trait UnlockRecipeAction
-  case object UnlockRecipeAction{
+  object UnlockRecipeAction{
     @enumValue(0) case object UnlockRecipeActionInit extends UnlockRecipeAction
     @enumValue(1) case object UnlockRecipeActionAdd extends UnlockRecipeAction
     @enumValue(2) case object UnlockRecipeActionRemove extends UnlockRecipeAction
@@ -965,7 +967,7 @@ object PlayPackets {
 
 
   sealed trait ScoreboardPosition
-  case object ScoreboardPosition {
+  object ScoreboardPosition {
     @enumValue(0) case object List extends ScoreboardPosition
     @enumValue(1) case object Sidebar extends ScoreboardPosition
     @enumValue(2) case object BelowName extends ScoreboardPosition
@@ -987,12 +989,12 @@ object PlayPackets {
 
   @packet(id = 0x41)
   case class EntityVelocity(@boxed entityId: Int,
-                            @boxed velocityX: Int,
-                            @boxed velocityY: Int,
-                            @boxed velocityZ: Int) extends Structure
+                            @short velocityX: Int,
+                            @short velocityY: Int,
+                            @short velocityZ: Int) extends Structure
 
   sealed trait EquipmentSlot
-  case object EquipmentSlot {
+  object EquipmentSlot {
     @enumValue(0) case object MainHand extends EquipmentSlot
     @enumValue(1) case object OffHand extends EquipmentSlot
     @enumValue(2) case object Boots extends EquipmentSlot
@@ -1017,7 +1019,7 @@ object PlayPackets {
                           foodSaturation: Float) extends Structure
 
   sealed trait ScoreboardType
-  case object ScoreboardType {
+  object ScoreboardType {
     @enumValue(0) case object ScoreboardInteger extends ScoreboardType
     @enumValue(1) case object ScoreboardHearts extends ScoreboardType
   }
@@ -1173,7 +1175,7 @@ object PlayPackets {
   case class Title(@switchType[VarInt] action: ActionPacket4B) extends Structure
 
   @packet(0x4C)
-  case class StopSound(flags: Byte,
+  case class StopSound(@byte flags: Int,
                        @enumType[VarInt] source: SoundCategory,
                        sound: Option[Identifier]) extends Structure
 
@@ -1294,11 +1296,13 @@ object PlayPackets {
                           @byte flags: Int) extends Structure
 
 
-  case class Ingredient(@precededBy[VarInt] items: List[Slot]) extends Structure
+  case class IngredientContent(slot: Slot) extends Structure
+
+  case class Ingredient(@precededBy[VarInt] items: List[IngredientContent]) extends Structure
 
   sealed trait RecipeType
 
-  @switchKey("crafting_shapeless") case class CraftingShapless(group: String,
+  @switchKey("crafting_shapeless") case class CraftingShapeless(group: String,
                                                                @precededBy[VarInt] ingredients: List[Ingredient],
                                                                result: Slot) extends RecipeType
 
