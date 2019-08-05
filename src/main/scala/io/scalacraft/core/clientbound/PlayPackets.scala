@@ -453,36 +453,21 @@ object PlayPackets {
   }
 
 
-  sealed trait ReasonCode
-
-  case object ReasonCode {
-
-    @enumValue(0) case class InvalidBed(value: Float) extends ReasonCode
-
-    @enumValue(1) case class EndRaining(value: Float) extends ReasonCode
-
-    @enumValue(2) case class BeginRaining(value: Float) extends ReasonCode
-
-    @enumValue(3) case class ChangeGameMode(@enumType[Float] value: GameModeValue) extends ReasonCode
-
-    @enumValue(4) case class ExitEnd(@enumType[Float] value: ExitModeValue) extends ReasonCode
-
-    @enumValue(5) case class DemoMessage(@enumType[Float] value: DemoMessage) extends ReasonCode
-
-    @enumValue(6) case class ArrowHittingPlayer(value: Float) extends ReasonCode
-
-    @enumValue(7) case class FadeValues(@enumType[Float] value: FadeValue) extends ReasonCode
-
-    @enumValue(8) case class FadeTime(value: Float) extends ReasonCode
-
-    @enumValue(9) case class PlayPufferFishStingSound(value: Float) extends ReasonCode
-
-    @enumValue(value = 10) case class PlayElderGuardianMob(value: Float) extends ReasonCode
-
-  }
+  sealed trait ReasonValue
+  @switchKey(0) case class InvalidBed(value: Float) extends ReasonValue
+  @switchKey(1) case class EndRaining(value: Float) extends ReasonValue
+  @switchKey(2) case class BeginRaining(value: Float) extends ReasonValue
+  @switchKey(3) case class ChangeGameMode(@enumType[Float] value: GameModeValue) extends ReasonValue
+  @switchKey(4) case class ExitEnd(@enumType[Float] value: ExitModeValue) extends ReasonValue
+  @switchKey(5) case class DemoMessage(@enumType[Float] value: DemoMessage) extends ReasonValue
+  @switchKey(6) case class ArrowHittingPlayer(value: Float) extends ReasonValue
+  @switchKey(7) case class FadeValues(@enumType[Float] value: FadeValue) extends ReasonValue
+  @switchKey(8) case class FadeTime(value: Float) extends ReasonValue
+  @switchKey(9) case class PlayPufferFishStingSound(value: Float) extends ReasonValue
+  @switchKey(value = 10) case class PlayElderGuardianMob(value: Float) extends ReasonValue
 
   @packet(id = 0x20)
-  case class ChangeGameState(@enumType[Byte] @byte reason: Int, @fromContext(0) @switchType[Byte]  body: ReasonCode )  extends Structure
+  case class ChangeGameState(@byte reason: Int, @fromContext(0) @switchType[Byte]  body: ReasonValue )  extends Structure
 
   @packet(id= 0x21)
   case class KeepAlive(keepAliveId: Long) extends Structure
