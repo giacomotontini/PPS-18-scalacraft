@@ -57,8 +57,15 @@ class StructureUnmarshallingSpec extends FlatSpec with Matchers with StructureMa
   "A structured data with metadata field" should "deserialize the correct value" in {
     val metadata = new AreaEffectCloud()
     val packet = StructureWithMetadata(0, metadata)
-
     structureUnmarshal(0x30, "000000000101ac0202050003070004070005070006023f000000070100080700090f0cff").shouldBe(packet)
+  }
+
+  "A structured data with custom metadata field" should "deserialize the correct value" in {
+    val metadata = new AreaEffectCloud()
+    metadata.radius = 1
+    metadata.ignoreRadiusAndShowEffectAtSinglePoint = true
+    val packet = StructureWithMetadata(0, metadata)
+    structureUnmarshal(0x30, "000000000101ac0202050003070004070005070006023f800000070100080701090f0cff").shouldBe(packet)
   }
 
 }
