@@ -126,8 +126,7 @@ object PlayPackets {
   }
 
   @packet(id = 0x07)
-  case class Statistics(@boxed count: Int,
-                        @precededBy[VarInt] statistic: List[CategoryStatistic],
+  case class Statistics(@precededBy[VarInt] statistic: List[CategoryStatistic],
                         @boxed value: Int) extends Structure
 
 
@@ -252,7 +251,6 @@ object PlayPackets {
   @packet(id = 0x0F)
   case class MultiBlockChange(chunkX: Int,
                               chunkY: Int,
-                              @boxed recordCount: Int,
                               @precededBy[VarInt] record: List[MultiBlockChangeRecord]) extends Structure //check protocol for position decoding algorithm
 
   case class TabCompleteMatches(tabMatch: String,
@@ -262,13 +260,11 @@ object PlayPackets {
   case class TabComplete(@boxed id: Int,
                          @boxed start: Int,
                          @boxed length: Int,
-                         @boxed count: Int,
                          @precededBy[VarInt] matches: List[TabCompleteMatches]) extends Structure
 
   /* TODO: support NODE data type
   @packet(id = 0x11)
-  case class DeclareCommands(@boxed count: Int,
-                             @precededBy[VarInt] nodes: List[Node],
+  case class DeclareCommands(@precededBy[VarInt] nodes: List[Node],
                              @boxed rootIndex: Int) extends Structure
    */
 
@@ -322,7 +318,8 @@ object PlayPackets {
                          @fromContext(2) entityId: Option[Int]) extends Structure //TODO: the option presence is determined by a string value => how we handle that?
 
   @packet(id = 0x15)
-  case class WindowItems(@byte windowId: Int, @short count: Int, @precededBy[Short] slot: List[Slot]) extends Structure
+  case class WindowItems(@byte windowId: Int,
+                         @precededBy[Short] slot: List[Slot]) extends Structure
 
   //TODO: 0x16 Packet unclear
 
@@ -396,7 +393,6 @@ object PlayPackets {
                        y: Float,
                        z: Float,
                        radius: Float,
-                       recordCount: Int,
                        @precededBy[Int] records: List[ExplosionOffset],
                        playerMotionX: Float,
                        playerMotionY: Float,
@@ -476,9 +472,7 @@ object PlayPackets {
                        chunkZ: Int,
                        fullChunk: Boolean,
                        @boxed primaryBitMask: Int,
-                       @boxed size: Int,
                        @precededBy[VarInt] @boxed data: List[Int],
-                       @boxed numberOfBlockEntities: Int,
                        @precededBy[VarInt] blockEntities: List[Nbt]) extends Structure
 
   sealed trait EffectId
@@ -746,14 +740,12 @@ object PlayPackets {
   case class MapData(@boxed mapId: Int,
                      @byte scale: Int,
                      trackingPosition: Boolean,
-                     @boxed iconCount: Int,
                      @precededBy[VarInt] icons: List[Icon],
                      @byte columns: Int,
                      @fromContext(5) @byte row: Option[Int],
                      @fromContext(5) @byte x: Option[Int],
                      @fromContext(5) @byte z: Option[Int],
-                     @fromContext(5) @boxed length: Option[Int],
-                     @fromContext(5) @byte data: List[Int] //TODO check
+                     @fromContext(5) @precededBy[VarInt] @byte data: List[Int] //TODO check
                     ) extends Structure
 
   @packet(id = 0x27)
@@ -835,8 +827,7 @@ object PlayPackets {
 
   @packet(id = 0x30)
   case class PlayerInfo(@boxed action: Int,
-                        @boxed numberOfPlayers: Int,
-                        @fromContext(0) @switchType[VarInt] @precededBy[VarInt] body: List[PlayerInfoAction]
+                        @fromContext(0) @switchType[VarInt] @precededBy[VarInt] players: List[PlayerInfoAction]
                        ) extends Structure
 
   sealed trait FeetEyes
