@@ -1256,23 +1256,77 @@ object PlayPackets {
 
   sealed trait AttributeModifier {
     def default: Double
-
     def min: Double
-
     def max: Double
   }
 
-  //TODO: Add all enumValues
   object AttributeModifier {
 
     @enumValue("generic.maxHealth") case object GenericMaxHealth extends AttributeModifier {
       override val default: Double = 20.0
-
       override val min: Double = 0.0
-
       override val max: Double = 1024.0
     }
 
+    @enumValue("generic.followRange") case object FollowRange extends AttributeModifier {
+      override val default: Double = 32.0
+      override val min: Double = 0.0
+      override val max: Double = 2048.0
+    }
+
+    @enumValue("generic.knockbackResistance") case object KnockbackResistance extends AttributeModifier {
+      override val default: Double = 0.0
+      override val min: Double = 0.0
+      override val max: Double = 1.0
+    }
+
+    @enumValue("generic.movementSpeed") case object MovementSpeed extends AttributeModifier {
+      override val default: Double = 0.699999988079071
+      override val min: Double = 0.0
+      override val max: Double = 1024.0
+    }
+
+    @enumValue("generic.attackDamage") case object AttackDamage extends AttributeModifier {
+      override val default: Double = 2.0
+      override val min: Double = 0.0
+      override val max: Double = 2048.0
+    }
+
+    @enumValue("generic.attackSpeed") case object AttackSpeed extends AttributeModifier {
+      override val default: Double = 4.0
+      override val min: Double = 0.0
+      override val max: Double = 1024.0
+    }
+
+    @enumValue("generic.flyingSpeed") case object FlyingSpeed extends AttributeModifier {
+      override val default: Double = 0.4000000059604645
+      override val min: Double = 0.0
+      override val max: Double = 1024.0
+    }
+
+    @enumValue("horse.jumpStrength") case object HorseJumpStrength extends AttributeModifier {
+      override val default: Double = 0.7
+      override val min: Double = 0.0
+      override val max: Double = 2.0
+    }
+
+    @enumValue("zombie.spawnReinforcements") case object ZombieSpawnReinforcements extends AttributeModifier {
+      override val default: Double = 0.0
+      override val min: Double = 0.0
+      override val max: Double = 1.0
+    }
+
+    @enumValue("generic.reachDistance") case object ReachDistance extends AttributeModifier {
+      override val default: Double = 5.0
+      override val min: Double = 0.0
+      override val max: Double = 1024.0
+    }
+
+    @enumValue("forge.swimSpeed") case object ForgeSwimSpeed extends AttributeModifier {
+      override val default: Double = 1.0
+      override val min: Double = 0.0
+      override val max: Double = 1024.0
+    }
   }
 
   sealed trait Operation
