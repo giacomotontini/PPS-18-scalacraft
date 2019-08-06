@@ -1227,22 +1227,32 @@ object PlayPackets {
   case class Requirement(@precededBy[VarInt] requirement: List[String]) extends Structure
 
 
-  case class AdvancedDisplay(title: Chat, description: Chat, icon: Slot, @enumType[VarInt] frame: FrameType,
-                             @switchType[Int] flags: Flags, xCoord: Float, yCoord: Float) extends Structure
+  case class AdvancedDisplay(title: Chat,
+                             description: Chat,
+                             icon: Slot,
+                             @enumType[VarInt] frame: FrameType,
+                             @switchType[Int] flags: Flags,
+                             xCoord: Float,
+                             yCoord: Float) extends Structure
 
-  case class Advancement(parentId: Option[Identifier], displayData: Option[AdvancedDisplay],
+  case class AdvancementMapping(key: Identifier, advancement: Advancement) extends Structure
+
+  case class Advancement(parentId: Option[Identifier],
+                         displayData: Option[AdvancedDisplay],
                          @precededBy[VarInt] criterias: List[Identifier],
-                         @precededBy[VarInt] requirments: List[Requirement]) extends Structure
+                         @precededBy[VarInt] requirements: List[Requirement]) extends Structure
 
   case class Criterion(criterionIdentifier: Identifier, dateOfAchieving: Option[Long]) extends Structure
 
-  case class Progress(@precededBy[VarInt] criterions: List[Criterion]) extends Structure
+  case class ProgressMapping(key: Identifier, value: AdvancementProgress) extends Structure
+
+  case class AdvancementProgress(@precededBy[VarInt] criterions: List[Criterion]) extends Structure
 
   @packet(0x51)
   case class Advancements(resetOrClear: Boolean,
-                          @precededBy[VarInt] advancements: List[Advancement],
+                          @precededBy[VarInt] advancementsMapping: List[AdvancementMapping],
                           @precededBy[VarInt] identifiers: List[Identifier],
-                          @precededBy[VarInt] progresses: List[Progress]) extends Structure
+                          @precededBy[VarInt] progressesMapping: List[ProgressMapping]) extends Structure
 
   sealed trait AttributeModifier {
     def default: Double
