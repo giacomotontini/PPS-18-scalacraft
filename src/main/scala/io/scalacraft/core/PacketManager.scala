@@ -41,12 +41,13 @@ class PacketManager[T: TypeTag] {
     case (packetId, tpe) => packetId -> createMarshaller(tpe)
   }
 
-  def marshal[U <: Structure](packet: U)(implicit outStream: DataOutputStream): Unit = {
+  def marshal[U <: Structure](packet: U)(implicit outStream: DataOutputStream): Int = {
     val packetId = packetTypes.collectFirst {
       case (packetId, tpe) if tpe =:= mirror.classSymbol(packet.getClass).toType => packetId
     } get
 
     packetMarshallers(packetId).marshal(packet)
+    packetId
   }
 
   def unmarshal(packetId: Int)(implicit inStream: DataInputStream): Structure =
