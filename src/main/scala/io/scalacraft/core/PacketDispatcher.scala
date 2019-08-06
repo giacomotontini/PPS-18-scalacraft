@@ -3,17 +3,17 @@ package io.scalacraft.core
 import java.io.{BufferedInputStream, DataInputStream, DataOutputStream}
 import java.util.UUID
 
+import io.scalacraft.core.DataTypes.VarInt
 import io.scalacraft.core.clientbound.LoginPackets.LoginSuccess
 import io.scalacraft.core.clientbound.StatusPacket.{Pong, Response}
 
-class PacketDispatcher {
+trait ConnectionManager {
+  def writePacket(dataToPacketId: DataOutputStream => VarInt): Unit
 
-  trait ConnectionManager {
-    def writePacket(dataToPacketId: DataOutputStream => Int): Unit
+  def closeConnection(): Unit
+}
 
-    def closeConnection(): Unit
-  }
-
+object PacketDispatcher {
 
   class ConnectionController(implicit connectionManager: ConnectionManager) {
     var currentState: ConnectionState = HandshakingState()
