@@ -11,7 +11,7 @@ object DataTypes {
   type Slot = Option[SlotData]
   type Nbt = CompoundTag
 
-  case class VarInt(value: Int) extends AnyVal
+  case class VarInt(value: Int, length: Int)
   case class Position(x: Int, y: Int, z: Int)
   case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt)
   case class Rotation(x: Float, y: Float, z: Float)

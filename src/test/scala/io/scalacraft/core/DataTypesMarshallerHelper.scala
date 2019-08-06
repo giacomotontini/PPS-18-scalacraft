@@ -1,12 +1,12 @@
 package io.scalacraft.core
 
-import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.{DataInputStream, DataOutputStream, ByteArrayInputStream, ByteArrayOutputStream}
 
 trait DataTypesMarshallerHelper {
 
   def dataTypesMarshal(marshaller: Marshaller, obj: Any): String = {
     val serializedPacket = new ByteArrayOutputStream()
-    implicit val outStream: BufferedOutputStream = new BufferedOutputStream(serializedPacket)
+    implicit val outStream: DataOutputStream = new DataOutputStream(serializedPacket)
     marshaller.marshal(obj)
     outStream.close()
 
@@ -15,7 +15,7 @@ trait DataTypesMarshallerHelper {
 
   def dataTypesUnmarshal(marshaller: Marshaller, hexInput: String)(implicit context: Context = Context.create): Any = {
     val byteArray = new ByteArrayInputStream(Helpers.hex2bytes(hexInput))
-    implicit val inStream: BufferedInputStream = new BufferedInputStream(byteArray)
+    implicit val inStream: DataInputStream = new DataInputStream(byteArray)
     val result = marshaller.unmarshal()
     inStream.close()
 

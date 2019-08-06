@@ -1,6 +1,6 @@
 package io.scalacraft.core
 
-import java.io.{BufferedInputStream, BufferedOutputStream}
+import java.io.{DataInputStream, DataOutputStream}
 import java.util.UUID
 
 import io.scalacraft.core.DataTypes.{Position => _, _}
@@ -41,7 +41,7 @@ class PacketManager[T: TypeTag] {
     case (packetId, tpe) => packetId -> createMarshaller(tpe)
   }
 
-  def marshal[U <: Structure](packet: U)(implicit outStream: BufferedOutputStream): Unit = {
+  def marshal[U <: Structure](packet: U)(implicit outStream: DataOutputStream): Unit = {
     val packetId = packetTypes.collectFirst {
       case (packetId, tpe) if tpe =:= mirror.classSymbol(packet.getClass).toType => packetId
     } get
@@ -49,7 +49,7 @@ class PacketManager[T: TypeTag] {
     packetMarshallers(packetId).marshal(packet)
   }
 
-  def unmarshal(packetId: Int)(implicit inStream: BufferedInputStream): Structure =
+  def unmarshal(packetId: Int)(implicit inStream: DataInputStream): Structure =
     packetMarshallers(packetId).unmarshal()(Context.create, inStream).asInstanceOf[Structure]
 
   private def getParamMarshallers(tpe: Type): List[Marshaller] = {

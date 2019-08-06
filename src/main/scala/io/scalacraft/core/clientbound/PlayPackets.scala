@@ -56,9 +56,9 @@ object PlayPackets {
                       yaw: Angle,
                       pitch: Angle,
                       headPitch: Angle,
-                      velocityX: Short,
-                      velocityY: Short,
-                      velocityZ: Short,
+                      @short velocityX: Int,
+                      @short velocityY: Int,
+                      @short velocityZ: Int,
                       @fromContext(2) metadata: MobEntity) extends Structure
 
   @packet(id = 0x04)
@@ -98,7 +98,7 @@ object PlayPackets {
 
   @packet(id = 0x06)
   case class Animation(@boxed entityId: Int,
-                       @enumType[Byte] animation: Animation) extends Structure
+                       @enumType[Byte] animation: AnimationType) extends Structure
 
   case class CategoryStatistic(@enumType[VarInt] categoryId: CategoriesType,
                                @boxed statisticId: Int) extends Structure
@@ -339,7 +339,7 @@ object PlayPackets {
 
   @packet(id = 0x17)
   case class SetSlot(@byte windowId: Int,
-                     slot: Short, //the slot that should be updated
+                     @short slot: Int, //the slot that should be updated
                      slotData: Slot) extends Structure
 
   @packet(id = 0x18)
@@ -479,7 +479,7 @@ object PlayPackets {
                        fullChunk: Boolean,
                        @boxed primaryBitMask: Int,
                        @precededBy[VarInt] @byte data: List[Int],
-                       @precededBy[VarInt] blockEntities: List[Nbt]) extends Structure
+                       @byte blockEntities: List[Int]) extends Structure // TODO: to restore
 
   sealed trait EffectId
 
@@ -711,7 +711,7 @@ object PlayPackets {
 
   sealed trait WorldDimension
 
-  object WordDimension {
+  object WorldDimension {
 
     @enumValue(-1) case object Nether extends WorldDimension
 
@@ -845,20 +845,17 @@ object PlayPackets {
                                  @precededBy[VarInt] properties: List[PlayerInfoProperty],
                                  @boxed gameMode: Int,
                                  @boxed ping: Int,
-                                 @precededBy[Boolean] displayName: Option[Chat]) extends PlayerInfoAction
+                                 displayName: Option[Chat]) extends PlayerInfoAction
 
   @switchKey(1) case class PlayerInfoUpdateGameMode(uuid: UUID,
                                       @boxed gameMode: Int) extends PlayerInfoAction
   @switchKey(2) case class PlayerInfoUpdateLatency(uuid: UUID,
                                      @boxed ping: Int) extends PlayerInfoAction
-  @switchKey(3) case class PlayerInfoUpdateDisplayName(uuid: UUID,
-                                         @precededBy[Boolean] displayName: Option[Chat]) extends PlayerInfoAction
+  @switchKey(3) case class PlayerInfoUpdateDisplayName(uuid: UUID, displayName: Option[Chat]) extends PlayerInfoAction
   @switchKey(4) case class PlayerInfoRemovePlayer(uuid: UUID) extends PlayerInfoAction
 
   @packet(id = 0x30)
-  case class PlayerInfo(@boxed action: Int,
-                        @fromContext(0) @switchType[VarInt] @precededBy[VarInt] players: List[PlayerInfoAction]
-                       ) extends Structure
+  case class PlayerInfo(@switchType[VarInt] @precededBy[VarInt] players: List[PlayerInfoAction]) extends Structure
 
   sealed trait FeetEyes
   object FeetEyes{
@@ -1302,6 +1299,18 @@ object PlayPackets {
       override val default: Double = 0.4000000059604645
       override val min: Double = 0.0
       override val max: Double = 1024.0
+    }
+
+    @enumValue("generic.armor") case object Armor extends AttributeModifier {
+      override val default: Double = 0.0
+      override val min: Double = 0.0
+      override val max: Double = 30.0
+    }
+
+    @enumValue("generic.armorToughness") case object ArmorToughness extends AttributeModifier {
+      override val default: Double = 0.0
+      override val min: Double = 0.0
+      override val max: Double = 20.0
     }
 
     @enumValue("horse.jumpStrength") case object HorseJumpStrength extends AttributeModifier {

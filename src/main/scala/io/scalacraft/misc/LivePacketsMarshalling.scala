@@ -1,15 +1,16 @@
 package io.scalacraft.misc
 
-import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 
+import io.scalacraft.core.DataTypes.VarInt
 import io.scalacraft.core.{Helpers, PacketManager}
 
 object LivePacketsMarshalling extends App {
 
-  val skipParsingFor: List[Int] = List(0x3f, 0x52, 0x22)
+  val skipParsingFor: List[Int] = List(0x3f, 0x22, 0x11, 0x42)
   val maxPacketContentLength: Int = 256
 
-  implicit val inStream: BufferedInputStream = new BufferedInputStream(System.in)
+  implicit val inStream: DataInputStream = new DataInputStream(System.in)
 
   val packetManager = if (args(0) == "clientbound") {
     if (args(1) == "login") {
@@ -32,8 +33,8 @@ object LivePacketsMarshalling extends App {
   }
 
   while (true) {
-    var (_, length) = Helpers.readVarInt(inStream)
-    val (packetIdLength, packetId) = Helpers.readVarInt(inStream)
+    var VarInt(length, _) = Helpers.readVarInt(inStream)
+    val VarInt(packetId, packetIdLength) = Helpers.readVarInt(inStream)
     length -= packetIdLength
 
     val array = new Array[Byte](length)
@@ -50,9 +51,9 @@ object LivePacketsMarshalling extends App {
 
   def parsePacket(packetId: Int, array: Array[Byte]): Unit = {
     val buffer = new ByteArrayInputStream(array)
-    val bufferedInStream = new BufferedInputStream(buffer)
+    val bufferedInStream = new DataInputStream(buffer)
     val outArray = new ByteArrayOutputStream
-    val bufferedOutStream = new BufferedOutputStream(outArray)
+    val bufferedOutStream = new DataOutputStream(outArray)
 
     try {
       val parsed = packetManager.unmarshal(packetId)(bufferedInStream)
@@ -62,13 +63,13 @@ object LivePacketsMarshalling extends App {
 
       val content = Helpers.bytes2hex(outArray.toByteArray)
       if (Helpers.bytes2hex(array) != content) {
-        System.err.println("$$$ marshalling error $$$")
+        System.err.println("\n$$$ marshalling error $$$")
         printExceptionContext(packetId, array)
-        System.err.println("Marshalled packet: " + content)
+        System.err.println("Struct content: " + content)
       }
     } catch {
       case e: Exception =>
-        System.err.println("$$$ UNmarshalling error $$$")
+        System.err.println("\n$$$ UNmarshalling error $$$")
         printExceptionContext(packetId, array)
         e.printStackTrace()
     }
@@ -82,7 +83,7 @@ object LivePacketsMarshalling extends App {
   def printExceptionContext(packetId: Int, array: Array[Byte]): Unit = {
     val content = Helpers.bytes2hex(array)
 
-    System.err.println("Packet id: " + packetId)
+    System.err.println("Packet id: 0x" + packetId.toHexString)
     System.err.println("Packet length: " + array.length)
     System.err.println("Packet content: " +  content.take(maxPacketContentLength) +
       (if (content.length > maxPacketContentLength) "<truncated>" else ""))

@@ -195,7 +195,7 @@ object PlayPackets {
   case class EntityAction(@boxed entityId: Int, @enumType[VarInt] actionId: ActionID, @boxed jumpBoost: Int) extends Structure
 
   @packet(0x1A)
-  case class SteerVehicle(sideways: Float, forward: Float, flags: Byte) extends Structure
+  case class SteerVehicle(sideways: Float, forward: Float, @byte flags: Int) extends Structure
 
   sealed trait SwitchInterface
 
