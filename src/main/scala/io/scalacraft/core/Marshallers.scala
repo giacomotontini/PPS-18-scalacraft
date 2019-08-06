@@ -4,7 +4,7 @@ import java.io.{BufferedInputStream, BufferedOutputStream, DataInputStream, EOFE
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import io.scalacraft.core.DataTypes.{Nbt, Position}
+import io.scalacraft.core.DataTypes.{Angle, Nbt, Position}
 import net.querz.nbt.{CompoundTag, NBTUtil, Tag}
 
 import scala.collection.mutable
@@ -206,6 +206,18 @@ object Marshallers {
       val p = Position(x, y, z)
       context.addField(p)
       p
+    }
+  }
+
+  class AngleMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: BufferedOutputStream): Unit = obj match {
+      case Angle(value) => outStream.write(value & 0xFF)
+    }
+
+    override def internalUnmarshal()(implicit context: Context, inStream: BufferedInputStream): Any = {
+      val angle = Angle(inStream.readIfIsAvailable())
+      context.addField(angle)
+      angle
     }
   }
 

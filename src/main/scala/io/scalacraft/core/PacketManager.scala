@@ -149,6 +149,7 @@ class PacketManager[T: TypeTag] {
       case sym if isSymType[DataTypes.Position](sym) => new PositionMarshaller(contextFieldIndex)
       case sym if isSymType[UUID](sym) => new UUIDMarshaller(contextFieldIndex)
       case sym if isSymType[VarInt](sym) => new VarIntMarshaller(contextFieldIndex)
+      case sym if isSymType[Angle](sym) => new AngleMarshaller(contextFieldIndex)
       case sym if isSymType[Nbt](sym) => new NbtMarshaller(contextFieldIndex)
       case sym if isSymType[String](sym) && checkAnnotations && hasAnnotation[maxLength](symAnnotations.get) =>
         new StringMarshaller(annotationParam[Int](annotation[maxLength](symAnnotations.get), 0), contextFieldIndex)

@@ -3,12 +3,11 @@ package io.scalacraft.core
 import java.util.UUID
 
 import io.scalacraft.core.PacketAnnotations._
-import net.querz.nbt.{CompoundTag, Tag}
+import net.querz.nbt.CompoundTag
 
 object DataTypes {
   type Chat = String
   type Identifier = String
-  type Angle = Byte
   type Slot = Option[SlotData]
   type Nbt = CompoundTag
 
@@ -16,6 +15,7 @@ object DataTypes {
   case class Position(x: Int, y: Int, z: Int)
   case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt)
   case class Rotation(x: Float, y: Float, z: Float)
+  case class Angle(value: Int) extends AnyVal
 
   sealed trait Direction
   object Direction {
