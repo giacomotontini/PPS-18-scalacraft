@@ -8,15 +8,17 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
-import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter, ChannelInitializer}
+import io.netty.channel.{Channel, ChannelHandlerContext, ChannelInboundHandlerAdapter, ChannelInitializer}
 import io.netty.handler.codec.ByteToMessageDecoder
-import io.scalacraft.core.fsm.ConnectionController
 import io.scalacraft.misc.ServerConfiguration
 
 import scala.language.postfixOps
 
-class Server(port: Int, handler:() => ChannelInboundHandlerAdapter){
-  var channelSocket: SocketChannel = _
+class Server(port: Int, handler:() => ChannelInboundHandlerAdapter) {
+
+  val bossGroup = new NioEventLoopGroup()
+  val workerGroup = new NioEventLoopGroup()
+  var socketChannel: Channel = _
 
   private[this] class MessageDecoder() extends ByteToMessageDecoder {
     var packetLength = -1
@@ -63,29 +65,31 @@ class Server(port: Int, handler:() => ChannelInboundHandlerAdapter){
   }
 
   def run(): Unit = {
-    val bossGroup = new NioEventLoopGroup()
-    val workerGroup = new NioEventLoopGroup()
     try {
       val serverBootstrap = new ServerBootstrap()
       serverBootstrap.group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
         .childHandler(new ChannelInitializer[SocketChannel] {
           override def initChannel(channel: SocketChannel): Unit = {
-            channelSocket = channel
             channel.pipeline().addLast(new MessageDecoder(), handler())
           }
         })
-      serverBootstrap.bind(port).sync()
-      //channelClosedFuture.channel().closeFuture().sync()
+
+      val bindFuture = serverBootstrap.bind(port).sync()
+      socketChannel = bindFuture.channel()
     }
   }
+
   def stop(): Unit = {
-    channelSocket.close()
+    socketChannel.close().sync()
+    workerGroup.shutdownGracefully()
+    bossGroup.shutdownGracefully()
   }
 
 }
 
 object Server extends App {
   def withDefaultServerHandler(port: Int): Server = new Server(ServerConfiguration.PORT, () => new ServerHandler())
+
   withDefaultServerHandler(ServerConfiguration.PORT).run()
 }

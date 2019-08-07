@@ -74,7 +74,6 @@ class ConnectionStateSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
 
-  /*
   "An handshake packet with next state 1" should " bring to a closed connection state " in {
     val handshake = Handshake(ServerConfiguration.VERSION_PROTOCOL,
       "localhost", ServerConfiguration.PORT, HandshakingPackets.NextState.Status)
@@ -117,7 +116,6 @@ class ConnectionStateSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
     connectionController.currentState shouldBe LoginState
   }
-  */
 
 
 }

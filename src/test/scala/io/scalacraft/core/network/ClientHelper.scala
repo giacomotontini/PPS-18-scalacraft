@@ -9,41 +9,31 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import org.scalatest.Matchers
 
-case class ClientHelper(toSend: Option[String], expected: Option[String]) extends Matchers{
+class ClientHelper(result: String=>Unit) extends Matchers {
 
-  private[this] class ClientHandler() extends ChannelInboundHandlerAdapter {
+  private var context: ChannelHandlerContext = _
 
-    override def channelActive(ctx: ChannelHandlerContext): Unit = {
-      toSend match {
-        case Some(message) =>
-          ctx.writeAndFlush(ctx.alloc().buffer().writeBytes(Helpers.hex2bytes(message)));
-      }
-    }
+  class ClientHandler() extends ChannelInboundHandlerAdapter {
+
+    override def channelActive(ctx: ChannelHandlerContext): Unit = context = ctx
 
     override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit = {
-      expected match {
-        case Some(messageExpected) =>
-          val messageByteBuf = message.asInstanceOf[ByteBuf]
-          try {
-            val byteOfExpectedString = messageExpected.getBytes
-            if(messageByteBuf.readableBytes() >= byteOfExpectedString.length) {
-                toSend.get shouldBe Helpers.bytes2hex(messageByteBuf.readBytes(byteOfExpectedString.length).array())
-            }
-            channelHandlerContext.close()
-          } finally {
-            messageByteBuf.release()
-          }
-      }
+      val buffer = message.asInstanceOf[ByteBuf]
+      val array = new Array[Byte](buffer.readableBytes())
+      buffer.readBytes(array)
+
+      result(Helpers.bytes2hex(array))
     }
 
-    override def exceptionCaught(channelHandlerContext: ChannelHandlerContext, cause: Throwable): Unit = {
-      channelHandlerContext.close()
-    }
+  }
+
+  def writeHex(payload: String): Unit = {
+    context.writeAndFlush(context.alloc().buffer().writeBytes(Helpers.hex2bytes(payload)))
   }
 
   def run(): Unit = {
-    val host = "localhost"
     val workerGroup = new NioEventLoopGroup()
+
     try {
       val bootstrap = new Bootstrap()
       bootstrap.group(workerGroup)
@@ -53,7 +43,8 @@ case class ClientHelper(toSend: Option[String], expected: Option[String]) extend
             channel.pipeline().addLast(new ClientHandler())
           }
         })
-      bootstrap.connect(host, ServerConfiguration.PORT).sync()
+      bootstrap.connect("localhost", ServerConfiguration.PORT).sync()
     }
   }
+
 }

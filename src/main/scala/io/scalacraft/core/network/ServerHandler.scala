@@ -10,6 +10,7 @@ class ServerHandler() extends ChannelInboundHandlerAdapter {
     val connectionManager: ConnectionManager = ConnectionManager(ctx)
     connectionController = new ConnectionController(connectionManager)
   }
+
   override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit = {
     val rawPacket = message.asInstanceOf[RawPacket]
     connectionController.handlePacket(rawPacket.packetId, rawPacket.payload)
@@ -17,6 +18,6 @@ class ServerHandler() extends ChannelInboundHandlerAdapter {
 
   override def exceptionCaught(channelHandlerContext: ChannelHandlerContext, cause: Throwable): Unit = {
     //logger.info(cause.getMessage)
-    channelHandlerContext close
+    channelHandlerContext.close()
   }
 }
