@@ -27,5 +27,7 @@ lazy val dependencies = Seq(
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
   "com.github.Querz" % "NBT" % "4.1",
   "io.netty" % "netty-all" % "4.1.38.Final",
-  //"org.apache.logging.log4j" %% "log4j-api-scala" % "11.0"
+  "org.apache.logging.log4j" %% "log4j-api-scala" % "11.0",
+  "org.apache.logging.log4j" % "log4j-api" % "2.12.0",
+  "org.apache.logging.log4j" % "log4j-core" % "2.12.0"
 )

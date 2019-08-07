@@ -40,7 +40,9 @@ class ServerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     server.stop()
   }
 
-  "A server" should "receive the correct message" in {
+  behavior of "A Server"
+
+  it should "receive the correct message" in {
     client.writeHex("03010102")
     checkResult(1, "0102")
   }

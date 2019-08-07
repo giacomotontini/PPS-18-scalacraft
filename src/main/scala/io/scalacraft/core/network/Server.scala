@@ -21,10 +21,8 @@ class Server(port: Int, handler:() => ChannelInboundHandlerAdapter) {
   var socketChannel: Channel = _
 
   private[this] class MessageDecoder() extends ByteToMessageDecoder {
-    var packetLength = -1
-    var packetId = -1
-    var numRead = 0
-    var result = 0
+    var packetLength, packetId = -1
+    var numRead, result = 0
 
     override def decode(ctx: ChannelHandlerContext, in: ByteBuf, out: util.List[AnyRef]): Unit = {
       def readVarInt(): Boolean = {
