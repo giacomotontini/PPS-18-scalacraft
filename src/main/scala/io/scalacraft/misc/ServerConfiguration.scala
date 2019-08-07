@@ -15,24 +15,6 @@ object ServerConfiguration {
   val VERSION_PROTOCOL = 404
 
   def configuration: String =
-    s"""{
-    "version": {
-      "name": "$VERSION_NAME",
-      "protocol": "$VERSION_PROTOCOL"
-    },
-    "players": {
-      "max": 100,
-      "online": $online,
-      "sample": [
-       {
-         "name": "thinkofdeath",
-          "id": "4566e69f-c907-48ee-8d71-d7ba5aa00d20"
-       }
-      ]
-    },
-    "description": {
-      "text": "Scalacraft Server"
-    },
-    "favicon": "data:image/png;base64,$favicon"
-  }"""
+    s"""{"version": {"name": "$VERSION_NAME", "protocol": $VERSION_PROTOCOL},"players": {"max": 100,"online": $online},"description": {"text": "Scalacraft Server"},"favicon": "data:image/png;base64,$favicon"}"""
+    //{"description":{"text":"A Minecraft Server"},"players":{"max":20,"online":0},"version":{"name":"1.13.2","protocol":404}}
 }

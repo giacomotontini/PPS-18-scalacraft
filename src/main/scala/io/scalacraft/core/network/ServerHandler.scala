@@ -3,7 +3,6 @@ package io.scalacraft.core.network
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.scalacraft.core.fsm.ConnectionController
 import org.apache.logging.log4j.scala.Logging
-import org.apache.logging.log4j.simple.SimpleLogger
 
 class ServerHandler() extends ChannelInboundHandlerAdapter with Logging {
   var connectionController: ConnectionController = _

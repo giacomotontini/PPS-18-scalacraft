@@ -29,6 +29,7 @@ object ConnectionManager {
       //write on channelByteBuf packetLength, packetId, payload respectively
       Helpers.writeVarInt(packetId.length + buffer.size(), channelByteBufOutputStream)
       Helpers.writeVarInt(packetId.value, channelByteBufOutputStream)
+      channelByteBufOutputStream.close()
       channelByteBuf.writeBytes(buffer.toByteArray)
       //write and send channelByteBuf over the channel
       channelHandlerContext.writeAndFlush(channelByteBuf)
