@@ -2,8 +2,8 @@ package io.scalacraft.misc
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 
-import io.scalacraft.core.DataTypes.VarInt
-import io.scalacraft.core.{Helpers, PacketManager}
+import io.scalacraft.core.marshalling.PacketManager
+import io.scalacraft.packets.DataTypes.VarInt
 
 object LivePacketsMarshalling extends App {
 
@@ -14,21 +14,21 @@ object LivePacketsMarshalling extends App {
 
   val packetManager = if (args(0) == "clientbound") {
     if (args(1) == "login") {
-      new PacketManager[io.scalacraft.core.clientbound.LoginPackets.type]
+      new PacketManager[io.scalacraft.packets.clientbound.LoginPackets.type]
     } else if (args(1) == "status") {
-      new PacketManager[io.scalacraft.core.clientbound.StatusPacket.type]
+      new PacketManager[io.scalacraft.packets.clientbound.StatusPacket.type]
     } else {
-      new PacketManager[io.scalacraft.core.clientbound.PlayPackets.type]
+      new PacketManager[io.scalacraft.packets.clientbound.PlayPackets.type]
     }
   } else {
     if (args(1) == "login") {
-      new PacketManager[io.scalacraft.core.serverbound.LoginPackets.type]
+      new PacketManager[io.scalacraft.packets.serverbound.LoginPackets.type]
     } else if (args(1) == "status") {
-      new PacketManager[io.scalacraft.core.serverbound.StatusPackets.type]
+      new PacketManager[io.scalacraft.packets.serverbound.StatusPackets.type]
     } else if (args(1) == "handshaking") {
-      new PacketManager[io.scalacraft.core.serverbound.HandshakingPackets.type]
+      new PacketManager[io.scalacraft.packets.serverbound.HandshakingPackets.type]
     } else {
-      new PacketManager[io.scalacraft.core.serverbound.PlayPackets.type]
+      new PacketManager[io.scalacraft.packets.serverbound.PlayPackets.type]
     }
   }
 
