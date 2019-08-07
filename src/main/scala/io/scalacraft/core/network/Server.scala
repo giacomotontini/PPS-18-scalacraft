@@ -15,13 +15,14 @@ import io.scalacraft.misc.ServerConfiguration
 
 import scala.language.postfixOps
 
-private[this] class Server(val port: Int) {
-
-  case class RawPacket(packetId: Int, payload: DataInputStream)
+class Server(port: Int, handler:() => ChannelInboundHandlerAdapter){
+  var channelSocket: SocketChannel = _
 
   private[this] class MessageDecoder() extends ByteToMessageDecoder {
-    var packetLength, packetId = -1
-    var numRead, result = 0
+    var packetLength = -1
+    var packetId = -1
+    var numRead = 0
+    var result = 0
 
     override def decode(ctx: ChannelHandlerContext, in: ByteBuf, out: util.List[AnyRef]): Unit = {
       def readVarInt(): Boolean = {
@@ -33,11 +34,10 @@ private[this] class Server(val port: Int) {
           if (numRead > 5) {
             throw new IllegalArgumentException("VarInt is too big")
           }
-          terminated = (read & 0x80) != 0
+          terminated = (read & 0x80) == 0
         } while (!terminated && in.readableBytes() > 0)
         terminated
       }
-
       if (packetLength == -1) {
         if (readVarInt()) {
           packetLength = result
@@ -45,15 +45,14 @@ private[this] class Server(val port: Int) {
           numRead = 0
         }
       }
-      if (packetId == -1) {
+      if (packetId == -1 && packetLength != -1) {
         if (readVarInt()) {
           packetId = result
           result = 0
         }
       }
-      val length =  packetLength - numRead
-      if (in.readableBytes() >= length) {
-        val buff: Array[Byte] = new Array[Byte](length)
+      if (in.readableBytes() >= packetLength - numRead && packetId != -1 && packetLength != -1) {
+        val buff: Array[Byte] = new Array[Byte](packetLength - numRead)
         in.readBytes(buff)
         out.add(RawPacket(packetId, new DataInputStream(new ByteArrayInputStream(buff))))
         packetLength = -1
@@ -63,44 +62,30 @@ private[this] class Server(val port: Int) {
     }
   }
 
-  private[this] class ServerHandler() extends ChannelInboundHandlerAdapter {
-    var connectionController: ConnectionController = _
-
-    override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
-      val connectionManager: ConnectionManager = ConnectionManager(ctx)
-      connectionController = new ConnectionController(connectionManager)
-    }
-    override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit = {
-      val rawPacket = message.asInstanceOf[RawPacket]
-      connectionController.handlePacket(rawPacket.packetId, rawPacket.payload)
-    }
-
-    override def exceptionCaught(channelHandlerContext: ChannelHandlerContext, cause: Throwable): Unit = {
-      //logger.info(cause.getMessage)
-      channelHandlerContext close
-    }
-  }
-
-
   def run(): Unit = {
-    val bossGroup = new NioEventLoopGroup();
-    val workerGroup = new NioEventLoopGroup();
+    val bossGroup = new NioEventLoopGroup()
+    val workerGroup = new NioEventLoopGroup()
     try {
-      val serverBootstrap = new ServerBootstrap();
+      val serverBootstrap = new ServerBootstrap()
       serverBootstrap.group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
         .childHandler(new ChannelInitializer[SocketChannel] {
-          override def initChannel(channel: SocketChannel): Unit = channel.pipeline().addLast(new MessageDecoder(), new ServerHandler())
+          override def initChannel(channel: SocketChannel): Unit = {
+            channelSocket = channel
+            channel.pipeline().addLast(new MessageDecoder(), handler())
+          }
         })
-      val channelClosedFuture = serverBootstrap.bind(port).sync();
-      channelClosedFuture.channel().closeFuture().sync();
-    } finally {
-      workerGroup.shutdownGracefully();
-      bossGroup.shutdownGracefully();
+      serverBootstrap.bind(port).sync()
+      //channelClosedFuture.channel().closeFuture().sync()
     }
   }
+  def stop(): Unit = {
+    channelSocket.close()
+  }
+
 }
 
 object Server extends App {
-  new Server(ServerConfiguration.PORT).run()
+  def withDefaultServerHandler(port: Int): Server = new Server(ServerConfiguration.PORT, () => new ServerHandler())
+  withDefaultServerHandler(ServerConfiguration.PORT).run()
 }
