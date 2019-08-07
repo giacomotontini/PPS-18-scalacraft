@@ -8,13 +8,14 @@ import io.scalacraft.core.network.ConnectionManager
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.clientbound.LoginPackets.LoginSuccess
 import io.scalacraft.packets.clientbound.StatusPacket.{Pong, Response}
+import io.scalacraft.packets.serverbound.HandshakingPackets.NextState
 
 trait ConnectionState {
   val connectionManager: ConnectionManager
   val packetManagerClientBound: PacketManager[_]
 
   def writePacket(packet: Structure): Unit = {
-    //connectionManager.writePacket(dataOutputStream => packetManagerClientBound.marshal(packet)(dataOutputStream))
+    connectionManager.writePacket(dataOutputStream => packetManagerClientBound.marshal(packet)(dataOutputStream))
   }
 
   def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState]
@@ -24,15 +25,15 @@ trait ConnectionState {
 
 object ConnectionState {
 
-  case class HandshakingState(implicit val connectionManager: ConnectionManager) extends ConnectionState {
+  case class HandshakingState(connectionManager: ConnectionManager) extends ConnectionState {
 
-    val packetManagerClientBound = null
-    val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.StatusPackets.type]
+    val packetManagerClientBound: PacketManager[_] = null
+    val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.HandshakingPackets.type]
 
     override def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState] = packetManagerServerBound.unmarshal(packetId)(buffer) match {
-      case handshake: io.scalacraft.packets.serverbound.HandshakingPackets.Handshake if handshake.nextState == 1 => Some(StatusState())
-      case handshake: io.scalacraft.packets.serverbound.HandshakingPackets.Handshake if handshake.nextState == 2 => Some(LoginState())
-      case _ =>
+      case handshake: io.scalacraft.packets.serverbound.HandshakingPackets.Handshake if handshake.nextState == NextState.Status => Some(StatusState(connectionManager))
+      case handshake: io.scalacraft.packets.serverbound.HandshakingPackets.Handshake if handshake.nextState == NextState.Login => Some(LoginState(connectionManager))
+      case p => println(p)
         System.err.println("[HandshakingState] Unhandled packet with id:", packetId)
         None
     }
@@ -43,10 +44,10 @@ object ConnectionState {
 
   }
 
-  case class StatusState(implicit val connectionManager: ConnectionManager) extends ConnectionState {
+  case class StatusState(connectionManager: ConnectionManager) extends ConnectionState {
 
-    val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.StatusPackets.type]
     val packetManagerClientBound = new PacketManager[io.scalacraft.packets.clientbound.StatusPacket.type]
+    val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.StatusPackets.type]
     var requestReceived: Boolean = false
 
     override def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState] = packetManagerServerBound.unmarshal(packetId)(buffer) match {
@@ -62,7 +63,7 @@ object ConnectionState {
         } else {
           System.err.println("Received a ping withount a previous Request")
         }
-        Some(ClosedState())
+        Some(ClosedState(connectionManager))
       case _ =>
         System.err.println("Unhandled packet with id: ", packetId, " within LoginState")
         None
@@ -73,10 +74,10 @@ object ConnectionState {
     }
   }
 
-  case class LoginState(implicit val connectionManager: ConnectionManager) extends ConnectionState {
+  case class LoginState(connectionManager: ConnectionManager) extends ConnectionState {
 
-    val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.LoginPackets.type]
     val packetManagerClientBound = new PacketManager[io.scalacraft.packets.clientbound.LoginPackets.type]
+    val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.LoginPackets.type]
 
     var loginStartReceived: Boolean = false
 
@@ -98,10 +99,10 @@ object ConnectionState {
     }
   }
 
-  case class PlayState(implicit val connectionManager: ConnectionManager) extends ConnectionState {
+  case class PlayState(connectionManager: ConnectionManager) extends ConnectionState {
 
-    val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.PlayPackets.type]
     val packetManagerClientBound = new PacketManager[io.scalacraft.packets.clientbound.PlayPackets.type]
+    val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.PlayPackets.type]
 
     override def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState] = packetManagerServerBound.unmarshal(packetId)(buffer) match {
       case _ =>
@@ -114,8 +115,8 @@ object ConnectionState {
     }
   }
 
-  case class ClosedState(implicit val connectionManager: ConnectionManager) extends ConnectionState {
-    val packetManagerClientBound = null //not used
+  case class ClosedState(connectionManager: ConnectionManager) extends ConnectionState {
+    val packetManagerClientBound: PacketManager[_] = null //not used
 
     override def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState] = {
       println("Connection closed. Can't parse packet with id: ", packetId)

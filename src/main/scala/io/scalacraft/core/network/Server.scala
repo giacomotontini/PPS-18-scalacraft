@@ -67,8 +67,8 @@ private[this] class Server(val port: Int) {
     var connectionController: ConnectionController = _
 
     override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
-      implicit val connectionManager: ConnectionManager = ConnectionManager(ctx)
-      connectionController = new ConnectionController()
+      val connectionManager: ConnectionManager = ConnectionManager(ctx)
+      connectionController = new ConnectionController(connectionManager)
     }
     override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit = {
       val rawPacket = message.asInstanceOf[RawPacket]
