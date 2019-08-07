@@ -2,8 +2,10 @@ package io.scalacraft.core.network
 
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.scalacraft.core.fsm.ConnectionController
+import org.apache.logging.log4j.scala.Logging
+import org.apache.logging.log4j.simple.SimpleLogger
 
-class ServerHandler() extends ChannelInboundHandlerAdapter {
+class ServerHandler() extends ChannelInboundHandlerAdapter with Logging {
   var connectionController: ConnectionController = _
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
@@ -17,7 +19,7 @@ class ServerHandler() extends ChannelInboundHandlerAdapter {
   }
 
   override def exceptionCaught(channelHandlerContext: ChannelHandlerContext, cause: Throwable): Unit = {
-    //logger.info(cause.getMessage)
+    logger.error(cause.getMessage)
     channelHandlerContext.close()
   }
 }
