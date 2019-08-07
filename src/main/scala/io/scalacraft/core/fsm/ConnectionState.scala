@@ -57,11 +57,12 @@ object ConnectionState {
         writePacket(Response(ServerConfiguration.configuration))
         None
       case ping: io.scalacraft.packets.serverbound.StatusPackets.Ping =>
+        println("Ping received")
         if (requestReceived) {
           val pong = Pong(ping.payload)
           writePacket(pong)
         } else {
-          System.err.println("Received a ping withount a previous Request")
+          throw new IllegalStateException("Received a ping without a previous Request")
         }
         Some(ClosedState(connectionManager))
       case _ =>
@@ -79,16 +80,15 @@ object ConnectionState {
     val packetManagerClientBound = new PacketManager[io.scalacraft.packets.clientbound.LoginPackets.type]
     val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.LoginPackets.type]
 
-    var loginStartReceived: Boolean = false
+    var uuidGenerator= () => UUID.randomUUID()
 
     override def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState] = packetManagerServerBound.unmarshal(packetId)(buffer) match {
       case loginStart: io.scalacraft.packets.serverbound.LoginPackets.LoginStart =>
         println("[LoginState] LoginStarted for " + loginStart.name)
-        val uuid = UUID.randomUUID().toString
-        val loginSuccess = LoginSuccess(uuid, loginStart.name)
+        val loginSuccess = LoginSuccess(uuidGenerator().toString, loginStart.name)
         //skipping setCompression and Encryption: Not supported
         writePacket(loginSuccess)
-        None
+        Some(PlayState(connectionManager))
       case _ =>
         System.err.println("Unhandled packet with id: ", packetId, " within LoginState")
         None
@@ -106,6 +106,7 @@ object ConnectionState {
 
     override def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState] = packetManagerServerBound.unmarshal(packetId)(buffer) match {
       case _ =>
+        // forward to game loop
         System.err.println("Unhandled packet with id: ", packetId, " within PlayState")
         None
     }

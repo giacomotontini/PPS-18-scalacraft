@@ -18,8 +18,4 @@ object HandshakingPackets {
                        @short serverPort:Int,
                        @enumType[VarInt] nextState: NextState) extends Structure
 
-  //payload should be always 0x01
-  @packet(0xFE)
-  case class LegacyServerListPing(@byte payload: Int) extends Structure
-
 }
