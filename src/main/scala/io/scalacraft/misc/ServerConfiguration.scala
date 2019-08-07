@@ -23,11 +23,16 @@ object ServerConfiguration {
     "players": {
       "max": 100,
       "online": $online,
-      "sample": []
+      "sample": [
+       {
+         "name": "thinkofdeath",
+          "id": "4566e69f-c907-48ee-8d71-d7ba5aa00d20"
+       }
+      ]
     },
     "description": {
       "text": "Scalacraft Server"
     },
-    "favicon": "data:image/png;base64$favicon"
+    "favicon": "data:image/png;base64,$favicon"
   }"""
 }

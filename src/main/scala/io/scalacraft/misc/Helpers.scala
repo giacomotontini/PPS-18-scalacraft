@@ -34,14 +34,14 @@ private[scalacraft] object Helpers {
     var i = value
     var numWrite = 0
     do {
-      var temp = value & 0x7f
+      var temp = i & 0x7f
       i = i >>> 7
-      if (value != 0) {
+      if (i != 0) {
         temp |= 0x80
       }
       numWrite += 1
       outStream.write(temp)
-    } while (value != 0)
+    } while (i != 0)
 
     numWrite
   }
