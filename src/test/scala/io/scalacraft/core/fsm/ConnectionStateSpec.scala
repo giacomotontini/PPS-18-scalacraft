@@ -72,8 +72,8 @@ class ConnectionStateSpec extends FlatSpec with Matchers with BeforeAndAfterEach
 
 
   "An handshake packet with next state 1" should " bring to a closed connection state " in {
-    val handshake = Handshake(ServerConfiguration.VERSION_PROTOCOL,
-      "localhost", ServerConfiguration.PORT, HandshakingPackets.NextState.Status)
+    val handshake = Handshake(ServerConfiguration.VersionProtocol,
+      "localhost", ServerConfiguration.Port, HandshakingPackets.NextState.Status)
     val request = Request()
     val response = Response(ServerConfiguration.configuration)
     val payload = new Random().nextLong()
@@ -97,8 +97,8 @@ class ConnectionStateSpec extends FlatSpec with Matchers with BeforeAndAfterEach
 
 
    it should "throw IllegalStateException if a ping is received before a Request" in {
-    val handshake = Handshake(ServerConfiguration.VERSION_PROTOCOL,
-      "localhost", ServerConfiguration.PORT, HandshakingPackets.NextState.Status)
+    val handshake = Handshake(ServerConfiguration.VersionProtocol,
+      "localhost", ServerConfiguration.Port, HandshakingPackets.NextState.Status)
     val request = Request()
     val response = Response(ServerConfiguration.configuration)
     val payload = new Random().nextLong()
@@ -119,8 +119,8 @@ class ConnectionStateSpec extends FlatSpec with Matchers with BeforeAndAfterEach
   }
 
   "An handshake packet with next state 2" should " bring to play status " in {
-    val handshake = Handshake(ServerConfiguration.VERSION_PROTOCOL,
-      "localhost", ServerConfiguration.PORT, HandshakingPackets.NextState.Login)
+    val handshake = Handshake(ServerConfiguration.VersionProtocol,
+      "localhost", ServerConfiguration.Port, HandshakingPackets.NextState.Login)
     val username = "a player"
     val myUUID = UUID.randomUUID()
     val loginStart = LoginStart(username)

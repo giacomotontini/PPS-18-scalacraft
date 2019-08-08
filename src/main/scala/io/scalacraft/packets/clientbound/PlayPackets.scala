@@ -741,7 +741,7 @@ object PlayPackets {
 
   @packet(id = 0x25)
   case class JoinGame(entityId: Int,
-                      @byte gameMode: Int,
+                      @enumType[Byte] gameMode: GameModeValue,
                       @enumType[Int] dimension: WorldDimension,
                       @enumType[Byte] difficulty: ServerDifficulties,
                       @byte maxPlayers: Int,

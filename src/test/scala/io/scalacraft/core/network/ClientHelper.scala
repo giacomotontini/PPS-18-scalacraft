@@ -42,7 +42,7 @@ class ClientHelper(result: String=>Unit) extends Matchers {
           channel.pipeline().addLast(new ClientHandler())
         }
       })
-    bootstrap.connect("localhost", ServerConfiguration.PORT).sync()
+    bootstrap.connect("localhost", ServerConfiguration.Port).sync()
   }
 
 }

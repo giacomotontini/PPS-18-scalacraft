@@ -85,7 +85,7 @@ class Server(port: Int, handler:() => ChannelInboundHandlerAdapter) {
 }
 
 object Server extends App {
-  def withDefaultServerHandler(port: Int): Server = new Server(ServerConfiguration.PORT, () => new ServerHandler())
+  def withDefaultServerHandler(port: Int): Server = new Server(ServerConfiguration.Port, () => new ServerHandler())
 
-  withDefaultServerHandler(ServerConfiguration.PORT).run()
+  withDefaultServerHandler(ServerConfiguration.Port).run()
 }

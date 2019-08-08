@@ -12,7 +12,7 @@ object Entrypoint extends App {
   val system = ActorSystem("scalacraft")
   val world = system.actorOf(World.props)
 
-  val server = Server.withDefaultServerHandler(ServerConfiguration.PORT)
+  val server = Server.withDefaultServerHandler(ServerConfiguration.Port)
   server.run()
 
 

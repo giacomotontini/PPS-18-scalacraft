@@ -21,7 +21,7 @@ class ServerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   }
 
   override def beforeEach() {
-    server = new Server(ServerConfiguration.PORT, () => new ChannelInboundHandlerAdapter {
+    server = new Server(ServerConfiguration.Port, () => new ChannelInboundHandlerAdapter {
       override def handlerAdded(ctx: ChannelHandlerContext): Unit = context = ctx
 
       override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit = {

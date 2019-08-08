@@ -17,18 +17,18 @@ object PlayPackets {
   @packet(0x02)
   case class ChatMessage(@maxLength(256) message: String) extends Structure
 
-  sealed trait ActionPacket3
+  sealed trait ClientStatusAction
 
-  object ActionPacket3 {
+  object ClientStatusAction {
 
-    @enumValue(0) case object PerformRespawn extends ActionPacket3
+    @enumValue(0) case object PerformRespawn extends ClientStatusAction
 
-    @enumValue(1) case object RequestStats extends ActionPacket3
+    @enumValue(1) case object RequestStats extends ClientStatusAction
 
   }
 
   @packet(0x03)
-  case class ClientStatus(@enumType[VarInt] action: ActionPacket3) extends Structure
+  case class ClientStatus(@enumType[VarInt] action: ClientStatusAction) extends Structure
 
   sealed trait ChatMode
 
