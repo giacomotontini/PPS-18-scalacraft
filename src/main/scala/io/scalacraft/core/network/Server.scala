@@ -63,19 +63,17 @@ class Server(port: Int, handler:() => ChannelInboundHandlerAdapter) {
   }
 
   def run(): Unit = {
-    try {
-      val serverBootstrap = new ServerBootstrap()
-      serverBootstrap.group(bossGroup, workerGroup)
-        .channel(classOf[NioServerSocketChannel])
-        .childHandler(new ChannelInitializer[SocketChannel] {
-          override def initChannel(channel: SocketChannel): Unit = {
-            channel.pipeline().addLast(new MessageDecoder(), handler())
-          }
-        })
+    val serverBootstrap = new ServerBootstrap()
+    serverBootstrap.group(bossGroup, workerGroup)
+      .channel(classOf[NioServerSocketChannel])
+      .childHandler(new ChannelInitializer[SocketChannel] {
+        override def initChannel(channel: SocketChannel): Unit = {
+          channel.pipeline().addLast(new MessageDecoder(), handler())
+        }
+      })
 
-      val bindFuture = serverBootstrap.bind(port).sync()
-      socketChannel = bindFuture.channel()
-    }
+    val bindFuture = serverBootstrap.bind(port).sync()
+    socketChannel = bindFuture.channel()
   }
 
   def stop(): Unit = {

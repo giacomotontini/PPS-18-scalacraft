@@ -7,7 +7,7 @@ import io.scalacraft.packets.DataTypes.VarInt
 
 object LivePacketsMarshalling extends App {
 
-  val skipParsingFor: List[Int] = List(0x3f, 0x22, 0x11, 0x42)
+  val skipParsingFor: List[Int] = List(0x3f, 0x11)
   val maxPacketContentLength: Int = 256
 
   implicit val inStream: DataInputStream = new DataInputStream(System.in)
@@ -36,6 +36,7 @@ object LivePacketsMarshalling extends App {
     var VarInt(length, _) = Helpers.readVarInt(inStream)
     val VarInt(packetId, packetIdLength) = Helpers.readVarInt(inStream)
     length -= packetIdLength
+
 
     val array = new Array[Byte](length)
     for (i <- 0 until length) {
@@ -85,8 +86,8 @@ object LivePacketsMarshalling extends App {
 
     System.err.println("Packet id: 0x" + packetId.toHexString)
     System.err.println("Packet length: " + array.length)
-    System.err.println("Packet content: " +  content.take(maxPacketContentLength) +
-      (if (content.length > maxPacketContentLength) "<truncated>" else ""))
+    System.err.println("Packet content: " +  content) // +
+      // (if (content.length > maxPacketContentLength) "<truncated>" else ""))
   }
 
 

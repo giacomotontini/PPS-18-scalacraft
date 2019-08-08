@@ -4,13 +4,13 @@ import java.util.UUID
 
 import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations._
-import net.querz.nbt.CompoundTag
+import net.querz.nbt.Tag
 
 object DataTypes {
   type Chat = String
   type Identifier = String
   type Slot = Option[SlotData]
-  type Nbt = CompoundTag
+  type Nbt = Tag[_]
 
   case class VarInt(value: Int, length: Int)
   case class Position(x: Int, y: Int, z: Int)

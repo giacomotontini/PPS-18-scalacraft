@@ -194,7 +194,7 @@ object Entities {
   class Horse extends AbstractHorse with MobEntity {
     @indexType(index = 1) @boxed var variant: Int = 0  //color & style
     @indexType(index = 1) @boxed var armorMaterial: Int = 0
-    @indexType(index = 6) var armorItem: Slot = None
+    @indexType(index = 6) var armorItem: Slot = None // TODO: check if none need to be written
   }
 
   class ZombieHorse extends AbstractHorse with MobEntity

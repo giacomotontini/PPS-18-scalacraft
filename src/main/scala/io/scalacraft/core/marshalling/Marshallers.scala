@@ -39,7 +39,7 @@ private[marshalling] object Marshallers {
     override def internalUnmarshal()(implicit context: Context, inStream: DataInputStream): Any = {
       val b = inStream.readIfIsAvailable()
       context.addField(b)
-      if (isUnsigned) b else b.toByte
+      if (isUnsigned) b else b.toByte.toInt
     }
   }
 
@@ -53,7 +53,7 @@ private[marshalling] object Marshallers {
     override def internalUnmarshal()(implicit context: Context, inStream: DataInputStream): Any = {
       val s = (inStream.readIfIsAvailable() << 8) | inStream.readIfIsAvailable()
       context.addField(s)
-      if (isUnsigned) s else s.toShort
+      if (isUnsigned) s else s.toShort.toInt
     }
   }
 
@@ -315,31 +315,37 @@ private[marshalling] object Marshallers {
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: DataInputStream): Any = {
-      val newContext = Context.create
-      context.addField(newContext)
-      val buffer = mutable.Buffer[Any]()
+      val trash = Context.trash
 
-      if (lengthMarshaller.isDefined) {
-        val length = lengthMarshaller.get.unmarshal()(Context.trash, inStream) match {
+      val list = if (lengthMarshaller.isDefined) {
+        val length = lengthMarshaller.get.unmarshal()(trash, inStream) match {
           case b: Byte => b
           case s: Short => s
           case i: Int => i
         }
 
-        for (_ <- 0 until length) {
-          buffer.append(paramMarshaller.unmarshal()(newContext, inStream))
+        val array = new Array[Any](length)
+
+        for (i <- 0 until length) {
+          array(i) = paramMarshaller.unmarshal()(trash, inStream)
         }
+
+        array.toList
       } else {
         var stop = false
+        val buffer = mutable.ArrayBuffer[Any]()
         while (!stop) {
-          try buffer.append(paramMarshaller.unmarshal()(newContext, inStream))
+          try buffer.append(paramMarshaller.unmarshal()(trash, inStream))
           catch {
             case _: EOFException => stop = true
           }
         }
+
+        buffer.toList
       }
 
-      buffer.toList
+      context.addField(list)
+      list
     }
   }
 
@@ -420,23 +426,14 @@ private[marshalling] object Marshallers {
 
   class NbtMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
-      /*case Nbt(name, compoundTag) => NbtParser.writeNBT(outStream)((name, compoundTag))*/
-      case _ =>
+      case tag: Tag[_] => tag.serialize(outStream, Tag.DEFAULT_MAX_DEPTH)
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: DataInputStream): Any = {
-      val content = new CompoundTag()
-      content.deserializeValue(new DataInputStream(inStream), Tag.DEFAULT_MAX_DEPTH)
+      val content = Tag.deserialize(inStream, Tag.DEFAULT_MAX_DEPTH)
       context.addField(content)
       content
-      /*NbtParser.readNBT(inStream) match {
-        case (name, compoundTag) =>
-          new CompoundTag().ser
-          val content = Nbt(name, compoundTag)
-          context.addField(content)
-          content
-      */
-      }
+    }
   }
 
   class EntityMarshaller(constructorMirrors: Map[Int, MethodMirror], typeMarshaller: Marshaller, typesMarshallers: Seq[Marshaller], val contextFieldIndex: Option[Int] = None) extends Marshaller {

@@ -34,17 +34,15 @@ class ClientHelper(result: String=>Unit) extends Matchers {
   def run(): Unit = {
     val workerGroup = new NioEventLoopGroup()
 
-    try {
-      val bootstrap = new Bootstrap()
-      bootstrap.group(workerGroup)
-        .channel(classOf[NioSocketChannel])
-        .handler(new ChannelInitializer[SocketChannel] {
-          override def initChannel(channel: SocketChannel): Unit = {
-            channel.pipeline().addLast(new ClientHandler())
-          }
-        })
-      bootstrap.connect("localhost", ServerConfiguration.PORT).sync()
-    }
+    val bootstrap = new Bootstrap()
+    bootstrap.group(workerGroup)
+      .channel(classOf[NioSocketChannel])
+      .handler(new ChannelInitializer[SocketChannel] {
+        override def initChannel(channel: SocketChannel): Unit = {
+          channel.pipeline().addLast(new ClientHandler())
+        }
+      })
+    bootstrap.connect("localhost", ServerConfiguration.PORT).sync()
   }
 
 }

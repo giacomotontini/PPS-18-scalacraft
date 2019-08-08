@@ -392,7 +392,7 @@ object PlayPackets {
   @packet(id = 0x1D)
   case class NbtQueryResponse(@boxed transactionId: Int, nbt: Nbt) extends Structure
 
-  case class ExplosionOffset(x: Long, y: Long, z: Long) extends Structure
+  case class ExplosionOffset(@byte x: Int, @byte y: Int, @byte z: Int) extends Structure
 
   @packet(id = 0x1E)
   case class Explosion(x: Float,
@@ -479,7 +479,7 @@ object PlayPackets {
                        fullChunk: Boolean,
                        @boxed primaryBitMask: Int,
                        @precededBy[VarInt] @byte data: List[Int],
-                       @byte blockEntities: List[Int]) extends Structure // TODO: to restore
+                       @precededBy[VarInt] blockEntities: List[Nbt]) extends Structure // TODO: to restore
 
   sealed trait EffectId
 
@@ -598,7 +598,7 @@ object PlayPackets {
 
   @switchKey(2) case class Barrier() extends ParticleStructure
 
-  @switchKey(3) case class Block() extends ParticleStructure
+  @switchKey(3) case class Block(@boxed blockState: Int) extends ParticleStructure
 
   @switchKey(4) case class Bubble() extends ParticleStructure
 
@@ -1431,5 +1431,9 @@ object PlayPackets {
   case class Tags(@precededBy[VarInt] blockTags: List[Tag],
                   @precededBy[VarInt] itemsTags: List[Tag],
                   @precededBy[VarInt] fluidTags: List[Tag]) extends Structure
+
+
+  @packet(0x100)
+  case class Testt(@precededBy[VarInt] list: List[Nbt]) extends Structure
 
 }
