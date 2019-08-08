@@ -3,8 +3,10 @@ package io.scalacraft.core.fsm
 import java.io.DataInputStream
 import java.util.UUID
 
+import io.scalacraft.Entrypoint
 import io.scalacraft.core.marshalling.{PacketManager, Structure}
 import io.scalacraft.core.network.ConnectionManager
+import io.scalacraft.logic.messages.Message.PlayerLogged
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.clientbound.LoginPackets.LoginSuccess
 import io.scalacraft.packets.clientbound.StatusPacket.{Pong, Response}
@@ -103,12 +105,17 @@ object ConnectionState {
 
     val packetManagerClientBound = new PacketManager[io.scalacraft.packets.clientbound.PlayPackets.type]
     val packetManagerServerBound = new PacketManager[io.scalacraft.packets.serverbound.PlayPackets.type]
+    var listener: ParseListener = _
 
-    override def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState] = packetManagerServerBound.unmarshal(packetId)(buffer) match {
-      case _ =>
-        // forward to game loop
-        System.err.println("Unhandled packet with id: ", packetId, " within PlayState")
-        None
+    // TODO: TODO: debito tecnico
+
+    Entrypoint.world ! PlayerLogged(this)
+
+    def attachListener(parseListener: ParseListener): Unit = listener = parseListener
+
+    override def parsePacket(packetId: Int, buffer: DataInputStream): Option[ConnectionState] = {
+      listener.parsePacket(packetId, buffer)
+      None
     }
 
     override def notifyConnectionClosed(): Unit = {

@@ -873,13 +873,13 @@ object PlayPackets {
                         @fromContext(4) @enumType[VarInt] entityFeetEyes: Option[FeetEyes]) extends Structure
 
   @packet(id = 0x32)
-  case class PlayerInfoAndLook(x: Double,
-                               y: Double,
-                               z: Double,
-                               yaw: Float,
-                               pitch: Float,
-                               @byte flags: Int,
-                               @boxed teleportId: Int) extends Structure
+  case class PlayerPositionAndLook(x: Double,
+                                   y: Double,
+                                   z: Double,
+                                   yaw: Float,
+                                   pitch: Float,
+                                   @byte flags: Int,
+                                   @boxed teleportId: Int) extends Structure
 
   @packet(id = 0x33)
   case class UseBed(@boxed entityId: Int,
