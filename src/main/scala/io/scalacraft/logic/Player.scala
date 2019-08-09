@@ -4,10 +4,12 @@ package io.scalacraft.logic
 import akka.actor.{Actor, ActorRef, Props, Timers}
 import io.scalacraft.core.fsm.ConnectionState.PlayState
 import io.scalacraft.core.marshalling.Structure
-import io.scalacraft.misc.ServerConfiguration
+import io.scalacraft.misc.{Blocks, Helpers, ServerConfiguration}
 import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets.{JoinGame, PlayerPositionAndLook, SpawnPosition, WorldDimension}
+import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, PlayerPositionAndLook, SpawnPosition, WorldDimension}
 import io.scalacraft.packets.serverbound.PlayPackets.{ClientSettings, ClientStatus, ClientStatusAction, KeepAlive, MainHand, TeleportConfirm}
+import net.querz.nbt.mca.MCAUtil
+import collection.JavaConverters._
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -19,9 +21,9 @@ class Player(playState: PlayState) extends Actor with Timers {
 
   private val entityId = 0
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = 0
-  private var posY: Int = 0
-  private var posZ: Int = 0
+  private var posX: Int = 3
+  private var posY: Int = 150
+  private var posZ: Int = 3
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   //private var digging: Boolean = false
@@ -48,6 +50,15 @@ class Player(playState: PlayState) extends Actor with Timers {
       mainHand = clientSettings.mainHand
       viewDistance = clientSettings.viewDistance
 
+      val chunkFile = MCAUtil.readMCAFile("world/regions/r.0.0.mca")
+      for(x <- 0 to 6) {
+        for(z <- 0 to 6) {
+          val chunkColumns = chunkFile.getChunk(0,0)
+          val (data,bitmask) = Helpers.buildChunkDataStructureAndBitmask(chunkColumns)
+          val chunkDataPacket = ChunkData(x, z, true, bitmask, data.map(_.toInt).toList, chunkColumns.getEntities.iterator().asScala.toList)
+          userContext ! chunkDataPacket
+        }
+      }
       // Send chunk data from chunk actor
 
       userContext ! SpawnPosition(Position(posX, posY, posZ))

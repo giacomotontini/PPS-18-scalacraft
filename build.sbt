@@ -4,6 +4,7 @@ val projectOrganization = "io.scalacraft"
 val projectScalaVersion = "2.12.8"
 val scalaTestVersion = "3.0.8"
 val akkaVersion = "2.5.23"
+val circeVersion = "0.11.1"
 
 lazy val root = Project(
   id = projectName,
@@ -26,10 +27,13 @@ lazy val dependencies = Seq(
   "org.scala-lang" % "scala-reflect" % projectScalaVersion,
   "org.scalactic" %% "scalactic" % scalaTestVersion,
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-  "com.github.Querz" % "NBT" % "4.1",
+  "it.eciavatta" % "NBT" % "4.1.2",
   "io.netty" % "netty-all" % "4.1.38.Final",
   "org.apache.logging.log4j" %% "log4j-api-scala" % "11.0",
   "org.apache.logging.log4j" % "log4j-api" % "2.12.0",
   "org.apache.logging.log4j" % "log4j-core" % "2.12.0",
-  "com.typesafe.akka" %% "akka-actor" % akkaVersion
+  "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion,
+  "io.circe" %% "circe-parser" % circeVersion
 )

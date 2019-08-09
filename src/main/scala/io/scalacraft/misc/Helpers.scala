@@ -1,8 +1,11 @@
 package io.scalacraft.misc
 
-import java.io.{InputStream, OutputStream}
+import java.io.{ByteArrayOutputStream, DataOutputStream, InputStream, OutputStream}
 
+import io.scalacraft.core.marshalling.Marshallers.LongMarshaller
 import io.scalacraft.packets.DataTypes.VarInt
+import net.querz.nbt.mca.Chunk
+import net.querz.nbt.{CompoundTag, ListTag}
 
 private[scalacraft] object Helpers {
 
@@ -46,4 +49,43 @@ private[scalacraft] object Helpers {
     numWrite
   }
 
+  def buildChunkDataStructureAndBitmask(chunkColumn: Chunk): (Array[Byte], Int) = {
+    def writePaletteArray(palette: ListTag[CompoundTag])(implicit dataOutputStream:DataOutputStream): Unit = {
+      writeVarInt(palette.size, dataOutputStream)
+      palette.forEach(paletteName => writeVarInt(Blocks.idFromCompoundTag(paletteName),dataOutputStream))
+    }
+    def writeLongArray(dataArray: Array[Long], valueMarshaller: LongMarshaller)(implicit dataOutputStream: DataOutputStream): Unit = {
+      writeVarInt(dataArray.length, dataOutputStream)
+      dataArray.foreach(value => valueMarshaller.marshal(value)(dataOutputStream))
+    }
+    def writeByteArray(dataArray: Array[Byte])(implicit dataOutputStream: DataOutputStream): Unit = {
+      writeVarInt(dataArray.length, dataOutputStream)
+      dataArray.foreach(dataArrayElement => dataOutputStream.write(dataArrayElement))
+    }
+    val byteArrayOutputStream = new ByteArrayOutputStream()
+    implicit val dataOutputStream: DataOutputStream = new DataOutputStream(byteArrayOutputStream)
+    var bitmask: Int = 0
+    val valueMarshaller = new LongMarshaller()
+    for(i <- 0 to 15) {
+      val chunkSection = chunkColumn.getSection(i)
+      println(i, chunkSection)
+      if(chunkSection != null && !chunkSection.isEmpty) {
+        bitmask |= 1 << i
+        val numberOfBytes = chunkSection.getPaletteBitSize
+        val palette = chunkSection.getPalette
+        val dataArray = chunkSection getBlockStates
+        val blockLight = chunkSection getBlockLight
+        val skyLight = chunkSection.getSkyLight
+        dataOutputStream.write(numberOfBytes)
+        writePaletteArray(palette)
+        writeLongArray(dataArray,valueMarshaller)
+        writeByteArray(blockLight)
+        writeByteArray(skyLight)
+      }
+    }
+    println(bitmask)
+    chunkColumn.getBiomes.foreach(biome => dataOutputStream.write(biome))
+    dataOutputStream.close()
+    (byteArrayOutputStream.toByteArray,bitmask)
+ }
 }

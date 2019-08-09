@@ -29,3 +29,4 @@ build
 
 #general
 *.class
+world/

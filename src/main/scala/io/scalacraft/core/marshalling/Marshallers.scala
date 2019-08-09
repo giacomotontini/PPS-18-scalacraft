@@ -10,7 +10,7 @@ import net.querz.nbt.{CompoundTag, Tag}
 import scala.collection.mutable
 import scala.reflect.runtime.universe._
 
-private[marshalling] object Marshallers {
+object Marshallers {
 
   implicit class RichStream(base: DataInputStream) {
     def readIfIsAvailable(): Int = {
