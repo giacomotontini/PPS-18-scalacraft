@@ -1,10 +1,10 @@
 package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, Props}
+import io.scalacraft.loaders.Chunks
 import io.scalacraft.logic.messages.Message.RequestChunkData
 import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
-import io.scalacraft.loaders.Chunks
 import net.querz.nbt.mca.MCAFile
 
 class Region(mca: MCAFile) extends Actor with ActorLogging {

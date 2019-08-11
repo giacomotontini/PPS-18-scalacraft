@@ -12,15 +12,16 @@ object ServerConfiguration {
   private[this] val image = Source.fromInputStream(getClass.getResourceAsStream("/server-logo.png"), "iso-8859-1").mkString
   private[this] val favicon = Base64.getEncoder.encodeToString(image.getBytes(Charset.forName("iso-8859-1")))
 
-  val Port = 25565
-  val VersionName = "1.13.2"
-  val VersionProtocol = 404
-  val Online = 0
-  val GameMode = GameModeValue.Survival
-  val ServerDifficulty = ServerDifficulties.Easy
-  val ReducedDebugInfo = false
-  val MaxPlayers = 100
-  val LevelTypeBiome = LevelType.Default
+  val Debug: Boolean = true
+  val Port: Int = 25565
+  val VersionName: String = "1.13.2"
+  val VersionProtocol: Int = 404
+  val Online: Int = 0
+  val GameMode: GameModeValue.Survival.type = GameModeValue.Survival
+  val ServerDifficulty: ServerDifficulties.Easy.type = ServerDifficulties.Easy
+  val ReducedDebugInfo: Boolean = false
+  val MaxPlayers: Int = 100
+  val LevelTypeBiome: LevelType = LevelType.Default
 
   def configuration: String =
     s"""{"version": {"name": "$VersionName", "protocol": $VersionProtocol},"players": {"max": $MaxPlayers,"online": $Online},"description": {"text": "Scalacraft Server"},"favicon": "data:image/png;base64,$favicon"}"""

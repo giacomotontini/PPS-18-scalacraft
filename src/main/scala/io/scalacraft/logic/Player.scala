@@ -2,14 +2,13 @@ package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
-import io.scalacraft.core.fsm.ConnectionState.PlayState
-import io.scalacraft.logic.messages.Message.{ChunkNotPresent, RequestChunkData}
-import io.scalacraft.logic.traits.DefaultTimeout
+import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, RequestChunkData}
+import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, SpawnPosition, WorldDimension}
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
-import io.scalacraft.packets.serverbound.PlayPackets.{ClientSettings, ClientStatus, ClientStatusAction, MainHand, PlayerPosition, TeleportConfirm}
+import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
 import net.querz.nbt.mca.MCAUtil
 
@@ -18,12 +17,12 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class Player(playState: PlayState) extends Actor with Timers with ActorLogging with DefaultTimeout {
+class Player(username: String, userContext: ActorRef) extends Actor
+  with Timers with ActorLogging with DefaultTimeout with ImplicitContext {
+
   import Player._
-  import context._
 
   private val world = context.parent
-  private var userContext: ActorRef = _
 
   private val entityId = 0
   private val worldDimension = WorldDimension.Overworld
@@ -42,13 +41,11 @@ class Player(playState: PlayState) extends Actor with Timers with ActorLogging w
 
   private val randomGenerator = Random
 
-  override def preStart(): Unit = {
-    userContext = context.actorOf(UserContext.props(playState))
-
-    userContext ! JoinGame(entityId, ServerConfiguration.GameMode, worldDimension, ServerConfiguration.ServerDifficulty, ServerConfiguration.MaxPlayers, ServerConfiguration.LevelTypeBiome, ServerConfiguration.ReducedDebugInfo)
-  }
-
   private def preStartBehaviour: Receive = {
+    case CanJoinGame =>
+      import ServerConfiguration._
+      userContext ! JoinGame(entityId, GameMode, worldDimension, ServerDifficulty, MaxPlayers, LevelTypeBiome,
+        ReducedDebugInfo)
     case clientSettings: ClientSettings =>
       locale = clientSettings.locale
       mainHand = clientSettings.mainHand
@@ -70,7 +67,7 @@ class Player(playState: PlayState) extends Actor with Timers with ActorLogging w
           val positionAndLook = cb.PlayerPositionAndLook(posX, posY, posZ, yaw, pitch, flags, teleportId)
           userContext ! positionAndLook
 
-          become(confirmTeleport(positionAndLook))
+          context.become(confirmTeleport(positionAndLook))
         case Failure(e) => log.error(e, "Cannot load chunks")
       }
     case clientStatus: ClientStatus if clientStatus.action == ClientStatusAction.PerformRespawn =>
@@ -85,7 +82,7 @@ class Player(playState: PlayState) extends Actor with Timers with ActorLogging w
         userContext ! positionAndLook
 
         timers.startPeriodicTimer(KeepAliveTickKey, KeepAliveTick, 5 seconds)
-        become(playingBehaviour)
+        context.become(playingBehaviour)
       } else {
         log.warning("Client not confirm teleport")
       }
@@ -135,10 +132,13 @@ class Player(playState: PlayState) extends Actor with Timers with ActorLogging w
 }
 
 object Player {
+
   private case object KeepAliveTickKey
   private case object KeepAliveTick
   private case object KeepAliveTimeout
   private case object KeepAliveTimeoutKey
 
-  def props(playState: PlayState): Props = Props(new Player(playState))
+  def props(username: String, userContext: ActorRef): Props = Props(new Player(username, userContext))
+  def name(username: String): String = s"Player-$username"
+
 }

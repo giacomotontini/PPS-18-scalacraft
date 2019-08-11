@@ -1,8 +1,8 @@
 package io.scalacraft.loaders
 
+import io.circe.generic.auto._
 import io.circe.parser
 import net.querz.nbt.CompoundTag
-import io.circe.generic.auto._
 
 import scala.io.Source
 

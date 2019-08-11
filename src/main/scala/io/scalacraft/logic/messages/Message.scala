@@ -1,6 +1,8 @@
 package io.scalacraft.logic.messages
 
-import io.scalacraft.core.fsm.ConnectionState.PlayState
+import java.util.UUID
+
+import akka.actor.ActorRef
 
 trait Message
 
@@ -10,7 +12,9 @@ object Message {
   case class  RequestChunkData(chunkX: Int, chunkZ: Int, fullChunk: Boolean = true) extends Message
   case object ChunkNotPresent extends Message
 
-  case class  PlayerLogged(playState: PlayState) extends Message
+  case class  RegisterUser(username: String, userContext: ActorRef) extends Message
+  case class  UserRegistered(uuid: UUID, player: ActorRef) extends Message
+  case object CanJoinGame
 
 
 }

@@ -4,8 +4,8 @@ import java.io.{ByteArrayOutputStream, DataOutputStream}
 
 import io.scalacraft.core.marshalling.Marshallers.{IntMarshaller, LongMarshaller}
 import io.scalacraft.misc.Helpers.writeVarInt
-import net.querz.nbt.{CompoundTag, ListTag}
 import net.querz.nbt.mca.Chunk
+import net.querz.nbt.{CompoundTag, ListTag}
 
 object Chunks {
 

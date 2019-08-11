@@ -1,24 +1,23 @@
 package io.scalacraft.core.network
 
+import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
-import io.scalacraft.core.fsm.ConnectionController
+import io.scalacraft.logic.UserContext
 
-class ServerHandler() extends ChannelInboundHandlerAdapter with LazyLogging {
-  var connectionController: ConnectionController = _
+class ServerHandler(actorSystem: ActorSystem) extends ChannelInboundHandlerAdapter with LazyLogging {
 
-  override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
-    val connectionManager: ConnectionManager = ConnectionManager(ctx)
-    connectionController = new ConnectionController(connectionManager)
-  }
+  var dispatcher: ActorRef = _
 
-  override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit = {
-    val rawPacket = message.asInstanceOf[RawPacket]
-    connectionController.handlePacket(rawPacket.packetId, rawPacket.payload)
-  }
+  override def handlerAdded(ctx: ChannelHandlerContext): Unit =
+    dispatcher = actorSystem.actorOf(UserContext.props(ConnectionManager(ctx)), UserContext.name)
+
+  override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit =
+    dispatcher ! message.asInstanceOf[RawPacket]
 
   override def exceptionCaught(channelHandlerContext: ChannelHandlerContext, cause: Throwable): Unit = {
     logger.error(cause.getMessage)
     channelHandlerContext.close()
   }
+
 }

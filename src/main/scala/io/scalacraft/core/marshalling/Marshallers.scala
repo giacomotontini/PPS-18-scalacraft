@@ -6,8 +6,7 @@ import java.util.UUID
 
 import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.DataTypes.{Angle, Position}
-import net.querz.nbt.{CompoundTag, Tag}
-import shapeless.Default.AsRecord.Helper
+import net.querz.nbt.Tag
 
 import scala.collection.mutable
 import scala.reflect.runtime.universe._
