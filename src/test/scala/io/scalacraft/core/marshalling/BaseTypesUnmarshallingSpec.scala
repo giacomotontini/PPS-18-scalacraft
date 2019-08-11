@@ -117,6 +117,14 @@ class BaseTypesUnmarshallingSpec extends FlatSpec with Matchers with DataTypesMa
       .shouldBe(Option(0x42))
   }
 
+  "A byte array marshaller" should "serialize correct values" in {
+    dataTypesUnmarshal(new ByteArrayMarshaller(None), "") shouldBe Array[Byte]()
+    dataTypesUnmarshal(new ByteArrayMarshaller(Some(new IntMarshaller)), "00000000") shouldBe Array[Byte]()
+    dataTypesUnmarshal(new ByteArrayMarshaller(None), "010203") shouldBe Array(1.toByte, 2.toByte, 3.toByte)
+    dataTypesUnmarshal(new ByteArrayMarshaller(Some(new IntMarshaller)), "00000003010203")
+      .shouldBe(Array(1.toByte, 2.toByte, 3.toByte))
+  }
+
   "A list marshaller" should "deserialize correct values" in {
     dataTypesUnmarshal(new ListMarshaller(new IntMarshaller, None), "") shouldBe List()
     dataTypesUnmarshal(new ListMarshaller(new IntMarshaller, Some(new IntMarshaller)), "00000000")

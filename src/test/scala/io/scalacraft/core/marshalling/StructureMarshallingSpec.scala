@@ -64,9 +64,14 @@ class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMars
     structureMarshal(packet) shouldBe "000000000101ac0202050003070004070005070006023f800000070100080701090f0cff"
   }
 
-  "An optional list of byte field" should "deserialize the correct values" in {
-    structureMarshal(OptionalList(1, true, List(1,2))) shouldBe "01010102"
-    structureMarshal(OptionalList(1,false,List())) shouldBe "0100"
+  "An optional array of byte field" should "deserialize the correct values" in {
+    structureMarshal(OptionalArray(1, successful = true, Array(1,2))) shouldBe "01010102"
+    structureMarshal(OptionalArray(1, successful = false, Array())) shouldBe "0100"
+  }
+
+  "An optional list of int field" should "deserialize the correct values" in {
+    structureMarshal(OptionalList(1, successful = true, List(1,2))) shouldBe "01010000000100000002"
+    structureMarshal(OptionalList(1, successful = false, List())) shouldBe "0100"
   }
 
 }

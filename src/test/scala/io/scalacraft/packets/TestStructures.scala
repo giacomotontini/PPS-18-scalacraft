@@ -59,10 +59,12 @@ object TestStructures {
   case class BaseOptional(@boxed value: Option[Int]) extends Structure
   @packet(0x14)
   case class OptionalEnum( @enumType[VarInt] value: Option[EnumInterface]) extends Structure
-  @packet(id= 0x15)
-  case class OptionalList(@boxed someValue: Int, successful: Boolean, @byte data: List[Int]) extends Structure
+  @packet(0x15)
+  case class OptionalArray(@boxed someValue: Int, successful: Boolean, data: Array[Byte]) extends Structure
+  @packet(0x16)
+  case class OptionalList(@boxed someValue: Int, successful: Boolean, data: List[Int]) extends Structure
 
-  @packet(id=0x30)
+  @packet(0x30)
   case class StructureWithMetadata(@boxed val tpe: Int, @fromContext(0) metadata: MobEntity) extends Structure
 
 }

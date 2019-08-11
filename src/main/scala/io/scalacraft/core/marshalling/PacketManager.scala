@@ -72,6 +72,12 @@ class PacketManager[T: TypeTag] {
                                  contextAnnotation: Option[Symbol] = None)
                                 (symbol: Symbol): Marshaller = {
 
+    def precededByMarshaller: Option[Marshaller] =
+      if (checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get)) {
+        val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
+        Some(subTypesMarshaller(checkAnnotations = false)(precededByType))
+      } else None
+
     val contextFieldIndex = if (contextAnnotation.isDefined && hasAnnotation[fromContext](contextAnnotation.get)) {
       Some(annotationParam[Int](annotation[fromContext](contextAnnotation.get), 0))
     } else None
@@ -156,11 +162,9 @@ class PacketManager[T: TypeTag] {
       case sym if isSymType[String](sym) && checkAnnotations && hasAnnotation[maxLength](symAnnotations.get) =>
         new StringMarshaller(annotationParam[Int](annotation[maxLength](symAnnotations.get), 0), contextFieldIndex)
       case sym if isSymType[String](sym) => new StringMarshaller(MaxStringLength, contextFieldIndex)
-      case sym if isSymType[List[_]](sym) /*&& checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get)*/ =>
-        val precededByMarshaller = if( checkAnnotations && hasAnnotation[precededBy[_]](symAnnotations.get)) {
-          val precededByType = annotationTypeArg(annotation[precededBy[_]](symAnnotations.get), 0)
-          Some(subTypesMarshaller(checkAnnotations = false)(precededByType))
-        } else None
+      case sym if isSymType[Array[Byte]](sym) =>
+        new ByteArrayMarshaller(precededByMarshaller, contextFieldIndex)
+      case sym if isSymType[List[_]](sym) =>
         val paramMarshaller = subTypesMarshaller(checkAnnotations = true, Some(sym))(sym.info.typeArgs.head.typeSymbol)
         new ListMarshaller(paramMarshaller, precededByMarshaller, contextFieldIndex)
       case sym if isSymType[Entity](sym) =>

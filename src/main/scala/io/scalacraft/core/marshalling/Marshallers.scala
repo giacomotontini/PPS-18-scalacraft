@@ -4,8 +4,10 @@ import java.io.{DataInputStream, DataOutputStream, EOFException}
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.DataTypes.{Angle, Position}
 import net.querz.nbt.{CompoundTag, Tag}
+import shapeless.Default.AsRecord.Helper
 
 import scala.collection.mutable
 import scala.reflect.runtime.universe._
@@ -128,33 +130,13 @@ object Marshallers {
 
   class VarIntMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
-      case i: Int =>
-        var value = i
-        do {
-          var temp = value & 0x7f
-          value = value >>> 7
-          if (value != 0) {
-            temp |= 0x80
-          }
-          outStream.write(temp)
-        } while (value != 0)
+      case i: Int => Helpers.writeVarInt(i, outStream)
     }
 
     override def internalUnmarshal()(implicit context: Context, inStream: DataInputStream): Any = {
-      var numRead = 0
-      var result = 0
-      var read = 0
-      do {
-        read = inStream.read()
-        result |= ((read & 0x7f) << (7 * numRead))
-        numRead += 1
-        if (numRead > 5) {
-          throw new IllegalArgumentException("VarInt is too big")
-        }
-      } while ((read & 0x80) != 0)
-
-      context.addField(result)
-      result
+      val value = Helpers.readVarInt(inStream).value
+      context.addField(value)
+      value
     }
   }
 
@@ -302,6 +284,44 @@ object Marshallers {
     }
   }
 
+  class ByteArrayMarshaller(lengthMarshaller: Option[Marshaller],
+                            val contextFieldIndex: Option[Int] = None) extends Marshaller {
+    override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
+      case byteArray: Array[Byte] =>
+        if (lengthMarshaller.isDefined) {
+          lengthMarshaller.get.marshal(byteArray.length)
+        }
+        outStream.write(byteArray)
+    }
+
+    override def internalUnmarshal()(implicit context: Context, inStream: DataInputStream): Any = {
+      val byteArray = if (lengthMarshaller.isDefined) {
+        val byteArray = new Array[Byte](readLength(lengthMarshaller.get))
+        inStream.read(byteArray)
+
+        byteArray
+      } else {
+        var b: Byte = 0
+        val buffer = mutable.ArrayBuffer[Byte]()
+        while ({ b = inStream.read().toByte; b } >= 0) {
+          buffer.append(b)
+        }
+
+        buffer.toArray
+      }
+
+      context.addField(byteArray)
+      byteArray
+    }
+  }
+
+  private def readLength(lengthMarshaller: Marshaller)(implicit inStream: DataInputStream): Int =
+    lengthMarshaller.unmarshal()(Context.trash, inStream) match {
+      case b: Byte => b
+      case s: Short => s
+      case i: Int => i
+    }
+
   class ListMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller],
                        val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
@@ -318,12 +338,7 @@ object Marshallers {
       val trash = Context.trash
 
       val list = if (lengthMarshaller.isDefined) {
-        val length = lengthMarshaller.get.unmarshal()(trash, inStream) match {
-          case b: Byte => b
-          case s: Short => s
-          case i: Int => i
-        }
-
+        val length = readLength(lengthMarshaller.get)
         val array = new Array[Any](length)
 
         for (i <- 0 until length) {

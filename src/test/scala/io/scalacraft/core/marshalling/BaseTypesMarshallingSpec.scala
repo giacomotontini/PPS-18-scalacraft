@@ -117,6 +117,14 @@ class BaseTypesMarshallingSpec extends FlatSpec with Matchers with DataTypesMars
     dataTypesMarshal(new OptionalMarshaller(new IntMarshaller, Some(new IntMarshaller)), Option(0x42)) shouldBe "00000042"
   }
 
+  "A byte array marshaller" should "serialize correct values" in {
+    dataTypesMarshal(new ByteArrayMarshaller(None), Array[Byte]()) shouldBe ""
+    dataTypesMarshal(new ByteArrayMarshaller(Some(new IntMarshaller)), Array[Byte]()) shouldBe "00000000"
+    dataTypesMarshal(new ByteArrayMarshaller(None), Array(1.toByte, 2.toByte, 3.toByte)) shouldBe "010203"
+    dataTypesMarshal(new ByteArrayMarshaller(Some(new IntMarshaller)), Array(1.toByte, 2.toByte, 3.toByte))
+      .shouldBe("00000003010203")
+  }
+
   "A list marshaller" should "serialize correct values" in {
     dataTypesMarshal(new ListMarshaller(new IntMarshaller, None), List())
       .shouldBe("")

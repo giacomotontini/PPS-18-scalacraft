@@ -30,9 +30,21 @@ class StructureUnmarshallingSpec extends FlatSpec with Matchers with StructureMa
     structureUnmarshal(0x14, "0102") shouldBe OptionalEnum(Some(EnumOption2))
   }
 
-  "An optional list of byte field" should "deserialize the correct values" in {
-    structureUnmarshal(0x15, "01010102") shouldBe OptionalList(1, true, List(1,2))
-    structureUnmarshal(0x15, "0100") shouldBe OptionalList(1,false,List())
+  "An optional array of byte" should "deserialize the correct values" in {
+    var optionalArray = structureUnmarshal(0x15, "01010102").asInstanceOf[OptionalArray]
+    optionalArray.someValue shouldBe 1
+    optionalArray.successful shouldBe true
+    optionalArray.data.toList should contain theSameElementsInOrderAs Array(1,2).toList
+
+    optionalArray = structureUnmarshal(0x15, "0100").asInstanceOf[OptionalArray]
+    optionalArray.someValue shouldBe 1
+    optionalArray.successful shouldBe false
+    optionalArray.data.toList should contain theSameElementsInOrderAs Array().toList
+  }
+
+  "An optional list of int field" should "deserialize the correct values" in {
+    structureMarshal(OptionalList(1, successful = true, List(1,2))) shouldBe "01010000000100000002"
+    structureMarshal(OptionalList(1, successful = false, List())) shouldBe "0100"
   }
 
   "A basic switch" should "serialize the correct values" in {

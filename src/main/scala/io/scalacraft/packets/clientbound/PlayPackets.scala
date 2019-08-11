@@ -346,7 +346,7 @@ object PlayPackets {
   case class SetCooldown(@boxed itemId: Int, @boxed cooldownTicks: Int) extends Structure
 
   @packet(id = 0x19)
-  case class PluginMessage(channel: Identifier, @byte data: List[Int]) extends Structure
+  case class PluginMessage(channel: Identifier, data: Array[Byte]) extends Structure
 
   sealed trait SoundCategory
 
@@ -478,8 +478,8 @@ object PlayPackets {
                        chunkZ: Int,
                        fullChunk: Boolean,
                        @boxed primaryBitMask: Int,
-                       @precededBy[VarInt] @byte data: List[Int],
-                       @precededBy[VarInt] blockEntities: List[Nbt]) extends Structure // TODO: to restore
+                       @precededBy[VarInt] data: Array[Byte],
+                       @precededBy[VarInt] blockEntities: List[Nbt]) extends Structure
 
   sealed trait EffectId
 
@@ -748,7 +748,7 @@ object PlayPackets {
                       @enumType[String] levelType: LevelType,
                       reducedDebugInfo: Boolean) extends Structure
 
-  case class MapDataContent(@precededBy[VarInt] @byte data: List[Int]) extends Structure
+  case class MapDataContent(@precededBy[VarInt] data: Array[Byte]) extends Structure
 
   sealed trait IconType
 

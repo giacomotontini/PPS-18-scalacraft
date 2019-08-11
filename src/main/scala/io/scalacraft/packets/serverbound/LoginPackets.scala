@@ -14,5 +14,5 @@ object LoginPackets {
   @packet(0x02)
   case class LoginPluginResponse(@boxed messageId: Int,
                                  successful: Boolean,
-                                 @byte data: List[Int]) extends Structure
+                                 data: Array[Byte]) extends Structure
 }

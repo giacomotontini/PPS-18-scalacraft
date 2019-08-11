@@ -11,8 +11,8 @@ object LoginPackets {
 
   @packet(0x01)
   case class EncryptionRequest(@maxLength(20) serverId: String,
-                               @precededBy[VarInt] @byte publicKey: List[Int],
-                               @precededBy[VarInt] @byte verifyTokenLength: List[Int]) extends Structure
+                               @precededBy[VarInt] publicKey: Array[Byte],
+                               @precededBy[VarInt] verifyTokenLength: Array[Byte]) extends Structure
 
   @packet(0x02)
   case class LoginSuccess(@maxLength(36) uuid: String,
@@ -24,6 +24,6 @@ object LoginPackets {
   @packet(0x04)
   case class LoginPluginRequest(@boxed messageID: Int,
                                 channel: Identifier,
-                                @byte data: List[Int]) extends Structure
+                                data: Array[Byte]) extends Structure
 
 }

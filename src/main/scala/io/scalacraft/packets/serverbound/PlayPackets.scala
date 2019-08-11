@@ -74,7 +74,7 @@ object PlayPackets {
   case class CloseWindow(@byte windowId: Int) extends Structure
 
   @packet(0x0A)
-  case class PluginMessage(channel: Identifier, @byte data: List[Int]) extends Structure
+  case class PluginMessage(channel: Identifier, data: Array[Byte]) extends Structure
   sealed trait Hand
 
   object Hand {
