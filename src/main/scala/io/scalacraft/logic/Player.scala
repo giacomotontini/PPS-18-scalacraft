@@ -1,29 +1,35 @@
 package io.scalacraft.logic
 
-
-import akka.actor.{Actor, ActorRef, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import akka.pattern._
 import io.scalacraft.core.fsm.ConnectionState.PlayState
-import io.scalacraft.core.marshalling.Structure
-import io.scalacraft.misc.{Blocks, Helpers, ServerConfiguration}
+import io.scalacraft.logic.messages.Message.{ChunkNotPresent, RequestChunkData}
+import io.scalacraft.logic.traits.DefaultTimeout
+import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, PlayerPositionAndLook, SpawnPosition, WorldDimension}
-import io.scalacraft.packets.serverbound.PlayPackets.{ClientSettings, ClientStatus, ClientStatusAction, KeepAlive, MainHand, TeleportConfirm}
+import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, SpawnPosition, WorldDimension}
+import io.scalacraft.packets.clientbound.{PlayPackets => cb}
+import io.scalacraft.packets.serverbound.PlayPackets.{ClientSettings, ClientStatus, ClientStatusAction, MainHand, PlayerPosition, TeleportConfirm}
+import io.scalacraft.packets.serverbound.{PlayPackets => sb}
 import net.querz.nbt.mca.MCAUtil
-import collection.JavaConverters._
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Random
+import scala.language.postfixOps
+import scala.util.{Failure, Random, Success}
 
-class Player(playState: PlayState) extends Actor with Timers {
+class Player(playState: PlayState) extends Actor with Timers with ActorLogging with DefaultTimeout {
   import Player._
   import context._
-  var userContext: ActorRef = _
+
+  private val world = context.parent
+  private var userContext: ActorRef = _
 
   private val entityId = 0
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = 3
-  private var posY: Int = 150
-  private var posZ: Int = 3
+  private var posX: Int = -20
+  private var posY: Int = 80
+  private var posZ: Int = 20
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   //private var digging: Boolean = false
@@ -33,8 +39,6 @@ class Player(playState: PlayState) extends Actor with Timers {
   private var viewDistance: Int = _ //render distance in chunks
 
   private var lastKeepAliveId: Long = _
-  private var teleportId: Int = _
-  private var playerPositionAndLookToBeConfirmed: PlayerPositionAndLook = _
 
   private val randomGenerator = Random
 
@@ -50,54 +54,64 @@ class Player(playState: PlayState) extends Actor with Timers {
       mainHand = clientSettings.mainHand
       viewDistance = clientSettings.viewDistance
 
-      val chunkFile = MCAUtil.readMCAFile("world/regions/r.0.0.mca")
-      for(x <- 0 to 6) {
-        for(z <- 0 to 6) {
-          val chunkColumns = chunkFile.getChunk(0,0)
-          val (data,bitmask) = Helpers.buildChunkDataStructureAndBitmask(chunkColumns)
-          val chunkDataPacket = ChunkData(x, z, true, bitmask, data.map(_.toInt).toList, chunkColumns.getEntities.iterator().asScala.toList)
-          userContext ! chunkDataPacket
+      val chunkX = MCAUtil.blockToChunk(posX)
+      val chunkZ = MCAUtil.blockToChunk(posZ)
+      Future.sequence(for (x <- chunkX - 3 to chunkX + 3; z <- chunkZ - 3 to chunkZ + 3) yield {
+        world ? RequestChunkData(x, z) map {
+          case chunkData: ChunkData => userContext ! chunkData
+          case ChunkNotPresent => log.warning(s"Chunk ($x,$z) not present")
         }
+      }) onComplete {
+        case Success(_) =>
+          userContext ! SpawnPosition(Position(posX, posY, posZ))
+
+          val teleportId = randomGenerator.nextInt()
+          val flags = playerPositionAndLookFlags(xRelative = false, yRelative = false, zRelative = false, Y_ROT = false, X_ROT = false)
+          val positionAndLook = cb.PlayerPositionAndLook(posX, posY, posZ, yaw, pitch, flags, teleportId)
+          userContext ! positionAndLook
+
+          become(confirmTeleport(positionAndLook))
+        case Failure(e) => log.error(e, "Cannot load chunks")
       }
-      // Send chunk data from chunk actor
+    case clientStatus: ClientStatus if clientStatus.action == ClientStatusAction.PerformRespawn =>
+      log.warning("Respawn not to be handled on login")
+    case clientStatus: ClientStatus if clientStatus.action == ClientStatusAction.RequestStats =>
+      log.warning("User request statistics, not handled")
+  }
 
-      userContext ! SpawnPosition(Position(posX, posY, posZ))
+  private def confirmTeleport(positionAndLook: cb.PlayerPositionAndLook): Receive = {
+    case teleportConfirm: TeleportConfirm =>
+      if (teleportConfirm.teleportId == positionAndLook.teleportId) {
+        userContext ! positionAndLook
 
-      teleportId = randomGenerator.nextInt()
-      val flags = playerPositionAndLookFlags(xRelative = false, yRelative = false, zRelative = false, Y_ROT = false, X_ROT = false)
-      playerPositionAndLookToBeConfirmed =  PlayerPositionAndLook(posX, posY, posZ, yaw, pitch, flags, teleportId)
-      userContext ! playerPositionAndLookToBeConfirmed
-
-      timers.startPeriodicTimer(KeepAliveTickKey, KeepAliveTick, 5.seconds)
-      become(playingBehaviour)
-    case teleportConfirm: TeleportConfirm if  teleportConfirm.teleportId == teleportId => userContext ! playerPositionAndLookToBeConfirmed
-    case clientStatus : ClientStatus if clientStatus.action == ClientStatusAction.PerformRespawn => println("Respawn not to be handled on login")
-    case clientStatus : ClientStatus if clientStatus.action == ClientStatusAction.RequestStats => println("User request statistics, not handled")
+        timers.startPeriodicTimer(KeepAliveTickKey, KeepAliveTick, 5 seconds)
+        become(playingBehaviour)
+      } else {
+        log.warning("Client not confirm teleport")
+      }
   }
 
   private def playingBehaviour: Receive = {
     case KeepAliveTick =>
       lastKeepAliveId = randomGenerator.nextLong()
-      userContext ! io.scalacraft.packets.clientbound.PlayPackets.KeepAlive(lastKeepAliveId)
+      userContext ! cb.KeepAlive(lastKeepAliveId)
       if(!timers.isTimerActive(KeepAliveTimeoutKey)) {
         timers.startSingleTimer(KeepAliveTimeoutKey, KeepAliveTimeout, 30.seconds)
       }
     case KeepAliveTimeout =>
       timers.cancel(KeepAliveTickKey)
-      println("Client timeout")
-    case keepAlive: KeepAlive if keepAlive.keepAliveId == lastKeepAliveId =>
+    case keepAlive: sb.KeepAlive if keepAlive.keepAliveId == lastKeepAliveId =>
       timers.cancel(KeepAliveTimeoutKey)
-      println("KeepAlive received, everything ok")
-    case keepAlive: KeepAlive if keepAlive.keepAliveId != lastKeepAliveId => println("Received a keep alive with different value, that's bad") //tobe removed
+    case keepAlive: sb.KeepAlive if keepAlive.keepAliveId != lastKeepAliveId =>
 
-    case player: io.scalacraft.packets.serverbound.PlayPackets.Player =>
+    case player: Player =>
       onGround = player.onGround
-    case playerPosition: io.scalacraft.packets.serverbound.PlayPackets.PlayerPosition =>
+    case playerPosition: PlayerPosition =>
       posX = playerPosition.x.toInt
       posY = playerPosition.feetY.toInt
       posZ = playerPosition.z.toInt
       onGround = playerPosition.onGround
-    case playerPositionAndLook: io.scalacraft.packets.serverbound.PlayPackets.PlayerPositionAndLook =>
+    case playerPositionAndLook: sb.PlayerPositionAndLook =>
       posX = playerPositionAndLook.x.toInt
       posY = playerPositionAndLook.feetY.toInt
       posZ = playerPositionAndLook.z.toInt

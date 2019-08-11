@@ -1,9 +1,10 @@
-package io.scalacraft.misc
+package io.scalacraft.loaders
 
-import scala.io.Source
-import io.circe.generic.auto._
 import io.circe.parser
 import net.querz.nbt.CompoundTag
+import io.circe.generic.auto._
+
+import scala.io.Source
 
 object Blocks {
 
@@ -13,30 +14,28 @@ object Blocks {
 
   //The index represents the block id, the compound tag represents the block state
   private lazy val compoundTagList = {
-    val inputFile = "/blocks.json"
-    val content = Source.fromInputStream(getClass.getResourceAsStream(inputFile)).mkString
-    val parsed = parser.decode[Map[String, Block]](content)
-    var resultMap: Map[String, Block] = Map()
-    parsed match {
-      case Right(result) => resultMap = result
-    }
-    val idToCompoundTag = resultMap.flatMap {
+    val content = Source.fromInputStream(getClass.getResourceAsStream("/blocks.json")).mkString
+    val Right(blocksMap) = parser.decode[Map[String, Block]](content)
+
+    blocksMap.flatMap {
       case (blockName, blockObject) =>
-        blockObject.states.map(blockState => {
+        blockObject.states map { blockState => {
           val compoundTag = new CompoundTag()
+
           compoundTag.putString("Name", blockName)
-          blockState.properties.map(property => {
+          blockState.properties map { property =>
             val innerTag = new CompoundTag()
+
             property.foreach {
-              case (name, value) =>
-                innerTag.putString(name, value)
+              case (name, value) => innerTag.putString(name, value)
             }
+
             innerTag
-          }).foreach(tag => compoundTag.put("Properties", tag))
+          } foreach { compoundTag.put("Properties", _) }
           blockState.id -> compoundTag
-        })
-    }
-    idToCompoundTag.toList.sortBy(_._1).map(_._2)
+        }
+      }
+    }.toList sortBy(_._1) map(_._2)
   }
 
   def compoundTagFromId(id: Int): CompoundTag = {
@@ -46,4 +45,5 @@ object Blocks {
   def idFromCompoundTag(compoundTag: CompoundTag): Int = {
     compoundTagList.indexOf(compoundTag)
   }
+
 }
