@@ -1,10 +1,10 @@
 package io.scalacraft.core.network
 
+import com.typesafe.scalalogging.LazyLogging
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.scalacraft.core.fsm.ConnectionController
-import org.apache.logging.log4j.scala.Logging
 
-class ServerHandler() extends ChannelInboundHandlerAdapter with Logging {
+class ServerHandler() extends ChannelInboundHandlerAdapter with LazyLogging {
   var connectionController: ConnectionController = _
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
