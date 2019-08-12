@@ -51,7 +51,7 @@ private[marshalling] object MobsAndObjectsTypeMapping {
       44 -> classOf[MinecartSpawner],
       45 -> classOf[MinecartTNT],
       46 -> classOf[Mule],
-      47 -> classOf[Mooshroom],
+      47 -> classOf[Mushroom],
       48 -> classOf[Ocelot],
       // 49 -> classOf[Painting],
       50 -> classOf[Parrot],
