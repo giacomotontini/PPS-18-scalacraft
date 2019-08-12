@@ -1,24 +1,30 @@
 package io.scalacraft.logic
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 case class InventoryItem(itemId: Int, var quantity: Int = 0)
 
 sealed trait Inventory {
-  private val inventory = mutable.MutableList[Option[InventoryItem]]()
+   protected val inventory: Array[Option[InventoryItem]]
 
-  def addItem(slot: Int, inventoryItem: InventoryItem): Unit = {
-    if(inventory(slot).isDefined && inventory(slot).get.itemId == inventoryItem.itemId)
-      inventory(slot).get.quantity += inventoryItem.quantity
-    else {
-      inventory(slot) = Some(inventoryItem)
+  def addItem(inventoryItem: InventoryItem): Unit = {
+    val slots = findItemsIndex(inventoryItem.itemId)
+    if(slots.isEmpty) {
+      val freeSlots = findAvailableIndex()
+      if(!freeSlots.isEmpty) {
+        inventory(freeSlots.head) = Some(inventoryItem)
+        println("aggiunto")
+      }
+    } else {
+      inventory(slots.head).get.quantity += inventoryItem.quantity
+      println("modificato")
     }
+
   }
 
-  def addItem(inventoryItem: InventoryItem): Unit = addItem(findAvailableIndex(), inventoryItem)
-
   def removeItem(slot: Int, inventoryItem: InventoryItem): Unit = {
-    if(inventory(slot).isDefined && inventory(slot).get.itemId == inventoryItem.itemId) {
+    if (inventory(slot).isDefined && inventory(slot).get.itemId == inventoryItem.itemId) {
       inventory(slot).get.quantity -= inventoryItem.quantity
       if (inventory(slot).get.quantity <= 0)
         inventory(slot) = None
@@ -26,9 +32,9 @@ sealed trait Inventory {
   }
 
   def moveItem(from: Int, to: Int, quantity: Int): Unit = {
-    if(inventory(from).isDefined && inventory(from).get.quantity >= quantity) {
+    if (inventory(from).isDefined && inventory(from).get.quantity >= quantity) {
       inventory(from).get.quantity -= quantity
-      if(inventory(to).isDefined) {
+      if (inventory(to).isDefined) {
         inventory(to).get.quantity += quantity
       } else {
         inventory(to) = Some(InventoryItem(inventory(from).get.itemId, quantity))
@@ -40,16 +46,16 @@ sealed trait Inventory {
     inventory.toList
   }
 
-  private def findAvailableIndex(): Int ={
-    inventory.indexWhere(_== None)
-  }
-}
+  def findAvailableIndex(): List[Int]
 
+  def findItemsIndex(itemId: Int): List[Int]
+}
 
 sealed trait CraftingInventoty
 sealed trait ChestInventory
 
 case class PlayerInventory() extends Inventory with CraftingInventoty {
+
   //All range boundaries are inclusive by protocol
   private val CrafitingOutputSlot = 0
   private val CraftingInputSlotRange = Range(1,4)
@@ -57,25 +63,57 @@ case class PlayerInventory() extends Inventory with CraftingInventoty {
   private val MainInventorySlotRange = Range(9, 35)
   private val HotBarSlotRange = Range(36, 44)
   private val OffhandSlot = 45
+
+  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(OffhandSlot + 1)(None:Option[InventoryItem])
+
+  override def findAvailableIndex(): List[Int] = {
+    println(inventory.size)
+    (for {
+      i <- (HotBarSlotRange ++ MainInventorySlotRange)
+      if inventory(i).isEmpty
+    } yield i).toList
+  }
+
+  override def findItemsIndex(itemId: Int): List[Int] = {
+    (for {
+      i <- (HotBarSlotRange ++ MainInventorySlotRange)
+      if inventory(i).isDefined && inventory(i).get.itemId == itemId
+    } yield i).toList
+  }
 }
 
 case class Chest() extends Inventory with ChestInventory {
+
   private val ChestSlotRange = Range(0, 26)
   private val MainInventorySlotRange = Range(27, 53)
   private val HotBarSlotRange = Range(54, 62)
+  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None:Option[InventoryItem])
+
+  override def findAvailableIndex(): List[Int] = List()
+  override def findItemsIndex(itemId: Int): List[Int] = List()
 }
 
 case class LargeChest() extends Inventory with ChestInventory {
+
   private val ChestSlotRange = Range(0, 53)
   private val MainInventorySlotRange = Range(53, 80)
   private val HotBarSlotRange = Range(81, 89)
+  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None:Option[InventoryItem])
+
+  override def findAvailableIndex(): List[Int] = List()
+  override def findItemsIndex(itemId: Int): List[Int] = List()
 }
 
 case class CraftingTable() extends Inventory with CraftingInventoty {
+
   private val CrafitingOutputSlot = 0
   private val CraftingInputSlotRange = Range(1,9)
   private val MainInventorySlotRange = Range(10, 36)
   private val HotBarSlotRange = Range(37, 45)
+  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None:Option[InventoryItem])
 
+  override def findAvailableIndex(): List[Int] = List()
+  override def findItemsIndex(itemId: Int): List[Int] = List()
 }
+
 

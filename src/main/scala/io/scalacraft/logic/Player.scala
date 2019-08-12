@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks
+import io.scalacraft.logic.PlayerInventoryActor.Message.AddItem
 import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, RequestChunkData}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
@@ -23,17 +24,18 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class Player(username: String, userContext: ActorRef) extends Actor
+class Player(username: String, userContext: ActorRef) extends Actor with ActorLogging
   with Timers with ActorLogging with DefaultTimeout with ImplicitContext {
 
   import Player._
 
   private val world = context.parent
+  private val inventory = context.actorOf(PlayerInventoryActor.props(self))
 
   private val entityId = 0
   private val worldDimension = WorldDimension.Overworld
   private var posX: Int = -20
-  private var posY: Int = 80
+  private var posY: Int = 70
   private var posZ: Int = 20
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
@@ -46,7 +48,6 @@ class Player(username: String, userContext: ActorRef) extends Actor
   private var viewDistance: Int = _ //render distance in chunks
 
   private var lastKeepAliveId: Long = _
-
   private val randomGenerator = Random
 
   private def preStartBehaviour: Receive = {
@@ -64,7 +65,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
       Future.sequence(for (x <- chunkX - 3 to chunkX + 3; z <- chunkZ - 3 to chunkZ + 3) yield {
         world ? RequestChunkData(x, z) map {
           case chunkData: ChunkData => userContext ! chunkData
-          case ChunkNotPresent => log.warning(s"Chunk ($x,$z) not present")
+          case ChunkNotPresent => log.warning(s"Chunk ($x,$z) not present.")
         }
       }) onComplete {
         case Success(_) =>
@@ -76,12 +77,12 @@ class Player(username: String, userContext: ActorRef) extends Actor
           userContext ! positionAndLook
 
           context.become(confirmTeleport(positionAndLook))
-        case Failure(e) => log.error(e, "Cannot load chunks")
+        case Failure(e) => log.error(e, "Cannot load chunks.")
       }
     case clientStatus: ClientStatus if clientStatus.action == ClientStatusAction.PerformRespawn =>
-      log.warning("Respawn not to be handled on login")
+      log.warning("Respawn not to be handled on login.")
     case clientStatus: ClientStatus if clientStatus.action == ClientStatusAction.RequestStats =>
-      log.warning("User request statistics, not handled")
+      log.warning("User request statistics, not handled.")
   }
 
   private def confirmTeleport(positionAndLook: cb.PlayerPositionAndLook): Receive = {
@@ -92,7 +93,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
         timers.startPeriodicTimer(KeepAliveTickKey, KeepAliveTick, 5 seconds)
         context.become(playingBehaviour)
       } else {
-        log.warning("Client not confirm teleport")
+        log.warning("Client not confirm teleport.")
       }
   }
 
@@ -108,7 +109,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
     case keepAlive: sb.KeepAlive if keepAlive.keepAliveId == lastKeepAliveId =>
       timers.cancel(KeepAliveTimeoutKey)
     case keepAlive: sb.KeepAlive if keepAlive.keepAliveId != lastKeepAliveId =>
-
+      log.warning("Client keep alive id invalid.")
     case player: Player =>
       onGround = player.onGround
     case playerPosition: PlayerPosition =>
@@ -123,17 +124,26 @@ class Player(username: String, userContext: ActorRef) extends Actor
       yaw = playerPositionAndLook.yaw
       pitch = playerPositionAndLook.pitch
       onGround = playerPositionAndLook.onGround
+    case playerLook: PlayerLook =>
+      yaw = playerLook.yaw
+      pitch = playerLook.pitch
+      onGround = playerLook.onGround
     case playerDigging: PlayerDigging =>
       digging = Some(playerDigging.status)
       if (playerDigging.status == PlayerDiggingStatus.StartedDigging) {
-
+        log.info("User:", username + " started digging")
+      } else if(playerDigging.status == PlayerDiggingStatus.CancelledDigging) {
+        log.info("User:", username + " canceled digging")
       } else if (playerDigging.status == PlayerDiggingStatus.FinishedDigging) {
+        log.info("User:", username + " finished digging")
         val pos = playerDigging.location
-        userContext ! Effect(EffectId.BlockBreakWithSound, playerDigging.location, 0, false)
-        userContext ! BlockBreakAnimation(entityId, playerDigging.location, 10)
-        val itemEntityId = randomGenerator.nextInt()
+        val itemEntityId: Int = randomGenerator.nextInt()
         val item = new Entities.Item()
         item.item = Some(SlotData(4, 1, new CompoundTag()))
+
+
+        userContext ! Effect(EffectId.BlockBreakWithSound, playerDigging.location, 0, false)
+        userContext ! BlockBreakAnimation(entityId, playerDigging.location, 10)
         userContext ! SpawnObject(itemEntityId, UUID.randomUUID(), 2, pos.x, pos.y, pos.z, Angle(0), Angle(0), 1, 0, 0, 0)
         userContext ! EntityMetadata(itemEntityId, item)
         userContext ! BlockChange(playerDigging.location, 0) //air
@@ -142,11 +152,22 @@ class Player(username: String, userContext: ActorRef) extends Actor
       }
     case collectItem: CollectItem  =>
       //add to my inventory
-      userContext ! collectItem
+      userContext.forward(collectItem)
+
       if (collectItem.collectorEntityId == entityId) {
-        val item = Some(SlotData(4, 1, new CompoundTag()))
-        userContext ! SetSlot(0, 36, item)
+        inventory ? AddItem(InventoryItem(2, collectItem.pickUpItemCount)) onComplete {
+          case Success(list: List[Option[InventoryItem]]) =>
+            list.collect {
+            case Some(item) =>
+              println(item)
+              val slot = list.indexOf(Some(item))
+              val slotData = Some(SlotData(item.itemId, item.quantity, new CompoundTag()))
+              userContext ! SetSlot(0, slot, slotData)
+          }
+        }
       }
+
+
     case heldItemChange: HeldItemChange => println("holding item in slot", heldItemChange.slot)
     case anyOther => println("Not handled", anyOther)
 
@@ -167,6 +188,11 @@ class Player(username: String, userContext: ActorRef) extends Actor
 }
 
 object Player {
+
+  sealed trait Message
+  object Message {
+    case class CollectItemWithType(collectItem: CollectItem, itemId: Int) extends Message
+  }
 
   private case object KeepAliveTickKey
 
