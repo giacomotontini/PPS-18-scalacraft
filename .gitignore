@@ -26,6 +26,11 @@ build
 .scala_dependencies
 .cache
 .cache-main
+.directory
 
 #general
+logs/
 *.class
+world/
+report.xml
+src/main/scala/io/scalacraft/Test.scala
