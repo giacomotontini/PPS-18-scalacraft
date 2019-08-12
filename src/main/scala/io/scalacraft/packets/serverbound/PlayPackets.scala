@@ -133,23 +133,23 @@ object PlayPackets {
   @packet(0x17)
   case class PlayerAbilities(@byte flags: Int, flyingSpeed: Float, walkingSpeed: Float) extends Structure
 
-  sealed trait Status
+  sealed trait PlayerDiggingStatus
 
-  object Status {
+  object PlayerDiggingStatus {
 
-    @enumValue(0) case object StartedDigging extends Status
+    @enumValue(0) case object StartedDigging extends PlayerDiggingStatus
 
-    @enumValue(1) case object CancelledDigging extends Status
+    @enumValue(1) case object CancelledDigging extends PlayerDiggingStatus
 
-    @enumValue(2) case object FinishedDigging extends Status
+    @enumValue(2) case object FinishedDigging extends PlayerDiggingStatus
 
-    @enumValue(3) case object DropItemStack extends Status
+    @enumValue(3) case object DropItemStack extends PlayerDiggingStatus
 
-    @enumValue(4) case object DropItem extends Status
+    @enumValue(4) case object DropItem extends PlayerDiggingStatus
 
-    @enumValue(5) case object ShootArrowOrFinishEating extends Status
+    @enumValue(5) case object ShootArrowOrFinishEating extends PlayerDiggingStatus
 
-    @enumValue(6) case object SwapItemInHand extends Status
+    @enumValue(6) case object SwapItemInHand extends PlayerDiggingStatus
 
   }
 
@@ -165,7 +165,7 @@ object PlayPackets {
   }
 
   @packet(0x18)
-  case class PlayerDigging(@enumType[VarInt] status: Status, location: Position, @enumType[Byte] face: Face) extends Structure
+  case class PlayerDigging(@enumType[VarInt] status: PlayerDiggingStatus, location: Position, @enumType[Byte] face: Face) extends Structure
 
   sealed trait ActionID
 

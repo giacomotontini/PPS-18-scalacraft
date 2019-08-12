@@ -14,7 +14,7 @@ object Message {
 
   case class  RegisterUser(username: String, userContext: ActorRef) extends Message
   case class  UserRegistered(uuid: UUID, player: ActorRef) extends Message
-  case object CanJoinGame
+  case object CanJoinGame extends Message
 
 
 }

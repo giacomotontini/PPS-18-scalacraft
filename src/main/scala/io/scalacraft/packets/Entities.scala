@@ -105,6 +105,10 @@ object Entities {
     @indexType(index = 1) @boxed var rotation: Int = 0
   }
 
+  class Item extends Entity with ObjectEntity {
+    @indexType(index = 6) var item: Slot = None
+  }
+
   class Living extends Entity {
     @indexType(index = 0) @byte var handStates: Int = 0
     @indexType(index = 2) var health: Float = 1.0f
@@ -431,6 +435,5 @@ object Entities {
   class TntPrimed extends Entity with MobEntity {
     @indexType(index = 1) @boxed var fuseTime: Int = 80
   }
-
 
 }

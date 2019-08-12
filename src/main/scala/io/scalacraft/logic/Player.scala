@@ -1,15 +1,21 @@
 package io.scalacraft.logic
 
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
+import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, RequestChunkData}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.misc.ServerConfiguration
-import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, SpawnPosition, WorldDimension}
+import io.scalacraft.misc.{Helpers, ServerConfiguration}
+import io.scalacraft.packets.DataTypes.{Angle, Position, SlotData}
+import io.scalacraft.packets.Entities
+import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, ChunkData, CollectItem, Effect, EffectId, EntityMetadata, JoinGame, SetSlot, SpawnMob, SpawnObject, SpawnPosition, Tag, WorldDimension}
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
+import net.querz.nbt.CompoundTag
 import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.Future
@@ -31,8 +37,10 @@ class Player(username: String, userContext: ActorRef) extends Actor
   private var posZ: Int = 20
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
-  //private var digging: Boolean = false
+  private var digging: Option[PlayerDiggingStatus] = None
   private var onGround = true
+  private var health = 20
+  private var foodHealth = 20
   private var mainHand: MainHand = _
   private var locale: String = _
   private var viewDistance: Int = _ //render distance in chunks
@@ -92,7 +100,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
     case KeepAliveTick =>
       lastKeepAliveId = randomGenerator.nextLong()
       userContext ! cb.KeepAlive(lastKeepAliveId)
-      if(!timers.isTimerActive(KeepAliveTimeoutKey)) {
+      if (!timers.isTimerActive(KeepAliveTimeoutKey)) {
         timers.startSingleTimer(KeepAliveTimeoutKey, KeepAliveTimeout, 30.seconds)
       }
     case KeepAliveTimeout =>
@@ -113,8 +121,35 @@ class Player(username: String, userContext: ActorRef) extends Actor
       posY = playerPositionAndLook.feetY.toInt
       posZ = playerPositionAndLook.z.toInt
       yaw = playerPositionAndLook.yaw
-      pitch =playerPositionAndLook.pitch
+      pitch = playerPositionAndLook.pitch
       onGround = playerPositionAndLook.onGround
+    case playerDigging: PlayerDigging =>
+      digging = Some(playerDigging.status)
+      if (playerDigging.status == PlayerDiggingStatus.StartedDigging) {
+
+      } else if (playerDigging.status == PlayerDiggingStatus.FinishedDigging) {
+        val pos = playerDigging.location
+        userContext ! Effect(EffectId.BlockBreakWithSound, playerDigging.location, 0, false)
+        userContext ! BlockBreakAnimation(entityId, playerDigging.location, 10)
+        val itemEntityId = randomGenerator.nextInt()
+        val item = new Entities.Item()
+        item.item = Some(SlotData(4, 1, new CompoundTag()))
+        userContext ! SpawnObject(itemEntityId, UUID.randomUUID(), 2, pos.x, pos.y, pos.z, Angle(0), Angle(0), 1, 0, 0, 0)
+        userContext ! EntityMetadata(itemEntityId, item)
+        userContext ! BlockChange(playerDigging.location, 0) //air
+        Thread.sleep(500)  // TODO: remove
+        self ! CollectItem(itemEntityId, entityId, 1) //TODO to be changed with a internal message wolrd -> player
+      }
+    case collectItem: CollectItem  =>
+      //add to my inventory
+      userContext ! collectItem
+      if (collectItem.collectorEntityId == entityId) {
+        val item = Some(SlotData(4, 1, new CompoundTag()))
+        userContext ! SetSlot(0, 36, item)
+      }
+    case heldItemChange: HeldItemChange => println("holding item in slot", heldItemChange.slot)
+    case anyOther => println("Not handled", anyOther)
+
   }
 
   override def receive: Receive = preStartBehaviour
@@ -123,9 +158,9 @@ class Player(username: String, userContext: ActorRef) extends Actor
     var flags: Byte = 0x00
     if (xRelative) flags = (flags | 0x01).toByte
     if (yRelative) flags = (flags | 0x02).toByte
-    if (zRelative) flags = (flags |  0x04).toByte
-    if (Y_ROT) flags = (flags |  0x08).toByte
-    if (X_ROT) flags = (flags |  0x10).toByte
+    if (zRelative) flags = (flags | 0x04).toByte
+    if (Y_ROT) flags = (flags | 0x08).toByte
+    if (X_ROT) flags = (flags | 0x10).toByte
     flags
   }
 
@@ -134,11 +169,15 @@ class Player(username: String, userContext: ActorRef) extends Actor
 object Player {
 
   private case object KeepAliveTickKey
+
   private case object KeepAliveTick
+
   private case object KeepAliveTimeout
+
   private case object KeepAliveTimeoutKey
 
   def props(username: String, userContext: ActorRef): Props = Props(new Player(username, userContext))
+
   def name(username: String): String = s"Player-$username"
 
 }
