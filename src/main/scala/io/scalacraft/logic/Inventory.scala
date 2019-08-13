@@ -1,12 +1,10 @@
 package io.scalacraft.logic
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 case class InventoryItem(itemId: Int, var quantity: Int = 0)
 
 sealed trait Inventory {
-   protected val inventory: Array[Option[InventoryItem]]
+  protected val inventory: Array[Option[InventoryItem]]
 
   def addItem(inventoryItem: InventoryItem): Unit = {
     val slots = findItemsIndex(inventoryItem.itemId)
@@ -14,11 +12,9 @@ sealed trait Inventory {
       val freeSlots = findAvailableIndex()
       if(!freeSlots.isEmpty) {
         inventory(freeSlots.head) = Some(inventoryItem)
-        println("aggiunto")
       }
     } else {
       inventory(slots.head).get.quantity += inventoryItem.quantity
-      println("modificato")
     }
 
   }
