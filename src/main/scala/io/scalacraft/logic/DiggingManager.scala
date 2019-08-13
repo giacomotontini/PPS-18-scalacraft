@@ -4,6 +4,7 @@ import java.util.UUID
 
 import akka.pattern._
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.DiggingManager.Message.PlayerDiggingWithItem
 import io.scalacraft.logic.Player.Message.CollectItemWithType
 import io.scalacraft.logic.messages.Message.BlockBreakAtPosition
@@ -31,13 +32,17 @@ class DiggingManager(worldContext: ActorRef) extends Actor with ActorLogging wit
       val position =  playerDigging.position
       worldContext ? BlockBreakAtPosition(position, playerId) onComplete {
         case Success(blockStateId: Int) =>
-          val item = new Entities.Item()
-          item.item = Some(SlotData(blockStateId, 1, new CompoundTag()))
-          val itemEntityId: Int = randomGenerator.nextInt()
-          worldContext ! SpawnObject(itemEntityId, UUID.randomUUID(), 2, position.x, position.y, position.z, Angle(0), Angle(0), 1, 0, 0, 0)
-          worldContext ! EntityMetadata(itemEntityId, item)
-          Thread.sleep(2000)
-          worldContext ! CollectItemWithType(CollectItem(itemEntityId, playerId, 1), blockStateId)
+          val droppedItemIds = Blocks.blockFromStateId(blockStateId).drops
+          println(droppedItemIds)
+          droppedItemIds.foreach(droppedItemId => {
+            val itemEntity = new Entities.Item()
+            itemEntity.item = Some(SlotData(droppedItemId, 1, new CompoundTag()))
+            val itemEntityId: Int = randomGenerator.nextInt()
+            worldContext ! SpawnObject(itemEntityId, UUID.randomUUID(), 2, position.x, position.y, position.z, Angle(0), Angle(0), 1, 0, 0, 0)
+            worldContext ! EntityMetadata(itemEntityId, itemEntity)
+            Thread.sleep(1000)
+            worldContext ! CollectItemWithType(CollectItem(itemEntityId, playerId, 1), droppedItemId)
+          })
       }
   }
 }

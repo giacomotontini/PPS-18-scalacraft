@@ -20,7 +20,6 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
     case BlockBreakAtPosition(position, _) =>
       val (chunkX, chunkZ) = (MCAUtil.blockToChunk(position.x), MCAUtil.blockToChunk(position.z))
       val compound = mca.getChunk(chunkX, chunkZ).getBlockStateAt(position.x, position.y, position.z)
-      println("region", Blocks.stateIdFromCompoundTag(compound))
       sender ! Blocks.stateIdFromCompoundTag(compound)
   }
 
