@@ -141,7 +141,6 @@ class Player(username: String, userContext: ActorRef) extends Actor
         val item = new Entities.Item()
         item.item = Some(SlotData(4, 1, new CompoundTag()))
 
-
         userContext ! Effect(EffectId.BlockBreakWithSound, playerDigging.location, 0, false)
         userContext ! BlockBreakAnimation(entityId, playerDigging.location, 10)
         userContext ! SpawnObject(itemEntityId, UUID.randomUUID(), 2, pos.x, pos.y, pos.z, Angle(0), Angle(0), 1, 0, 0, 0)
@@ -151,9 +150,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
         self ! CollectItem(itemEntityId, entityId, 1) //TODO to be changed with a internal message wolrd -> player
       }
     case collectItem: CollectItem  =>
-      //add to my inventory
       userContext.forward(collectItem)
-
       if (collectItem.collectorEntityId == entityId) {
         inventory ? AddItem(InventoryItem(2, collectItem.pickUpItemCount)) onComplete {
           case Success(list: List[Option[InventoryItem]]) =>
