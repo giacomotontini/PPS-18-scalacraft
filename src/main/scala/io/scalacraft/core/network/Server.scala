@@ -1,5 +1,6 @@
 package io.scalacraft.core.network
 
+import com.typesafe.scalalogging.LazyLogging
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -8,13 +9,15 @@ import io.netty.channel.{Channel, ChannelInboundHandlerAdapter, ChannelInitializ
 
 import scala.language.postfixOps
 
-class Server(port: Int, handler: () => ChannelInboundHandlerAdapter) {
+class Server(port: Int, handler: () => ChannelInboundHandlerAdapter) extends LazyLogging {
 
   val bossGroup = new NioEventLoopGroup()
   val workerGroup = new NioEventLoopGroup()
   var socketChannel: Channel = _
 
   def run(): Unit = {
+    logger.info(s"Starting server at port $port")
+
     val serverBootstrap = new ServerBootstrap()
     serverBootstrap.group(bossGroup, workerGroup)
       .channel(classOf[NioServerSocketChannel])

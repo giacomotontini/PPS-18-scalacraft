@@ -1,11 +1,11 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
 import akka.pattern._
 import io.scalacraft.logic.DiggingManager.Message.PlayerDiggingWithItem
 import io.scalacraft.logic.Player.Message.CollectItemWithType
 import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldedItemId}
-import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, ForwardToClient, ForwardToWorld, RequestChunkData}
+import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.{Position, SlotData}
@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class Player(username: String, userContext: ActorRef) extends Actor
+class Player(username: String, userContext: ActorRef, serverConfiguration: ServerConfiguration) extends Actor
   with Timers with ActorLogging with DefaultTimeout with ImplicitContext {
 
   import Player._
@@ -49,9 +49,10 @@ class Player(username: String, userContext: ActorRef) extends Actor
 
   private def preStartBehaviour: Receive = {
     case CanJoinGame =>
-      import ServerConfiguration._
-      userContext ! JoinGame(playerId, GameMode, worldDimension, ServerDifficulty, MaxPlayers, LevelTypeBiome,
-        ReducedDebugInfo)
+      userContext ! JoinGame(playerId, serverConfiguration.gameMode, worldDimension,
+        serverConfiguration.serverDifficulty, serverConfiguration.maxPlayers, serverConfiguration.levelTypeBiome,
+        !serverConfiguration.debug)
+      world ! JoiningGame
     case clientSettings: ClientSettings =>
       locale = clientSettings.locale
       mainHand = clientSettings.mainHand
@@ -114,7 +115,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
       this.posY = feetY.toInt
       this.posZ = z.toInt
       this.onGround = onGround
-    case sb.PlayerPositionAndLook(x,feetY, z, yaw, pitch, onGround) =>
+    case sb.PlayerPositionAndLook(x, feetY, z, yaw, pitch, onGround) =>
       this.posX = x.toInt
       this.posY = feetY.toInt
       this.posZ = z.toInt
@@ -126,7 +127,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
       this.pitch = pitch
       this.onGround = onGround
     case msg: sb.HeldItemChange => inventory.forward(msg)
-    case playerDigging @ PlayerDigging(status, position, face) =>
+    case playerDigging@PlayerDigging(status, position, face) =>
       digging = Some(status)
       inventory ? RetrieveHeldedItemId onComplete {
         case Success(heldedItemId: Option[Int]) =>
@@ -151,8 +152,11 @@ class Player(username: String, userContext: ActorRef) extends Actor
         }
       case _ => userContext ! msg
     }
+    case timeUpdate: TimeUpdate => userContext forward timeUpdate
+    case RemovePlayer =>
+      world ! LeavingGame
+      self ! PoisonPill
     case anyOther => println("Not handled", anyOther)
-
   }
 
   override def receive: Receive = preStartBehaviour
@@ -172,8 +176,11 @@ class Player(username: String, userContext: ActorRef) extends Actor
 object Player {
 
   sealed trait Message
+
   object Message {
+
     case class CollectItemWithType(collectItem: CollectItem, blockStateId: Int) extends Message
+
   }
 
   private case object KeepAliveTickKey
@@ -184,7 +191,8 @@ object Player {
 
   private case object KeepAliveTimeoutKey
 
-  def props(username: String, userContext: ActorRef): Props = Props(new Player(username, userContext))
+  def props(username: String, userContext: ActorRef, serverConfiguration: ServerConfiguration): Props =
+    Props(new Player(username, userContext, serverConfiguration))
 
   def name(username: String): String = s"Player-$username"
 

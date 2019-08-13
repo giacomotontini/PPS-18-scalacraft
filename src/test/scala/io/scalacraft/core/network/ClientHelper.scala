@@ -2,11 +2,11 @@ package io.scalacraft.core.network
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.ByteBuf
-import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter, ChannelInitializer}
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
-import io.scalacraft.misc.{Helpers, ServerConfiguration}
+import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter, ChannelInitializer}
+import io.scalacraft.misc.Helpers
 import org.scalatest.Matchers
 
 class ClientHelper(result: String=>Unit) extends Matchers {
@@ -42,7 +42,7 @@ class ClientHelper(result: String=>Unit) extends Matchers {
           channel.pipeline().addLast(new ClientHandler())
         }
       })
-    bootstrap.connect("localhost", ServerConfiguration.Port).sync()
+    bootstrap.connect("localhost", ServerSpec.testPort).sync()
   }
 
 }
