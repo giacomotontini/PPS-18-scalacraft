@@ -22,7 +22,21 @@ object Message {
 
   case object CanJoinGame
 
+  // Sent by Player to inform world that player started playing
+  case object JoiningGame extends Message
+
+  // Sent by Player to inform world that player stopped playing
+  case object LeavingGame extends Message
+  case object UserDisconnected extends Message
+  case object RemovePlayer extends Message
+
+  // Sent by UserContext to World to ask the number of players online
+  case object RequestOnlinePlayers extends Message
+
+  case class  OnlinePlayers(number: Int) extends Message
+  
   /* --------------------------------------------- Mobs Spawning --------------------------------------------- */
+
   case class RequestMobsInChunk(chunkX: Int, chunkZ: Int) extends Message
 
   case class PlayerExitedFromChunk(chunkX: Int, chunkZ: Int) extends Message

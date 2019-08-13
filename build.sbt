@@ -10,6 +10,7 @@ val scalaLoggingVersion = "3.9.2"
 val nettyVersion        = "4.1.38.Final"
 val logbackVersion      = "1.2.3"
 val nbtVersion          = "4.1.2"
+val scoptVersion        = "4.0.0-RC2"
 
 lazy val root = Project(
   id = projectName,
@@ -31,14 +32,16 @@ lazy val root = Project(
 lazy val dependencies = Seq(
   "org.scala-lang"             %  "scala-reflect"   % projectScalaVersion,
   "org.scalactic"              %% "scalactic"       % scalaTestVersion,
-  "org.scalatest"              %% "scalatest"       % scalaTestVersion     % "test",
+  "org.scalatest"              %% "scalatest"       % scalaTestVersion     % Test,
   "com.typesafe.scala-logging" %% "scala-logging"   % scalaLoggingVersion,
   "it.eciavatta"               %  "NBT"             % nbtVersion,
   "io.netty"                   %  "netty-all"       % nettyVersion,
   "com.typesafe.akka"          %% "akka-actor"      % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"      % akkaVersion,
+  "com.typesafe.akka"          %% "akka-testkit"    % akkaVersion          % Test,
   "ch.qos.logback"             %  "logback-classic" % logbackVersion,
   "io.circe"                   %% "circe-core"      % circeVersion,
   "io.circe"                   %% "circe-generic"   % circeVersion,
-  "io.circe"                   %% "circe-parser"    % circeVersion
+  "io.circe"                   %% "circe-parser"    % circeVersion,
+  "com.github.scopt"           %% "scopt"           % scoptVersion
 )

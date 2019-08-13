@@ -4,13 +4,16 @@ import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.scalacraft.logic.UserContext
+import io.scalacraft.logic.messages.Message.UserDisconnected
+import io.scalacraft.misc.ServerConfiguration
 
-class ServerHandler(actorSystem: ActorSystem) extends ChannelInboundHandlerAdapter with LazyLogging {
+class ServerHandler(actorSystem: ActorSystem, serverConfiguration: ServerConfiguration)
+  extends ChannelInboundHandlerAdapter with LazyLogging {
 
   var dispatcher: ActorRef = _
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit =
-    dispatcher = actorSystem.actorOf(UserContext.props(ConnectionManager(ctx)), UserContext.name)
+    dispatcher = actorSystem.actorOf(UserContext.props(ConnectionManager(ctx), serverConfiguration), UserContext.name)
 
   override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit =
     dispatcher ! message.asInstanceOf[RawPacket]
@@ -19,5 +22,8 @@ class ServerHandler(actorSystem: ActorSystem) extends ChannelInboundHandlerAdapt
     logger.error(cause.getMessage)
     channelHandlerContext.close()
   }
+
+  override def channelInactive(ctx: ChannelHandlerContext): Unit =
+    dispatcher ! UserDisconnected
 
 }
