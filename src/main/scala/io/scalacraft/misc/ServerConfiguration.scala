@@ -7,23 +7,30 @@ import io.scalacraft.packets.clientbound.PlayPackets.{GameModeValue, LevelType, 
 
 import scala.io.Source
 
+case class ServerConfiguration(debug: Boolean = false,
+                               port: Int = 25565,
+                               serverDescription: String = "Scalacraft Server",
+                               gameMode: GameModeValue = GameModeValue.Survival,
+                               serverDifficulty: ServerDifficulties = ServerDifficulties.Easy,
+                               maxPlayers: Int = 100,
+                               levelTypeBiome: LevelType = LevelType.Default) {
+
+  import ServerConfiguration._
+
+  def loadConfiguration(onlinePlayers: Int): String =
+    s"""{"version": {"name": "$VersionName", "protocol": $VersionProtocol},"players": {"max": $maxPlayers,"online": $onlinePlayers},"description": {"text": "$serverDescription"},"favicon": "data:image/png;base64,$favicon"}"""
+
+}
+
 object ServerConfiguration {
 
-  private[this] val image = Source.fromInputStream(getClass.getResourceAsStream("/server-logo.png"), "iso-8859-1").mkString
-  private[this] val favicon = Base64.getEncoder.encodeToString(image.getBytes(Charset.forName("iso-8859-1")))
+  private val image = Source.fromInputStream(getClass.getResourceAsStream("/server-logo.png"), "iso-8859-1").mkString
+  private val favicon = Base64.getEncoder.encodeToString(image.getBytes(Charset.forName("iso-8859-1")))
 
-  val Debug: Boolean = true
-  val Port: Int = 25565
+  val Name: String = "scalacraft"
+  val Version: String = "0.1"
   val VersionName: String = "1.13.2"
   val VersionProtocol: Int = 404
-  val Online: Int = 0
-  val GameMode: GameModeValue.Survival.type = GameModeValue.Survival
-  val ServerDifficulty: ServerDifficulties.Easy.type = ServerDifficulties.Easy
-  val ReducedDebugInfo: Boolean = false
-  val MaxPlayers: Int = 100
-  val LevelTypeBiome: LevelType = LevelType.Default
+  val TicksInSecond: Int = 20
 
-  def configuration: String =
-    s"""{"version": {"name": "$VersionName", "protocol": $VersionProtocol},"players": {"max": $MaxPlayers,"online": $Online},"description": {"text": "Scalacraft Server"},"favicon": "data:image/png;base64,$favicon"}"""
-    //{"description":{"text":"A Minecraft Server"},"players":{"max":20,"online":0},"version":{"name":"1.13.2","protocol":404}}
 }

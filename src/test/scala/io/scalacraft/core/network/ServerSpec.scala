@@ -1,8 +1,10 @@
 package io.scalacraft.core.network
 
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
-import io.scalacraft.misc.{Helpers, ServerConfiguration}
+import io.scalacraft.misc.Helpers
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
+import scala.util.Random
 
 class ServerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -21,7 +23,7 @@ class ServerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   }
 
   override def beforeEach() {
-    server = new Server(ServerConfiguration.Port, () => new ChannelInboundHandlerAdapter {
+    server = new Server(ServerSpec.testPort, () => new ChannelInboundHandlerAdapter {
       override def handlerAdded(ctx: ChannelHandlerContext): Unit = context = ctx
 
       override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit = {
@@ -62,5 +64,11 @@ class ServerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     Thread.sleep(500)
     result shouldBe "03010102"
   }
+
+}
+
+object ServerSpec {
+
+  val testPort: Int = 26666
 
 }

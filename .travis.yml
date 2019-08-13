@@ -16,3 +16,8 @@ cache:
   directories:
   - $HOME/.ivy2/cache
   - $HOME/.sbt/boot/
+
+notifications:
+  webhooks:
+    urls:
+      - https://hooks.eciavatta.it/hooks/scalacraft-deploy
