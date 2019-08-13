@@ -62,12 +62,11 @@ case class PlayerInventory() extends Inventory with CraftingInventoty {
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(OffhandSlot + 1)(None:Option[InventoryItem])
 
-  def findHeldedItemId(hotSlot: Int): Unit = {
+  def findHeldedItemId(hotSlot: Int): Option[Int] = {
     inventory(hotSlot + HotBarSlotRange.start).map(_.itemId)
   }
 
   override def findAvailableIndex(): List[Int] = {
-    println(inventory.size)
     (for {
       i <- (HotBarSlotRange ++ MainInventorySlotRange)
       if inventory(i).isEmpty

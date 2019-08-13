@@ -165,7 +165,7 @@ object PlayPackets {
   }
 
   @packet(0x18)
-  case class PlayerDigging(@enumType[VarInt] status: PlayerDiggingStatus, location: Position, @enumType[Byte] face: Face) extends Structure
+  case class PlayerDigging(@enumType[VarInt] status: PlayerDiggingStatus, position: Position, @enumType[Byte] face: Face) extends Structure
 
   sealed trait ActionID
 

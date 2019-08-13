@@ -42,7 +42,7 @@ object Blocks {
       block: Block =>
         val allStatesLists = block.states.map(state => state.`type` match {
           case "bool" => List(true, false)
-          case "int" => List.range(1, state.num_values + 1)
+          case "int" => List.range(0, state.num_values)
           case _ => state.values.get
         })
         val properties = Helpers.cartesianProduct(allStatesLists: _*)
@@ -51,12 +51,13 @@ object Blocks {
           val actualState = stateId - block.minStateId
           val compoundTag = new CompoundTag()
           val innerTag = new CompoundTag
-          compoundTag.putString("name", block.name)
-          if (properties.nonEmpty)
+          compoundTag.putString("Name", "minecraft:" + block.name)
+          if (properties.nonEmpty) {
             properties(actualState).zipWithIndex.foreach {
               case (value, index) => innerTag.putString(block.states(index).name, value.toString)
             }
-          compoundTag.put("properties", innerTag)
+            compoundTag.put("Properties", innerTag)
+          }
           stateId -> compoundTag
         }
     }.sortBy(_._1) map(_._2)
@@ -74,7 +75,7 @@ object Blocks {
 
 
   def blockFromStateId(stateId: Int): Block = {
-      blocks.filter(b => b.minStateId >= stateId && b.maxStateId <= stateId).head
+      blocks.filter(b => stateId >= b.minStateId && stateId <= b.maxStateId).head
   }
 
   def blockFromBlockId(blockId: Int): Block = {

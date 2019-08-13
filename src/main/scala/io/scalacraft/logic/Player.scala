@@ -2,14 +2,14 @@ package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
-import io.scalacraft.logic.BlockManagerActor.Message.PlayerDiggingWithItem
+import io.scalacraft.logic.DiggingManager.Message.PlayerDiggingWithItem
 import io.scalacraft.logic.Player.Message.CollectItemWithType
 import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldedItemId}
-import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, RequestChunkData}
+import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, ForwardToClient, ForwardToWorld, RequestChunkData}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.{Position, SlotData}
-import io.scalacraft.packets.clientbound.PlayPackets.{HeldItemChange => _, _}
+import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
@@ -103,49 +103,54 @@ class Player(username: String, userContext: ActorRef) extends Actor
       }
     case KeepAliveTimeout =>
       timers.cancel(KeepAliveTickKey)
-    case keepAlive: sb.KeepAlive if keepAlive.keepAliveId == lastKeepAliveId =>
+    case sb.KeepAlive(keepAliveId) if keepAliveId == lastKeepAliveId =>
       timers.cancel(KeepAliveTimeoutKey)
-    case keepAlive: sb.KeepAlive if keepAlive.keepAliveId != lastKeepAliveId =>
+    case sb.KeepAlive(keepAliveId) if keepAliveId != lastKeepAliveId =>
       log.warning("Client keep alive id invalid.")
-    case player: Player =>
-      onGround = player.onGround
-    case playerPosition: PlayerPosition =>
-      posX = playerPosition.x.toInt
-      posY = playerPosition.feetY.toInt
-      posZ = playerPosition.z.toInt
-      onGround = playerPosition.onGround
-    case playerPositionAndLook: sb.PlayerPositionAndLook =>
-      posX = playerPositionAndLook.x.toInt
-      posY = playerPositionAndLook.feetY.toInt
-      posZ = playerPositionAndLook.z.toInt
-      yaw = playerPositionAndLook.yaw
-      pitch = playerPositionAndLook.pitch
-      onGround = playerPositionAndLook.onGround
-    case playerLook: PlayerLook =>
-      yaw = playerLook.yaw
-      pitch = playerLook.pitch
-      onGround = playerLook.onGround
-    case playerDigging: PlayerDigging =>
-      digging = Some(playerDigging.status)
+    case sb.Player(onGround) =>
+      this.onGround = onGround
+    case sb.PlayerPosition(x, feetY, z, onGround) =>
+      this.posX = x.toInt
+      this.posY = feetY.toInt
+      this.posZ = z.toInt
+      this.onGround = onGround
+    case sb.PlayerPositionAndLook(x,feetY, z, yaw, pitch, onGround) =>
+      this.posX = x.toInt
+      this.posY = feetY.toInt
+      this.posZ = z.toInt
+      this.yaw = yaw
+      this.pitch = pitch
+      this.onGround = onGround
+    case sb.PlayerLook(yaw, pitch, onGround) =>
+      this.yaw = yaw
+      this.pitch = pitch
+      this.onGround = onGround
+    case msg: sb.HeldItemChange => inventory.forward(msg)
+    case playerDigging @ PlayerDigging(status, position, face) =>
+      digging = Some(status)
       inventory ? RetrieveHeldedItemId onComplete {
-        case Success(heldedItemId: Int) =>
-          world ! PlayerDiggingWithItem(playerId, playerDigging,heldedItemId)
-          log.info("User: {} {} digging", username, playerDigging.status)
+        case Success(heldedItemId: Option[Int]) =>
+          world ! PlayerDiggingWithItem(playerId, playerDigging, heldedItemId)
+          log.info("User: {} {} digging", username, status)
       }
-    case collectItemWithType: CollectItemWithType  =>
-      userContext.forward(collectItemWithType.collectItem)
-      if (collectItemWithType.collectItem.collectorEntityId == playerId) {
-        inventory ? AddItem(InventoryItem(collectItemWithType.itemId, collectItemWithType.collectItem.pickUpItemCount)) onComplete {
-          case Success(list: List[Option[InventoryItem]]) =>
-            list.collect {
-            case Some(item) =>
-              val slot = list.indexOf(Some(item))
-              val slotData = Some(SlotData(item.itemId, item.quantity, new CompoundTag()))
-              userContext ! SetSlot(0, slot, slotData)
+    case animation: sb.Animation =>
+      world ! ForwardToWorld(animation, playerId)
+    case ForwardToClient(msg) => msg match {
+      case CollectItemWithType(collectItem, blockStateId) =>
+        userContext.forward(collectItem)
+        if (collectItem.collectorEntityId == playerId) {
+          inventory ? AddItem(InventoryItem(blockStateId, collectItem.pickUpItemCount)) onComplete {
+            case Success(list: List[Option[InventoryItem]]) =>
+              list.collect {
+                case Some(item) =>
+                  val slot = list.indexOf(Some(item))
+                  val slotData = Some(SlotData(item.itemId, item.quantity, new CompoundTag()))
+                  userContext ! SetSlot(0, slot, slotData)
+              }
           }
         }
-      }
-    case heldItemChange: HeldItemChange => println("holding item in slot", heldItemChange.slot)
+      case _ => userContext ! msg
+    }
     case anyOther => println("Not handled", anyOther)
 
   }
@@ -168,7 +173,7 @@ object Player {
 
   sealed trait Message
   object Message {
-    case class CollectItemWithType(collectItem: CollectItem, itemId: Int) extends Message
+    case class CollectItemWithType(collectItem: CollectItem, blockStateId: Int) extends Message
   }
 
   private case object KeepAliveTickKey

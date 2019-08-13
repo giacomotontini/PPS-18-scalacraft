@@ -1,11 +1,11 @@
 package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, Props}
-import io.scalacraft.loaders.Chunks
-import io.scalacraft.logic.messages.Message.RequestChunkData
+import io.scalacraft.loaders.{Blocks, Chunks}
+import io.scalacraft.logic.messages.Message.{BlockBreakAtPosition, RequestChunkData}
 import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
-import net.querz.nbt.mca.MCAFile
+import net.querz.nbt.mca.{MCAFile, MCAUtil}
 
 class Region(mca: MCAFile) extends Actor with ActorLogging {
 
@@ -17,6 +17,11 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
 
       val chunkData = ChunkData(chunkX, chunkZ, fullChunk, primaryBitMask, data, entities)
       sender ! chunkData
+    case BlockBreakAtPosition(position, _) =>
+      val (chunkX, chunkZ) = (MCAUtil.blockToChunk(position.x), MCAUtil.blockToChunk(position.z))
+      val compound = mca.getChunk(chunkX, chunkZ).getBlockStateAt(position.x, position.y, position.z)
+      println("region", Blocks.stateIdFromCompoundTag(compound))
+      sender ! Blocks.stateIdFromCompoundTag(compound)
   }
 
 }

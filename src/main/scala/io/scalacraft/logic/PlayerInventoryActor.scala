@@ -2,11 +2,12 @@ package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorRef, Props}
 import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, MoveItem, RemoveItem, RetrieveAllItems, RetrieveHeldedItemId}
+import io.scalacraft.packets.serverbound.PlayPackets.HeldItemChange
 
 class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor {
 
   private val inventory: PlayerInventory = PlayerInventory()
-  private val heldedSlot: Int = 0
+  private var heldedSlot: Int = 0
 
   override def receive: Receive = {
     case AddItem(inventoryItem) =>
@@ -20,6 +21,8 @@ class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor {
       sender ! inventory.retrieveAllItems()
     case RetrieveAllItems =>
       inventory.retrieveAllItems()
+    case HeldItemChange(slot) =>
+      heldedSlot = slot
     case RetrieveHeldedItemId =>
       sender ! inventory.findHeldedItemId(heldedSlot)
   }
