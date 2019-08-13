@@ -10,6 +10,8 @@ import io.scalacraft.packets.DataTypes.{Angle, Position}
 import io.scalacraft.packets.Entities.Chicken
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
 
+import scala.concurrent.Future
+import scala.concurrent.Future._
 import scala.util.Success
 
 class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout {
@@ -17,13 +19,14 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout {
   var numberOfPlayersInChunk: Map[(Int, Int), Int] = Map()
   //Mantains the habitation times of every habitated chunk
   var chunkHabitationTime: Map[(Int, Int), Int] = Map()
-  var i = 100
+  //Indicates if creatures have been spawned yet in a given chunk
+  var spawnedMobFuturePerChunk: Map[(Int, Int),Future[_]] = _
 
   //Update an indicator of a chunk (i.e numberOfPlayer, habitationTime) and get the actual number of player.
   private[this] def updateChunkIndicators(chunkMapToUpdate: Map[(Int, Int), Int], chunkX: Int, chunkZ: Int,
-                                             updateFunction: Int => Int, removeEntryPredicate: Int => Boolean):
+                                          updateFunction: Int => Int, removeEntryPredicate: Int => Boolean):
   (Map[(Int, Int), Int], Int) = {
-    val parameterToBeUpdated = chunkMapToUpdate.getOrElse((chunkX, chunkZ),0)
+    val parameterToBeUpdated = chunkMapToUpdate.getOrElse((chunkX, chunkZ), 0)
     val updatedParameter = updateFunction(parameterToBeUpdated)
     val updatedMap = if (removeEntryPredicate(updatedParameter))
       chunkMapToUpdate.updated((chunkX, chunkZ), updatedParameter)
@@ -32,28 +35,39 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout {
 
     (updatedMap, updatedParameter)
   }
+  private[this] def requestSpawnMobPacketsToCreatures(chunkX: Int, chunkZ: Int, onResult: List[SpawnMob] => Unit): Unit  = {
+    sequence(context.children.map(mobActor => mobActor ? GetCreatureInChunk(chunkX, chunkZ))).onComplete {
+      case Success(spawnMobPackets: List[Option[SpawnMob]]) => onResult(spawnMobPackets.collect {
+        case Some(spawnMob: SpawnMob) => spawnMob
+      })
+    }
+  }
 
   override def receive: Receive = {
-    case PlayerEnteredInChunk(chunkX, chunkZ, player) =>
+    case RequestMobsInChunk(chunkX, chunkZ) =>
       val (updatedMap, actualNumberOfPlayer) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
       numberOfPlayersInChunk = updatedMap
       if (actualNumberOfPlayer == 1) {
-        chunkHabitationTime = chunkHabitationTime ++ Map((chunkX, chunkZ) -> 0)
-        context.parent ? RequestSpawnPoints(chunkX, chunkZ) onComplete{
+        val spawnedMobFuture = (context.parent ? RequestSpawnPoints(chunkX, chunkZ)).andThen {
           case Success(biomeToSpawnPosition: Map[Int, List[Position]]) =>
-            biomeToSpawnPosition.values.foreach(values =>values.foreach(position =>{
-            player ! SpawnMob(i,UUID.randomUUID(), 7, position.x, position.y+10, position.z, Angle(0), Angle(0),Angle(0), 0, 0, 0, new Chicken());
-              i+=1})
-            )
+            //createActors
+            println(biomeToSpawnPosition)
+            requestSpawnMobPacketsToCreatures(chunkX,chunkZ, spawnMobPackets => sender ! spawnMobPackets)
+            chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)
         }
+        spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)
       } else {
-        context.children.foreach(mobActor => mobActor ? GetCreatureInChunk(chunkX,chunkZ) onComplete{
-          ??? //case Success()
-        })
+        if (chunkHabitationTime.contains((chunkX, chunkZ))) {
+          requestSpawnMobPacketsToCreatures(chunkX,chunkZ, spawnMobPackets => sender ! spawnMobPackets)
+        } else {
+          spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete{
+            case Success(_) => requestSpawnMobPacketsToCreatures(chunkX,chunkZ, spawnMobPackets => sender ! spawnMobPackets)
+          }
+        }
       }
 
-    case PlayerExitedFromChunk(chunkX, chunkZ, player) =>
+    case PlayerExitedFromChunk(chunkX, chunkZ) =>
       val (updatedMap, actualNumberOfPlayer) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ - 1, removeEntryPredicate = _ == 0)
       numberOfPlayersInChunk = updatedMap

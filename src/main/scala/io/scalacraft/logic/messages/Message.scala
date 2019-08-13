@@ -12,7 +12,7 @@ trait Message
 object Message {
 
   /* --------------------------------------------- Region and chunks --------------------------------------------- */
-  case class RequestChunkData(chunkX: Int, chunkZ: Int, fullChunk: Boolean = true, sender: ActorRef) extends Message
+  case class RequestChunkData(chunkX: Int, chunkZ: Int, fullChunk: Boolean = true) extends Message
 
   case object ChunkNotPresent extends Message
 
@@ -23,9 +23,9 @@ object Message {
   case object CanJoinGame
 
   /* --------------------------------------------- Mobs Spawning --------------------------------------------- */
-  case class PlayerEnteredInChunk(chunkX: Int, chunkZ: Int, player: ActorRef) extends Message
+  case class RequestMobsInChunk(chunkX: Int, chunkZ: Int) extends Message
 
-  case class PlayerExitedFromChunk(chunkX: Int, chunkZ: Int, player: ActorRef) extends Message
+  case class PlayerExitedFromChunk(chunkX: Int, chunkZ: Int) extends Message
 
   case class GetCreatureInChunk(chunkX: Int, chunkZ: Int)
 
