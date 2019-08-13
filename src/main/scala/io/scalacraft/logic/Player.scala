@@ -24,7 +24,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class Player(username: String, userContext: ActorRef) extends Actor with ActorLogging
+class Player(username: String, userContext: ActorRef) extends Actor
   with Timers with ActorLogging with DefaultTimeout with ImplicitContext {
 
   import Player._
