@@ -1,12 +1,14 @@
 package io.scalacraft.logic
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import akka.pattern._
 import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.network.{ConnectionManager, RawPacket}
 import io.scalacraft.loaders.Packets
 import io.scalacraft.loaders.Packets.ConnectionState
-import io.scalacraft.logic.messages.Message.{CanJoinGame, RegisterUser, UserRegistered}
+import io.scalacraft.logic.messages.Message.{CanJoinGame, OnlinePlayers, RegisterUser, RemovePlayer, RequestOnlinePlayers, UserDisconnected, UserRegistered}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.clientbound.LoginPackets.LoginSuccess
@@ -17,11 +19,15 @@ import io.scalacraft.packets.serverbound.StatusPackets.{Ping, Request}
 
 import scala.util.{Failure, Random, Success}
 
-class UserContext(connectionManager: ConnectionManager) extends Actor
+class UserContext(connectionManager: ConnectionManager, serverConfiguration: ServerConfiguration) extends Actor
   with ActorLogging with DefaultTimeout with ImplicitContext {
+
+  private val world = context.actorSelection("/user/world")
 
   private var currentState: ConnectionState = ConnectionState.Handshaking
   private var player: ActorRef = _
+  private var username: String = _
+  private var uuid: UUID = _
 
   override def receive: Receive = handlePacketFor(handshakingBehaviour)
 
@@ -40,23 +46,31 @@ class UserContext(connectionManager: ConnectionManager) extends Actor
 
   private def statusBehaviour: Receive = {
     case Request() =>
-      writePacket(Response(ServerConfiguration.configuration))
-      log.debug("Request received. Sending server configuration..")
-      context.become(handlePacketFor {
-        case Ping(payload) =>
-          writePacket(Pong(payload))
-          stop()
-          log.debug("Ping received. Sending pong and closing connection..")
-      })
+      world ? RequestOnlinePlayers onComplete {
+        case Success(OnlinePlayers(number)) =>
+          writePacket(Response(serverConfiguration.loadConfiguration(number)))
+          log.debug("Request received. Sending server configuration..")
+          context.become(handlePacketFor {
+            case Ping(payload) =>
+              writePacket(Pong(payload))
+              stop()
+              log.debug("Ping received. Sending pong and closing connection..")
+          })
+        case Success(_) => // never happens
+        case Failure(ex) => log.error(ex, "Can't retrieve the number of online players")
+      }
+
   }
 
   private def loginBehaviour: Receive = {
     case LoginStart(username) =>
+      this.username = username
       log.debug(s"User $username is authenticating..")
 
-      context.actorSelection("/user/world") ? RegisterUser(username, self) onComplete {
+      world ? RegisterUser(username, self) onComplete {
         case Success(UserRegistered(uuid, playerRef)) =>
           player = playerRef
+          this.uuid = uuid
           writePacket(LoginSuccess(uuid.toString, username))
           currentState = ConnectionState.Play
           context.become(handlePacketFor(playBehaviour))
@@ -78,7 +92,7 @@ class UserContext(connectionManager: ConnectionManager) extends Actor
     case RawPacket(packetId, buffer) =>
       val packetManager = Packets.serverboundPackageManagers(currentState)
       val message = packetManager.unmarshal(packetId)(buffer)
-      if (ServerConfiguration.Debug) {
+      if (serverConfiguration.debug) {
         log.info(s"C → S $message")
       }
 
@@ -87,13 +101,19 @@ class UserContext(connectionManager: ConnectionManager) extends Actor
       } else {
         log.warning(s"Unhandled packet in state $currentState: $message")
       }
+    case UserDisconnected =>
+      if (currentState == ConnectionState.Play) {
+        player ! RemovePlayer
+        log.info(s"User $username with uuid $uuid disconnected")
+        stop()
+      }
   }
 
   private def writePacket(packet: Structure): Unit = {
     val packetManager = Packets.clientboundPackageManagers(currentState)
     connectionManager.writePacket(dataOutputStream => packetManager.marshal(packet)(dataOutputStream))
 
-    if (ServerConfiguration.Debug) {
+    if (serverConfiguration.debug) {
       log.info(s"S → C $packet")
     }
   }
@@ -115,7 +135,8 @@ class UserContext(connectionManager: ConnectionManager) extends Actor
 
 object UserContext {
 
-  def props(connectionManager: ConnectionManager): Props = Props(new UserContext(connectionManager))
+  def props(connectionManager: ConnectionManager, serverConfiguration: ServerConfiguration): Props =
+    Props(new UserContext(connectionManager, serverConfiguration))
   def name: String = s"UserContext-${Math.abs(new Random().nextInt())}"
 
 }

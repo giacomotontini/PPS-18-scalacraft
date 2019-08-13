@@ -1,12 +1,12 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
 import akka.pattern._
-import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, RequestChunkData}
+import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, JoiningGame, LeavingGame, RemovePlayer, RequestChunkData}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, SpawnPosition, WorldDimension}
+import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, SpawnPosition, TimeUpdate, WorldDimension}
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class Player(username: String, userContext: ActorRef) extends Actor
+class Player(username: String, userContext: ActorRef, serverConfiguration: ServerConfiguration) extends Actor
   with Timers with ActorLogging with DefaultTimeout with ImplicitContext {
 
   import Player._
@@ -43,9 +43,10 @@ class Player(username: String, userContext: ActorRef) extends Actor
 
   private def preStartBehaviour: Receive = {
     case CanJoinGame =>
-      import ServerConfiguration._
-      userContext ! JoinGame(entityId, GameMode, worldDimension, ServerDifficulty, MaxPlayers, LevelTypeBiome,
-        ReducedDebugInfo)
+      userContext ! JoinGame(entityId, serverConfiguration.gameMode, worldDimension,
+        serverConfiguration.serverDifficulty, serverConfiguration.maxPlayers, serverConfiguration.levelTypeBiome,
+        !serverConfiguration.debug)
+      world ! JoiningGame
     case clientSettings: ClientSettings =>
       locale = clientSettings.locale
       mainHand = clientSettings.mainHand
@@ -115,6 +116,10 @@ class Player(username: String, userContext: ActorRef) extends Actor
       yaw = playerPositionAndLook.yaw
       pitch =playerPositionAndLook.pitch
       onGround = playerPositionAndLook.onGround
+    case timeUpdate: TimeUpdate => userContext forward timeUpdate
+    case RemovePlayer =>
+      world ! LeavingGame
+      self ! PoisonPill
   }
 
   override def receive: Receive = preStartBehaviour
@@ -138,7 +143,8 @@ object Player {
   private case object KeepAliveTimeout
   private case object KeepAliveTimeoutKey
 
-  def props(username: String, userContext: ActorRef): Props = Props(new Player(username, userContext))
+  def props(username: String, userContext: ActorRef, serverConfiguration: ServerConfiguration): Props =
+    Props(new Player(username, userContext, serverConfiguration))
   def name(username: String): String = s"Player-$username"
 
 }

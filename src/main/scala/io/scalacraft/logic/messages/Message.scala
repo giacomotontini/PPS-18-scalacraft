@@ -14,7 +14,19 @@ object Message {
 
   case class  RegisterUser(username: String, userContext: ActorRef) extends Message
   case class  UserRegistered(uuid: UUID, player: ActorRef) extends Message
-  case object CanJoinGame
+  case object CanJoinGame extends Message
 
+  // Sent by Player to inform world that player started playing
+  case object JoiningGame extends Message
+
+  // Sent by Player to inform world that player stopped playing
+  case object LeavingGame extends Message
+  case object UserDisconnected extends Message
+  case object RemovePlayer extends Message
+
+  // Sent by UserContext to World to ask the number of players online
+  case object RequestOnlinePlayers extends Message
+
+  case class  OnlinePlayers(number: Int) extends Message
 
 }
