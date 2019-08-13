@@ -1,18 +1,15 @@
 package io.scalacraft.logic
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
-import io.scalacraft.loaders.Blocks
-import io.scalacraft.logic.PlayerInventoryActor.Message.AddItem
+import io.scalacraft.logic.BlockManagerActor.Message.PlayerDiggingWithItem
+import io.scalacraft.logic.Player.Message.CollectItemWithType
+import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldedItemId}
 import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, RequestChunkData}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.misc.{Helpers, ServerConfiguration}
-import io.scalacraft.packets.DataTypes.{Angle, Position, SlotData}
-import io.scalacraft.packets.Entities
-import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, ChunkData, CollectItem, Effect, EffectId, EntityMetadata, JoinGame, SetSlot, SpawnMob, SpawnObject, SpawnPosition, Tag, WorldDimension}
+import io.scalacraft.misc.ServerConfiguration
+import io.scalacraft.packets.DataTypes.{Position, SlotData}
+import io.scalacraft.packets.clientbound.PlayPackets.{HeldItemChange => _, _}
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
@@ -32,7 +29,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
   private val world = context.parent
   private val inventory = context.actorOf(PlayerInventoryActor.props(self))
 
-  private val entityId = 0
+  private val playerId = 0
   private val worldDimension = WorldDimension.Overworld
   private var posX: Int = -20
   private var posY: Int = 70
@@ -53,7 +50,7 @@ class Player(username: String, userContext: ActorRef) extends Actor
   private def preStartBehaviour: Receive = {
     case CanJoinGame =>
       import ServerConfiguration._
-      userContext ! JoinGame(entityId, GameMode, worldDimension, ServerDifficulty, MaxPlayers, LevelTypeBiome,
+      userContext ! JoinGame(playerId, GameMode, worldDimension, ServerDifficulty, MaxPlayers, LevelTypeBiome,
         ReducedDebugInfo)
     case clientSettings: ClientSettings =>
       locale = clientSettings.locale
@@ -130,41 +127,24 @@ class Player(username: String, userContext: ActorRef) extends Actor
       onGround = playerLook.onGround
     case playerDigging: PlayerDigging =>
       digging = Some(playerDigging.status)
-      if (playerDigging.status == PlayerDiggingStatus.StartedDigging) {
-        log.info("User:", username + " started digging")
-      } else if(playerDigging.status == PlayerDiggingStatus.CancelledDigging) {
-        log.info("User:", username + " canceled digging")
-      } else if (playerDigging.status == PlayerDiggingStatus.FinishedDigging) {
-        log.info("User:", username + " finished digging")
-        val pos = playerDigging.location
-        val itemEntityId: Int = randomGenerator.nextInt()
-        val item = new Entities.Item()
-        item.item = Some(SlotData(4, 1, new CompoundTag()))
-
-        userContext ! Effect(EffectId.BlockBreakWithSound, playerDigging.location, 0, false)
-        userContext ! BlockBreakAnimation(entityId, playerDigging.location, 10)
-        userContext ! SpawnObject(itemEntityId, UUID.randomUUID(), 2, pos.x, pos.y, pos.z, Angle(0), Angle(0), 1, 0, 0, 0)
-        userContext ! EntityMetadata(itemEntityId, item)
-        userContext ! BlockChange(playerDigging.location, 0) //air
-        Thread.sleep(500)  // TODO: remove
-        self ! CollectItem(itemEntityId, entityId, 1) //TODO to be changed with a internal message wolrd -> player
+      inventory ? RetrieveHeldedItemId onComplete {
+        case Success(heldedItemId: Int) =>
+          world ! PlayerDiggingWithItem(playerId, playerDigging,heldedItemId)
+          log.info("User: {} {} digging", username, playerDigging.status)
       }
-    case collectItem: CollectItem  =>
-      userContext.forward(collectItem)
-      if (collectItem.collectorEntityId == entityId) {
-        inventory ? AddItem(InventoryItem(2, collectItem.pickUpItemCount)) onComplete {
+    case collectItemWithType: CollectItemWithType  =>
+      userContext.forward(collectItemWithType.collectItem)
+      if (collectItemWithType.collectItem.collectorEntityId == playerId) {
+        inventory ? AddItem(InventoryItem(collectItemWithType.itemId, collectItemWithType.collectItem.pickUpItemCount)) onComplete {
           case Success(list: List[Option[InventoryItem]]) =>
             list.collect {
             case Some(item) =>
-              println(item)
               val slot = list.indexOf(Some(item))
               val slotData = Some(SlotData(item.itemId, item.quantity, new CompoundTag()))
               userContext ! SetSlot(0, slot, slotData)
           }
         }
       }
-
-
     case heldItemChange: HeldItemChange => println("holding item in slot", heldItemChange.slot)
     case anyOther => println("Not handled", anyOther)
 
