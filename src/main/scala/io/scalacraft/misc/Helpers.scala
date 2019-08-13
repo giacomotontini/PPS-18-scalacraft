@@ -3,7 +3,7 @@ package io.scalacraft.misc
 import java.io.{InputStream, OutputStream}
 
 import io.scalacraft.packets.DataTypes.VarInt
-import net.querz.nbt.{ListTag, Tag}
+import net.querz.nbt.{CompoundTag, ListTag, StringTag, Tag}
 
 import scala.collection.JavaConverters._
 
@@ -50,5 +50,13 @@ private[scalacraft] object Helpers {
   }
 
   def listTagToList[T <: Tag[_]](listTag: ListTag[T]): List[T] = listTag.iterator().asScala.toList
+
+  implicit class RichNbtCompoundTag(nbtTag: CompoundTag) {
+    def isWater(): Boolean = {
+      val waterStringTag = new StringTag()
+      waterStringTag.setValue("minecraft:water")
+      nbtTag.entrySet().stream().anyMatch(elem => elem.getValue.equals(waterStringTag))
+    }
+  }
 
 }
