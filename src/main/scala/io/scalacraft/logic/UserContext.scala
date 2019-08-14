@@ -8,7 +8,7 @@ import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.network.{ConnectionManager, RawPacket}
 import io.scalacraft.loaders.Packets
 import io.scalacraft.loaders.Packets.ConnectionState
-import io.scalacraft.logic.messages.Message.{CanJoinGame, OnlinePlayers, RegisterUser, RemovePlayer, RequestOnlinePlayers, UserDisconnected, UserRegistered}
+import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.clientbound.LoginPackets.LoginSuccess
@@ -46,17 +46,15 @@ class UserContext(connectionManager: ConnectionManager, serverConfiguration: Ser
 
   private def statusBehaviour: Receive = {
     case Request() =>
-      world ? RequestOnlinePlayers onComplete {
-        case Success(OnlinePlayers(number)) =>
+      world ? RequestOnlinePlayers map (_.asInstanceOf[Int]) onComplete {
+        case Success(number) =>
           writePacket(Response(serverConfiguration.loadConfiguration(number)))
           log.debug("Request received. Sending server configuration..")
           context.become(handlePacketFor {
             case Ping(payload) =>
               writePacket(Pong(payload))
-              stop()
               log.debug("Ping received. Sending pong and closing connection..")
           })
-        case Success(_) => // never happens
         case Failure(ex) => log.error(ex, "Can't retrieve the number of online players")
       }
 
@@ -65,17 +63,17 @@ class UserContext(connectionManager: ConnectionManager, serverConfiguration: Ser
   private def loginBehaviour: Receive = {
     case LoginStart(username) =>
       this.username = username
-      log.debug(s"User $username is authenticating..")
+      log.info(s"User $username is authenticating..")
 
-      world ? RegisterUser(username, self) onComplete {
-        case Success(UserRegistered(uuid, playerRef)) =>
+      world ? RegisterUser(username) onComplete {
+        case Success(UserRegistered(entityId, uuid, playerRef)) =>
           player = playerRef
           this.uuid = uuid
           writePacket(LoginSuccess(uuid.toString, username))
           currentState = ConnectionState.Play
           context.become(handlePacketFor(playBehaviour))
-          player ! CanJoinGame
-          log.debug(s"User $username with uuid $uuid authenticated successfully")
+          player ! RequestJoinGame(entityId, self)
+          log.info(s"User $username with uuid $uuid authenticated successfully")
         case Success(_) => // never happens
         case Failure(ex) =>
           log.error(ex, s"Can't register user $username")
@@ -105,8 +103,8 @@ class UserContext(connectionManager: ConnectionManager, serverConfiguration: Ser
       if (currentState == ConnectionState.Play) {
         player ! RemovePlayer
         log.info(s"User $username with uuid $uuid disconnected")
-        stop()
       }
+      stop()
   }
 
   private def writePacket(packet: Structure): Unit = {
@@ -127,7 +125,6 @@ class UserContext(connectionManager: ConnectionManager, serverConfiguration: Ser
     // TODO: handle wrong protocol version
     if (clientProtocolVersion != ServerConfiguration.VersionProtocol) {
       log.warning(s"Client use $clientProtocolVersion protocolVersion instead of ${ServerConfiguration.VersionProtocol}")
-      stop()
     }
   }
 

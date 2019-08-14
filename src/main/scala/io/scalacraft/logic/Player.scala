@@ -1,34 +1,34 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
-import io.scalacraft.logic.messages.Message.{CanJoinGame, ChunkNotPresent, JoiningGame, LeavingGame, RemovePlayer, RequestChunkData}
+import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, SpawnPosition, TimeUpdate, WorldDimension}
+import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
-import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class Player(username: String, userContext: ActorRef, serverConfiguration: ServerConfiguration) extends Actor
+class Player(username: String, serverConfiguration: ServerConfiguration) extends Actor
   with Timers with ActorLogging with DefaultTimeout with ImplicitContext {
 
   import Player._
 
   private val world = context.parent
 
-  private val entityId = 0
+  private var entityId: Int = _
+  private var userContext: ActorRef = _
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = -20
+  private var posX: Int = 0
   private var posY: Int = 80
-  private var posZ: Int = 20
+  private var posZ: Int = -0
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   //private var digging: Boolean = false
@@ -39,27 +39,29 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
 
   private var lastKeepAliveId: Long = _
 
+  private var loadedChunks: Set[(Int, Int)] = Set()
+
   private val randomGenerator = Random
 
   private def preStartBehaviour: Receive = {
-    case CanJoinGame =>
+    case RequestJoinGame(playerEntityId, playerUserContext) =>
+      entityId = playerEntityId
+      userContext = playerUserContext
+
       userContext ! JoinGame(entityId, serverConfiguration.gameMode, worldDimension,
         serverConfiguration.serverDifficulty, serverConfiguration.maxPlayers, serverConfiguration.levelTypeBiome,
-        !serverConfiguration.debug)
+        serverConfiguration.reducedDebugInfo)
       world ! JoiningGame
+      // userContext ! cb.PluginMessage("minecraft:brand", Array(7, 118, 97, 110, 105, 108, 108, 97))
+      // userContext ! cb.PlayerAbilities(0)
+
     case clientSettings: ClientSettings =>
       locale = clientSettings.locale
       mainHand = clientSettings.mainHand
-      viewDistance = clientSettings.viewDistance
+      viewDistance = if (clientSettings.viewDistance > ServerConfiguration.MaxViewDistance)
+        ServerConfiguration.MaxViewDistance else clientSettings.viewDistance
 
-      val chunkX = MCAUtil.blockToChunk(posX)
-      val chunkZ = MCAUtil.blockToChunk(posZ)
-      Future.sequence(for (x <- chunkX - 3 to chunkX + 3; z <- chunkZ - 3 to chunkZ + 3) yield {
-        world ? RequestChunkData(x, z) map {
-          case chunkData: ChunkData => userContext ! chunkData
-          case ChunkNotPresent => log.warning(s"Chunk ($x,$z) not present")
-        }
-      }) onComplete {
+      loadChunks() onComplete {
         case Success(_) =>
           userContext ! SpawnPosition(Position(posX, posY, posZ))
 
@@ -109,6 +111,7 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
       posY = playerPosition.feetY.toInt
       posZ = playerPosition.z.toInt
       onGround = playerPosition.onGround
+      loadChunks()
     case playerPositionAndLook: sb.PlayerPositionAndLook =>
       posX = playerPositionAndLook.x.toInt
       posY = playerPositionAndLook.feetY.toInt
@@ -116,10 +119,11 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
       yaw = playerPositionAndLook.yaw
       pitch =playerPositionAndLook.pitch
       onGround = playerPositionAndLook.onGround
+      loadChunks()
     case timeUpdate: TimeUpdate => userContext forward timeUpdate
     case RemovePlayer =>
       world ! LeavingGame
-      self ! PoisonPill
+      reset()
   }
 
   override def receive: Receive = preStartBehaviour
@@ -134,6 +138,40 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
     flags
   }
 
+  private def reset(): Unit = {
+    loadedChunks = Set()
+    lastPosition = null
+    context.become(preStartBehaviour)
+  }
+
+  private var lastPosition: (Int, Int) = _
+  private def loadChunks(): Future[Unit] = {
+    val timeout = 16 seconds
+    def needLoadingChunks: Boolean = {
+      math.abs(posX - lastPosition._1) > ServerConfiguration.LoadingChunksBlocksThreshold ||
+        math.abs(posZ - lastPosition._2) > ServerConfiguration.LoadingChunksBlocksThreshold
+    }
+
+    if (lastPosition == null || needLoadingChunks) {
+      val chunkX = posX >> 4
+      val chunkZ = posZ >> 4
+      lastPosition = (posX, posZ)
+      val newChunks = (for (x <- chunkX - viewDistance until chunkX + viewDistance;
+           z <- chunkZ - viewDistance until chunkZ + viewDistance) yield (x, z)).toSet
+      val toUnload = loadedChunks diff newChunks
+      val toLoad = newChunks diff loadedChunks
+      loadedChunks = newChunks
+
+      toUnload foreach { case (x, z) => userContext ! UnloadChunk(x, z) }
+      Future.sequence(toLoad map { case (x, z) =>
+        world.ask(RequestChunkData(x, z))(timeout) map {
+          case chunkData: ChunkData => userContext ! chunkData
+          case _ => // do nothing
+        }
+      }) map (_ => Unit)
+    } else Future.unit
+  }
+
 }
 
 object Player {
@@ -143,8 +181,8 @@ object Player {
   private case object KeepAliveTimeout
   private case object KeepAliveTimeoutKey
 
-  def props(username: String, userContext: ActorRef, serverConfiguration: ServerConfiguration): Props =
-    Props(new Player(username, userContext, serverConfiguration))
+  def props(username: String, serverConfiguration: ServerConfiguration): Props =
+    Props(new Player(username, serverConfiguration))
   def name(username: String): String = s"Player-$username"
 
 }

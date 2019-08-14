@@ -4,63 +4,62 @@ import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import com.typesafe.scalalogging.LazyLogging
-import io.scalacraft.loaders.Regions
 import io.scalacraft.logic.World.TimeTick
-import io.scalacraft.logic.messages.Message.{ChunkNotPresent, JoiningGame, LeavingGame, OnlinePlayers, RegisterUser, RequestChunkData, RequestOnlinePlayers, UserRegistered}
-import io.scalacraft.misc.ServerConfiguration
+import io.scalacraft.logic.messages.Message._
+import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import io.scalacraft.packets.clientbound.PlayPackets.TimeUpdate
 import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLogging with ActorLogging with Timers {
 
   private val TimeUpdateInterval: Int = ServerConfiguration.TicksInSecond * 20
   private val TicksInDay: Int = 24000
 
-  private var regions: Map[(Int, Int), ActorRef] = _
-  private var players: Map[String, UUID] = Map()
+  private var regions: Map[(Int, Int), ActorRef] = Map()
+  private var players: Map[String, (UUID, ActorRef)] = Map()
   private var onlinePlayers: List[ActorRef] = List()
 
   private var worldAge: Long = 0
 
+  private val entityIdGenerator: Iterator[Int] = Helpers.linearCongruentialGenerator(System.nanoTime().toInt)
+
   override def preStart(): Unit = {
-    import World._
-
-    try {
-      log.debug("Loading regions..")
-      regions = Regions.loadRegions() map {
-        case ((x, y), file) => (x, y) -> context.actorOf(Region.props(file), Region.name(x, y))
-      }
-    } catch {
-      case e: Exception => logger.error("Error loading the world", e)
-    }
-
     timers.startPeriodicTimer(new Object(), TimeTick, 1 second)
   }
 
   override def receive: Receive = {
     /* ----------------------------------------------- Users ----------------------------------------------- */
-    case RegisterUser(username: String, userContext: ActorRef) =>
-      val uuid = if (players.contains(username)) players(username)
+    case RegisterUser(username) =>
+      val (uuid, player) = if (players.contains(username)) players(username)
       else {
         val newUUID = UUID.randomUUID()
-        players += username -> newUUID
-        newUUID
+        val actorRef = context.actorOf(Player.props(username, serverConfiguration), Player.name(username))
+        players += username -> (newUUID, actorRef)
+        (newUUID, actorRef)
       }
-      val player = context.actorOf(Player.props(username, userContext, serverConfiguration), Player.name(username))
-      sender ! UserRegistered(uuid, player)
+
+      sender ! UserRegistered(entityIdGenerator.next(), uuid, player)
     case JoiningGame => onlinePlayers +:= sender
     case LeavingGame => onlinePlayers = onlinePlayers filter {_ != sender}
-    case RequestOnlinePlayers => sender ! OnlinePlayers(onlinePlayers.size)
+    case RequestOnlinePlayers => sender ! onlinePlayers.size
     case request @ RequestChunkData(chunkX, chunkZ, _) =>
       val (relativeX, relativeZ) = (MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ))
       if (regions.contains((relativeX, relativeZ))) {
         regions((relativeX, relativeZ)) forward request
       } else {
-        log.warning(s"Region ($relativeX,$relativeZ) not loaded")
-        sender ! ChunkNotPresent
+        Try(MCAUtil.readMCAFile(s"world/regions/r.$relativeX.$relativeZ.mca")) match {
+          case Success(regionFile) =>
+            val region = context.actorOf(Region.props(regionFile), Region.name(relativeX, relativeZ))
+            regions += (relativeX, relativeZ) -> region
+            region forward request
+          case Failure(_) =>
+            log.warning(s"Region ($relativeX,$relativeZ) not loaded")
+            sender ! ChunkNotPresent
+        }
       }
     case TimeTick =>
       val timeOfDay = worldAge % TicksInDay
@@ -71,6 +70,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
       }
 
       worldAge += ServerConfiguration.TicksInSecond
+    case RequestEntityId => sender ! entityIdGenerator.next()
   }
 
 }

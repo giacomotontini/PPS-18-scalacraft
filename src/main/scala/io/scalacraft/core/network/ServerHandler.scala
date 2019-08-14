@@ -12,8 +12,10 @@ class ServerHandler(actorSystem: ActorSystem, serverConfiguration: ServerConfigu
 
   var dispatcher: ActorRef = _
 
-  override def handlerAdded(ctx: ChannelHandlerContext): Unit =
+  override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
+    logger.debug(s"Accepting new connection from address ${ctx.channel().remoteAddress()}")
     dispatcher = actorSystem.actorOf(UserContext.props(ConnectionManager(ctx), serverConfiguration), UserContext.name)
+  }
 
   override def channelRead(channelHandlerContext: ChannelHandlerContext, message: Object): Unit =
     dispatcher ! message.asInstanceOf[RawPacket]
@@ -23,7 +25,9 @@ class ServerHandler(actorSystem: ActorSystem, serverConfiguration: ServerConfigu
     channelHandlerContext.close()
   }
 
-  override def channelInactive(ctx: ChannelHandlerContext): Unit =
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = {
+    logger.debug(s"Closing connection of address ${ctx.channel().remoteAddress()}")
     dispatcher ! UserDisconnected
+  }
 
 }
