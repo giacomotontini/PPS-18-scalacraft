@@ -16,9 +16,9 @@ object Message {
 
   case object ChunkNotPresent extends Message
 
-  case class RegisterUser(username: String, userContext: ActorRef) extends Message
-
-  case class UserRegistered(uuid: UUID, player: ActorRef) extends Message
+  case class  RegisterUser(username: String) extends Message
+  case class  UserRegistered(entityId: Int, uuid: UUID, player: ActorRef) extends Message
+  case class  RequestJoinGame(entityId: Int, userContext: ActorRef) extends Message
 
   case object CanJoinGame
 
@@ -33,9 +33,7 @@ object Message {
   // Sent by UserContext to World to ask the number of players online
   case object RequestOnlinePlayers extends Message
 
-  case class  OnlinePlayers(number: Int) extends Message
-  
-  /* --------------------------------------------- Mobs Spawning --------------------------------------------- */
+  case object RequestEntityId extends Message
 
   case class RequestMobsInChunk(chunkX: Int, chunkZ: Int) extends Message
 

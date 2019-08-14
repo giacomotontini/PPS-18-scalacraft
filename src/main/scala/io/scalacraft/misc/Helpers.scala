@@ -49,6 +49,17 @@ private[scalacraft] object Helpers {
     numWrite
   }
 
+  def linearCongruentialGenerator(rseed: Int): Iterator[Int] = new Iterator[Int] {
+    var seed: Int = rseed
+
+    override def hasNext: Boolean = true
+
+    override def next: Int = {
+      seed = (seed * 1103515245 + 12345) & Int.MaxValue;
+      seed
+    }
+  }
+
   def listTagToList[T <: Tag[_]](listTag: ListTag[T]): List[T] = listTag.iterator().asScala.toList
 
   implicit class RichNbtCompoundTag(nbtTag: CompoundTag) {

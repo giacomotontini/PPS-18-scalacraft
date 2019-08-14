@@ -13,7 +13,8 @@ case class ServerConfiguration(debug: Boolean = false,
                                gameMode: GameModeValue = GameModeValue.Survival,
                                serverDifficulty: ServerDifficulties = ServerDifficulties.Easy,
                                maxPlayers: Int = 100,
-                               levelTypeBiome: LevelType = LevelType.Default) {
+                               levelTypeBiome: LevelType = LevelType.Default,
+                               reducedDebugInfo: Boolean = false) {
 
   import ServerConfiguration._
 
@@ -32,5 +33,7 @@ object ServerConfiguration {
   val VersionName: String = "1.13.2"
   val VersionProtocol: Int = 404
   val TicksInSecond: Int = 20
+  val MaxViewDistance: Int = 10
+  val LoadingChunksBlocksThreshold = 8  // not compute needed chunks if player moves under this
 
 }
