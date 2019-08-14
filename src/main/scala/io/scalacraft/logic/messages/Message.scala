@@ -19,9 +19,9 @@ object Message {
   case class  RequestChunkData(chunkX: Int, chunkZ: Int, fullChunk: Boolean = true) extends Message
   case object ChunkNotPresent extends Message
 
-  case class  RegisterUser(username: String, userContext: ActorRef) extends Message
-  case class  UserRegistered(uuid: UUID, player: ActorRef) extends Message
-  case object CanJoinGame extends Message
+  case class  RegisterUser(username: String) extends Message
+  case class  UserRegistered(entityId: Int, uuid: UUID, player: ActorRef) extends Message
+  case class  RequestJoinGame(entityId: Int, userContext: ActorRef) extends Message
 
   // Sent by Player to inform world that player started playing
   case object JoiningGame extends Message
@@ -36,6 +36,7 @@ object Message {
 
   case class  OnlinePlayers(number: Int) extends Message
   
+  case object RequestEntityId extends Message
 
 
 }

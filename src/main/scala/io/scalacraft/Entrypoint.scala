@@ -22,6 +22,9 @@ object Entrypoint extends App with LazyLogging {
       opt[Unit]("debug")
         .action((_, c) => c.copy(debug = true))
         .text("enable debug mode"),
+      opt[Unit]("reduced-debug-info")
+        .action((_, c) => c.copy(reducedDebugInfo = true))
+        .text("disable in-game debug info"),
       opt[Int]('p', "port")
         .action((p, c) => c.copy(port = p))
         .text("the port listen on"),
