@@ -33,7 +33,6 @@ class DiggingManager(worldContext: ActorRef) extends Actor with ActorLogging wit
       worldContext ? BlockBreakAtPosition(position, playerId) onComplete {
         case Success(blockStateId: Int) =>
           val droppedItemIds = Blocks.blockFromStateId(blockStateId).drops
-          println(droppedItemIds)
           droppedItemIds.foreach(droppedItemId => {
             val itemEntity = new Entities.Item()
             itemEntity.item = Some(SlotData(droppedItemId, 1, new CompoundTag()))

@@ -51,13 +51,13 @@
     "id": 8,
     "displayName": "Grass Block",
     "name": "grass_block",
-    "stackSize": 64
+    "stackSize": 4
   },
   {
     "id": 9,
     "displayName": "Dirt",
     "name": "dirt",
-    "stackSize": 64
+    "stackSize": 4
   },
   {
     "id": 10,

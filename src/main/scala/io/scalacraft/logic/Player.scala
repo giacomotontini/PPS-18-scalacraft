@@ -144,15 +144,14 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
     case animation: sb.Animation =>
       world ! PlayerAnimation(username, playerId, animation)
     case ForwardToClient(msg) => msg match {
-      case CollectItemWithType(collectItem, blockStateId) =>
+      case CollectItemWithType(collectItem, itemId) =>
         userContext.forward(collectItem)
         if (collectItem.collectorEntityId == playerId) {
-          (inventory ? AddItem(InventoryItem(blockStateId, collectItem.pickUpItemCount)))
+          (inventory ? AddItem(InventoryItem(itemId, collectItem.pickUpItemCount)))
             . map(_.asInstanceOf[List[Option[InventoryItem]]]) onComplete {
-            case Success(list) =>
-              list.collect {
-                case Some(item) =>
-                  val slot = list.indexOf(Some(item))
+            case Success(inventory) =>
+              inventory.zipWithIndex.collect {
+                case (Some(item), slot) =>
                   val slotData = Some(SlotData(item.itemId, item.quantity, new CompoundTag()))
                   userContext ! SetSlot(0, slot, slotData)
               }
@@ -188,7 +187,7 @@ object Player {
 
   object Message {
 
-    case class CollectItemWithType(collectItem: CollectItem, blockStateId: Int) extends Message
+    case class CollectItemWithType(collectItem: CollectItem, itemId: Int) extends Message
 
   }
 

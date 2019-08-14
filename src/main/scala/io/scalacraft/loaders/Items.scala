@@ -11,10 +11,10 @@ object Items {
                           name: String,
                           stackSize: Int)
 
-   private lazy val storableItems: List[StorableItem] = {
+  private lazy val storableItems: List[StorableItem] = {
     val content = Source.fromInputStream(getClass.getResourceAsStream("/data/items.json")).mkString
     val Right(items) = parser.decode[List[StorableItem]](content)
-     items
+    items
   }
 
   def getStorableItemById(itemId: Int): StorableItem = {
