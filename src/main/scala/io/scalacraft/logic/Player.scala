@@ -27,7 +27,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   private var entityId: Int = _
   private var userContext: ActorRef = _
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = -504
+  private var posX: Int = 200
   private var posY: Int = 80
   private var posZ: Int = 200
   private var yaw: Float = 0.0f
@@ -121,12 +121,13 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       pitch =playerPositionAndLook.pitch
       onGround = playerPositionAndLook.onGround
       loadChunks()
-      world ! RequestMobsInChunk(MCAUtil.blockToChunk(posX), MCAUtil.blockToChunk(posZ))
     case timeUpdate: TimeUpdate => userContext forward timeUpdate
     case RemovePlayer =>
       world ! LeavingGame
       reset()
     case spawnMobs: List[SpawnMob] => spawnMobs.foreach(spawnMob => userContext ! spawnMob)
+    case _: Animation=>
+      world ! RequestMobsInChunk(posX, posZ)
   }
 
   override def receive: Receive = preStartBehaviour

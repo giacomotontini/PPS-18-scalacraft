@@ -11,6 +11,7 @@ import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.BiomesToCreatureAndDensity
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
+import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.Future
 import scala.concurrent.Future._
@@ -50,16 +51,19 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
 
   private[this] def getMaximumSquareHeight(positions: List[Position], position: Position): Int = {
     positions.collect {
-      case Position(x, y, z) if x == position.x + 1 && z == position.z ||
-        z == position.z + 1 && x == position.x ||
-        x == position.x + 1 && z == position.z + 1 =>
+      case Position(x, y, z) if x == position.x - 1 && z == position.z ||
+        z == position.z - 1 && x == position.x ||
+        x == position.x - 1 && z == position.z - 1 ||
+        x == position.x && z == position.z =>
         println("Original: ", position.x, position.y, position.z, "New :", x, y, z)
         y
     }.max
   }
 
   override def receive: Receive = {
-    case RequestMobsInChunk(chunkX, chunkZ) =>
+    case RequestMobsInChunk(x, z/*chunkX, chunkZ*/) =>
+      val chunkX = MCAUtil.blockToChunk(x)
+      val chunkZ = MCAUtil.blockToChunk(z)
       val senderRef = sender
       val (updatedMap, actualNumberOfPlayer) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
@@ -72,21 +76,27 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
                  if creatureInstance.spawnableBiomes.keySet.contains(biomeAndPosition._1)) yield {
               creatureInstance match {
                 case farmAnimal: FarmAnimal =>
-                  val spawnProbability = farmAnimal.spawnableBiomes(biomeAndPosition._1) //TODO: put /256
+                  //val spawnProbability = farmAnimal.spawnableBiomes(biomeAndPosition._1)
                   var positions = biomeAndPosition._2.filter {
                     case (_, isWater) => !isWater
                   }.map(_._1)
-                  println(positions)
-                  if (randomGenerator.nextFloat() < spawnProbability) {
-                    val position = positions(randomGenerator.nextInt(positions.length))
+                  //if (randomGenerator.nextFloat() < spawnProbability) {
+                    //val position = positions(randomGenerator.nextInt(positions.length))
+                    val pos = positions.find(p => p.x == x && p.z == z)
+                  if(pos.isDefined) {
+                    val position = pos.get
                     for (_ <- 0 to 3) {
                       val uuid: UUID = UUID.randomUUID()
                       val entityId = randomGenerator.nextInt()
-                      positions = positions.filter(elem => elem != position)
-                      logger.info("spawned mob in: "+ position.x+" " + position.y+ " " + position.z)
-                      context.actorOf(farmAnimal.props(entityId, uuid, position.x, position.y, position.z,
+                      logger.info("spawned mob in: " + position.x + " " + position.y + " " + position.z)
+                      context.actorOf(farmAnimal.props(entityId, uuid, position.x, getMaximumSquareHeight(positions, position), position.z,
                         randomGenerator.nextFloat() < farmAnimal.spawnBabyPercentage))
+                      //positions = positions.filter(elem => elem != position)
+                      // }
                     }
+                  }
+                  else {
+                    logger.info("cannot spawn mob at: " + x + " " + z)
                   }
                 case _ => println("Not Implemented Animal")
               }

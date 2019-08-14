@@ -11,15 +11,11 @@ import net.querz.nbt.mca.{Chunk, MCAFile, MCAUtil}
 
 class Region(mca: MCAFile) extends Actor with ActorLogging {
   private[this] def firstSpawnableHeight(chunk: Chunk, x: Int, z: Int): Int = {
-    var yIndex = 0
-    var lastSpawnableIndex = 0
-    while (yIndex <= 255 && chunk.getBlockStateAt(x, yIndex, z) != null) {
-      if(chunk.getBlockStateAt(x, yIndex, z).isSpawnableSurface()) {
-        lastSpawnableIndex = yIndex
-      }
-      yIndex += 1
+    var yIndex = 255
+    while (chunk.getBlockStateAt(x, yIndex, z) == null || !chunk.getBlockStateAt(x, yIndex, z).isSpawnableSurface()) {
+      yIndex -= 1
     }
-    lastSpawnableIndex
+    yIndex + 1
   }
 
   override def receive: Receive = {
@@ -34,11 +30,11 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
       val chunkColumn = mca.getChunk(chunkX, chunkZ)
       val biomeToSpawnPosition = (for (x <- 0 to 15;
                                        z <- 0 to 15) yield {
-        val posX = MCAUtil.chunkToBlock(chunkX)+x
-        val posZ = MCAUtil.chunkToBlock(chunkZ)+z
+        val posX = MCAUtil.chunkToBlock(chunkX) + x
+        val posZ = MCAUtil.chunkToBlock(chunkZ) + z
         val y = firstSpawnableHeight(chunkColumn, x, z)
         val biome = chunkColumn.getBiomeAt(x, z)
-        val isWater = chunkColumn.getBlockStateAt(x, y, z).isWater()
+        val isWater = chunkColumn.getBlockStateAt(x, y-1, z).isWater()
         biome -> (Position(posX, y, posZ), isWater)
       }).groupBy(_._1).map {
         case (biomeIndex, values) => biomeIndex -> values.map(_._2).toList

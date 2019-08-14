@@ -76,10 +76,8 @@ private[scalacraft] object Helpers {
         checkIfIsASpecificTypeOfBlock("minecraft:cave_air")
     }
     def isGrass(): Boolean = {
-        checkIfIsASpecificTypeOfBlock("minecraft:grass")
-    }
-    def isTallGrass(): Boolean = {
-      checkIfIsASpecificTypeOfBlock("minecraft:tall_grass")
+        checkIfIsASpecificTypeOfBlock("minecraft:grass") ||
+          checkIfIsASpecificTypeOfBlock("minecraft:tall_grass")
     }
     def isLeaves(): Boolean = {
       checkIfIsASpecificTypeOfBlock("minecraft:birch_leaves") ||
@@ -90,7 +88,7 @@ private[scalacraft] object Helpers {
         checkIfIsASpecificTypeOfBlock("minecraft:oak_log")
     }
     def isSpawnableSurface(): Boolean = {
-      !isAir() && !isWoodOfTree() && !isLeaves() && !isTallGrass()
+      !isAir() && !isWoodOfTree() && !isLeaves() && !isGrass()
     }
   }
 
