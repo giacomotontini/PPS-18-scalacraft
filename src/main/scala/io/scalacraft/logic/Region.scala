@@ -4,7 +4,6 @@ import akka.actor.{Actor, ActorLogging, Props}
 import io.scalacraft.loaders.{Blocks, Chunks, Items}
 import io.scalacraft.logic.messages.Message.{BlockBreakAtPosition, BlockPlacedByUser, RequestChunkData}
 import io.scalacraft.misc.Helpers
-import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
 import net.querz.nbt.mca.{MCAFile, MCAUtil}
 
@@ -21,19 +20,14 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
     case BlockBreakAtPosition(position, _) =>
       val (chunkX, chunkZ) = (MCAUtil.blockToChunk(position.x), MCAUtil.blockToChunk(position.z))
       val compound = mca.getChunk(chunkX, chunkZ).getBlockStateAt(position.x, position.y, position.z)
-      println("block break", position)
       sender ! Blocks.stateIdFromCompoundTag(compound)
 
-    case BlockPlacedByUser(playerBlockPlacement, itemId, username) =>
-      val x = Math.round(playerBlockPlacement.position.x + playerBlockPlacement.cursorPositionX)
-      val y = Math.round(playerBlockPlacement.position.y + playerBlockPlacement.cursorPositionY)
-      val z = Math.round(playerBlockPlacement.position.z + playerBlockPlacement.cursorPositionZ)
-      val position = Position(x,y,z)
+    case BlockPlacedByUser(playerBlockPlacement, itemId, _) =>
+      val position = playerBlockPlacement.position
       val item = Items.getStorableItemById(itemId)
       val tag = Blocks.compoundTagFromBlockName(item.name)
-      println("block place", playerBlockPlacement)
       val (chunkX, chunkZ) = (MCAUtil.blockToChunk(position.x), MCAUtil.blockToChunk(position.z))
-      mca.getChunk(chunkX, chunkZ).setBlockStateAt(position.x, position.y, position.z, tag, false)
+      mca.getChunk(chunkX, chunkZ).setBlockStateAt(position.x, position.y + 1, position.z, tag, false)
   }
 
 }

@@ -65,8 +65,6 @@ object Blocks {
 
 
   def compoundTagFromBlockName(name: String): CompoundTag = {
-    println(name)
-
     compoundTagList.reverse
       .filter(_.containsKey("Name"))
       .filter(_.getString("Name").equals("minecraft:" + name)).head
@@ -89,8 +87,4 @@ object Blocks {
     blocks(blockId)
   }
 
-}
-
-object Test extends App {
-  println(Blocks.blockFromStateId(9))
 }
