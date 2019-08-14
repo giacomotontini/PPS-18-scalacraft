@@ -75,9 +75,7 @@ sealed trait Inventory {
     }
   }
 
-  def retrieveAllItems(): List[Option[InventoryItem]] = {
-    inventory.toList
-  }
+  def retrieveAllItems(): List[Option[InventoryItem]] = inventory.toList
 
   def findAvailableIndex(): List[Int]
 
@@ -88,15 +86,19 @@ sealed trait CraftingInventoty
 
 sealed trait ChestInventory
 
-case class PlayerInventory() extends Inventory with CraftingInventoty {
-
+object PlayerInventory {
+  def Id = 0  //PlayerInventory
+  //TODO do the same with other windows
   //All range boundaries are inclusive by protocol
-  private val CrafitingOutputSlot = 0
-  private val CraftingInputSlotRange = Range(1, 4)
-  private val ArmorSlotRange = Range(5, 8)
-  private val MainInventorySlotRange = Range(9, 35)
-  private val HotBarSlotRange = Range(36, 44)
-  private val OffhandSlot = 45
+  def CrafitingOutputSlot = 0
+  def CraftingInputSlotRange = Range(1, 4)
+  def ArmorSlotRange = Range(5, 8)
+  def MainInventorySlotRange = Range(9, 35)
+  def HotBarSlotRange = Range(36, 44)
+  def OffhandSlot = 45
+}
+case class PlayerInventory() extends Inventory with CraftingInventoty {
+  import PlayerInventory._
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(OffhandSlot + 1)(None: Option[InventoryItem])
 

@@ -66,9 +66,61 @@ object PlayPackets {
   @packet(0x07)
   case class EnchantItem(@byte enchantItem: Int, @byte windowId: Int) extends Structure
 
+  trait ClickWindowAction
+  object ClickWindowAction {
+    case class LeftMouseClick(outsideWindows: Boolean = false) extends ClickWindowAction
+    case class RightMouseClick(outsideWindows: Boolean = false) extends ClickWindowAction
+    case object ShiftLeftMouseClick extends ClickWindowAction
+    case object ShiftRightMouseClick extends ClickWindowAction
+    case class NumberKey(keyNum:Int) extends ClickWindowAction
+    case object MiddleMouseClick extends ClickWindowAction
+    case object DropKey extends ClickWindowAction
+    case object ControlDropKey extends ClickWindowAction
+    case class LeftMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+    case class RightMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+    case class MiddleMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+    case object DoubleClick extends ClickWindowAction
+  }
   @packet(0x08)
   case class ClickWindow(@byte windowId: Int, @short slot: Int, @byte button: Int, @short actionNumber: Int,
-                         @boxed mode: Int, clickedItem: Slot) extends Structure
+                         @boxed mode: Int, clickedItem: Slot) extends Structure {
+
+    def actionPerformed(): ClickWindowAction = {
+      import ClickWindowAction._
+      mode match {
+        case 1 =>
+          button match {
+            case 0 => LeftMouseClick()
+            case 1 => RightMouseClick()
+          }
+        case 2 =>
+          button match {
+            case 0 => ShiftLeftMouseClick
+            case 1 => ShiftRightMouseClick
+          }
+        case 3 => NumberKey(button)
+        case 4 =>
+          button match {
+            case 0 if slot == -999 => LeftMouseClick(true)
+            case 1 if slot == -999 => RightMouseClick(true)
+            case 0 => DropKey
+            case 1 => ControlDropKey
+          }
+        case 5 => button match {
+          case 0 if slot == -999 => LeftMouseDrag()
+          case 4 if slot == -999 => RightMouseDrag()
+          case 8 if slot == -999 => MiddleMouseDrag()
+          case 1 => LeftMouseDrag(addSlot = true)
+          case 5 => RightMouseDrag(addSlot = true)
+          case 9 => MiddleMouseDrag(addSlot = true)
+          case 2 => LeftMouseDrag(endDrag = true)
+          case 6 => RightMouseDrag(endDrag = true)
+          case 10 => MiddleMouseDrag(endDrag = true)
+        }
+        case 6 if button == 0 => DoubleClick
+      }
+    }
+  }
 
   @packet(0x09)
   case class CloseWindow(@byte windowId: Int) extends Structure

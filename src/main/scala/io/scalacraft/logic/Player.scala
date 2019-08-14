@@ -147,24 +147,16 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
       case CollectItemWithType(collectItem, itemId) =>
         userContext.forward(collectItem)
         if (collectItem.collectorEntityId == playerId) {
-          (inventory ? AddItem(InventoryItem(itemId, collectItem.pickUpItemCount)))
-            . map(_.asInstanceOf[List[Option[InventoryItem]]]) onComplete {
-            case Success(inventory) =>
-              inventory.zipWithIndex.collect {
-                case (Some(item), slot) =>
-                  val slotData = Some(SlotData(item.itemId, item.quantity, new CompoundTag()))
-                  userContext ! SetSlot(0, slot, slotData)
-              }
-            case Failure(exception) => log.warning("Failed to add item to inventory.")
-          }
+          inventory ! AddItem(InventoryItem(itemId, collectItem.pickUpItemCount))
         }
       case _ => userContext ! msg
     }
+    case msg: ClickWindow if msg.windowId == PlayerInventory.Id => inventory forward(msg)
     case timeUpdate: TimeUpdate => userContext forward timeUpdate
     case RemovePlayer =>
       world ! LeavingGame
       self ! PoisonPill
-    case anyOther => println("Not handled", anyOther)
+    case anyOther => //println("Not handled", anyOther)
   }
 
   override def receive: Receive = preStartBehaviour
