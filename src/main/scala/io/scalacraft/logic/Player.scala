@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
 import akka.pattern._
 import io.scalacraft.logic.DiggingManager.Message.PlayerDiggingWithItem
 import io.scalacraft.logic.Player.Message.CollectItemWithType
-import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldedItemId}
+import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveAllItems, RetrieveHeldedItemId, UseHeldedItem}
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
@@ -31,8 +31,8 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
 
   private val playerId = 0
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = -20
-  private var posY: Int = 70
+  private var posX: Int = 5
+  private var posY: Int = 63
   private var posZ: Int = 20
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
@@ -51,12 +51,12 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
     case CanJoinGame =>
       userContext ! JoinGame(playerId, serverConfiguration.gameMode, worldDimension,
         serverConfiguration.serverDifficulty, serverConfiguration.maxPlayers, serverConfiguration.levelTypeBiome,
-        !serverConfiguration.debug)
+        serverConfiguration.debug)
       world ! JoiningGame
-    case clientSettings: ClientSettings =>
-      locale = clientSettings.locale
-      mainHand = clientSettings.mainHand
-      viewDistance = clientSettings.viewDistance
+    case ClientSettings(locale, viewDistance, _, _, _, mainHand) =>
+      this.locale = locale
+      this.mainHand = mainHand
+      this.viewDistance = viewDistance
 
       val chunkX = MCAUtil.blockToChunk(posX)
       val chunkZ = MCAUtil.blockToChunk(posZ)
@@ -129,25 +129,34 @@ class Player(username: String, userContext: ActorRef, serverConfiguration: Serve
     case msg: sb.HeldItemChange => inventory.forward(msg)
     case playerDigging@PlayerDigging(status, position, face) =>
       digging = Some(status)
-      inventory ? RetrieveHeldedItemId onComplete {
-        case Success(heldedItemId: Option[Int]) =>
+      (inventory ? RetrieveHeldedItemId) map(_.asInstanceOf[Option[Int]]) onComplete {
+        case Success(heldedItemId) =>
           world ! PlayerDiggingWithItem(playerId, playerDigging, heldedItemId)
           log.info("User: {} {} digging", username, status)
+        case Failure(exception) => log.warning("Failed to retrieve helded item.")
+      }
+    case msg: PlayerBlockPlacement =>
+      (inventory ? UseHeldedItem).map(_.asInstanceOf[Int]) onComplete {
+        case Success(itemId) =>
+          world ! BlockPlacedByUser(msg, itemId, username)
+        case Failure(exception) => log.warning("Failed to retrieve placed block type.")
       }
     case animation: sb.Animation =>
-      world ! ForwardToWorld(animation, playerId)
+      world ! PlayerAnimation(username, playerId, animation)
     case ForwardToClient(msg) => msg match {
       case CollectItemWithType(collectItem, blockStateId) =>
         userContext.forward(collectItem)
         if (collectItem.collectorEntityId == playerId) {
-          inventory ? AddItem(InventoryItem(blockStateId, collectItem.pickUpItemCount)) onComplete {
-            case Success(list: List[Option[InventoryItem]]) =>
+          (inventory ? AddItem(InventoryItem(blockStateId, collectItem.pickUpItemCount)))
+            . map(_.asInstanceOf[List[Option[InventoryItem]]]) onComplete {
+            case Success(list) =>
               list.collect {
                 case Some(item) =>
                   val slot = list.indexOf(Some(item))
                   val slotData = Some(SlotData(item.itemId, item.quantity, new CompoundTag()))
                   userContext ! SetSlot(0, slot, slotData)
               }
+            case Failure(exception) => log.warning("Failed to add item to inventory.")
           }
         }
       case _ => userContext ! msg

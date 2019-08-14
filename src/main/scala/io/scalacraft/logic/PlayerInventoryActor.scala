@@ -1,7 +1,7 @@
 package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorRef, Props}
-import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, MoveItem, RemoveItem, RetrieveAllItems, RetrieveHeldedItemId}
+import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, MoveItem, RemoveItem, RetrieveAllItems, RetrieveHeldedItemId, UseHeldedItem}
 import io.scalacraft.packets.serverbound.PlayPackets.HeldItemChange
 
 class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor {
@@ -20,11 +20,13 @@ class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor {
       inventory.moveItem(from, to, quantity)
       sender ! inventory.retrieveAllItems()
     case RetrieveAllItems =>
-      inventory.retrieveAllItems()
+      sender ! inventory.retrieveAllItems()
     case HeldItemChange(slot) =>
       heldedSlot = slot
     case RetrieveHeldedItemId =>
       sender ! inventory.findHeldedItemId(heldedSlot)
+    case UseHeldedItem =>
+      sender ! inventory.removeUsedHeldedItem(heldedSlot)
   }
 }
 
@@ -36,6 +38,7 @@ object PlayerInventoryActor {
     case class MoveItem(fromSlot: Int, toSlot: Int, quantity: Int) extends Message
     case class RetrieveAllItems() extends Message
     case class RetrieveHeldedItemId() extends Message
+    case class UseHeldedItem() extends Message
   }
 
   def props(userContext: ActorRef): Props = Props(new PlayerInventoryActor(userContext))

@@ -9,8 +9,12 @@ import io.scalacraft.logic.DiggingManager.Message.PlayerDiggingWithItem
 import io.scalacraft.logic.World.TimeTick
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.ServerConfiguration
-import io.scalacraft.packets.clientbound.PlayPackets._
+import io.scalacraft.packets.DataTypes.Position
 import net.querz.nbt.mca.MCAUtil
+import io.scalacraft.packets.clientbound.PlayPackets._
+import io.scalacraft.packets.clientbound.{PlayPackets => cb}
+import io.scalacraft.packets.serverbound.PlayPackets._
+import io.scalacraft.packets.serverbound.{PlayPackets => sb}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -22,7 +26,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
 
   private var regions: Map[(Int, Int), ActorRef] = _
   private var players: Map[String, UUID] = Map()
-  private var onlinePlayers: List[ActorRef] = List()
+  implicit private var onlinePlayers: List[ActorRef] = List()
   private var diggingManager: ActorRef = _
 
   private var worldAge: Long = 0
@@ -69,14 +73,12 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
       }
     case TimeTick =>
       val timeOfDay = worldAge % TicksInDay
-
       if (worldAge % TimeUpdateInterval == 0) {
         val timeUpdate = TimeUpdate(worldAge, timeOfDay)
         onlinePlayers foreach {
           _ ! timeUpdate
         }
       }
-
       worldAge += ServerConfiguration.TicksInSecond
     case request@BlockBreakAtPosition(position, playerId) =>
       val (relativeX, relativeZ) = (MCAUtil.blockToRegion(position.x), MCAUtil.blockToRegion(position.z))
@@ -84,21 +86,30 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
       sendToPlayers(Effect(EffectId.BlockBreakWithSound, position, 0, disableRelativeVolume = false))
       sendToPlayers(BlockBreakAnimation(playerId, position, 10))
       sendToPlayers(BlockChange(position, 0))
-    case ForwardToWorld(message, playerId) => message match {
-      case _ =>
-      //case sb.Animation(hand) if hand == Hand.MainHand => sendToPlayers(cb.Animation(playerId, AnimationType.SwingMainArm))
-      //case sb.Animation(hand) if hand == Hand.OffHand => sendToPlayers(cb.Animation(playerId, AnimationType.SwingOffHand))
+    case PlayerAnimation(username, playerId, animation: sb.Animation) => animation.hand match {
+      case Hand.MainHand => sendToPlayersExceptOne(username, cb.Animation(playerId, AnimationType.SwingMainArm))
+      case Hand.OffHand => sendToPlayersExceptOne(username, cb.Animation(playerId, AnimationType.SwingOffHand))
+    }
+    case msg @ BlockPlacedByUser(playerBlockPlacement, _,_) => {
+      val (relativeX, relativeZ) = (MCAUtil.blockToRegion(playerBlockPlacement.position.x), MCAUtil.blockToRegion(playerBlockPlacement.position.z))
+      regions(relativeX, relativeZ) forward msg
     }
     case msg: PlayerDiggingWithItem => diggingManager forward msg
     case msg => sendToPlayers(msg)
   }
 
-  private def sendToPlayers(obj: Any): Unit = {
-    context.actorSelection("/user/world/Player*") ! ForwardToClient(obj)
+  private def sendToPlayersExceptOne(username: String, obj: Any): Unit = {
+    sendToPlayers(obj)(onlinePlayers.filter(!_.path.name.contains("Player-" + username)))
+  }
+
+  private def sendToPlayers(obj: Any)(implicit players :List[ActorRef]): Unit = {
+    players foreach (_ ! ForwardToClient(obj))
   }
 
   private def sentToPlayer(username: String, obj: Any): Unit = {
-    context.actorSelection("/user/world/Player-" + username) ! ForwardToClient(obj)
+    onlinePlayers.foreach {
+      case actor:ActorRef if actor.path.name.contains("Player-" + username) => actor ! ForwardToClient(obj)
+    }
   }
 
 }

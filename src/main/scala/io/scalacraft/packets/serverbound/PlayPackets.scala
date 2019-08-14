@@ -346,9 +346,9 @@ object PlayPackets {
   case class Spectate(targetPlayer: UUID) extends Structure
 
   @packet(0x29)
-  case class PlayerBlockPlacement(location: Position, @enumType[VarInt] face: Face, @enumType[VarInt] hand: Hand,
+  case class PlayerBlockPlacement(position: Position, @enumType[VarInt] face: Face, @enumType[VarInt] hand: Hand,
                                   cursorPositionX: Float, cursorPositionY: Float,
-                                  cursorPosiontZ: Float) extends Structure
+                                  cursorPositionZ: Float) extends Structure
 
   @packet(0x2A)
   case class UseItem(@enumType[VarInt] hand: Hand) extends Structure

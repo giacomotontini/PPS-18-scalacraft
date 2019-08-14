@@ -64,6 +64,14 @@ object Blocks {
   }
 
 
+  def compoundTagFromBlockName(name: String): CompoundTag = {
+    println(name)
+
+    compoundTagList.reverse
+      .filter(_.containsKey("Name"))
+      .filter(_.getString("Name").equals("minecraft:" + name)).head
+  }
+
   def compoundTagFromBlockStateId(blockStateId: Int): CompoundTag = {
     compoundTagList(blockStateId)
   }
@@ -73,7 +81,6 @@ object Blocks {
     compoundTagList.indexOf(compoundTag)
   }
 
-
   def blockFromStateId(stateId: Int): Block = {
       blocks.filter(b => stateId >= b.minStateId && stateId <= b.maxStateId).head
   }
@@ -82,4 +89,8 @@ object Blocks {
     blocks(blockId)
   }
 
+}
+
+object Test extends App {
+  println(Blocks.blockFromStateId(9))
 }

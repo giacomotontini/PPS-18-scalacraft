@@ -66,6 +66,15 @@ case class PlayerInventory() extends Inventory with CraftingInventoty {
     inventory(hotSlot + HotBarSlotRange.start).map(_.itemId)
   }
 
+  def removeUsedHeldedItem(hotSlot: Int): Int = {
+    findHeldedItemId(hotSlot) match {
+      case Some(itemId) =>
+        removeItem(hotSlot + HotBarSlotRange.start, InventoryItem(itemId, 1))
+        itemId
+      case None => 0
+    }
+  }
+
   override def findAvailableIndex(): List[Int] = {
     (for {
       i <- (HotBarSlotRange ++ MainInventorySlotRange)

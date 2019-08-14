@@ -4,13 +4,17 @@ import java.util.UUID
 
 import akka.actor.ActorRef
 import io.scalacraft.packets.DataTypes.Position
+import io.scalacraft.packets.serverbound.PlayPackets.{Animation, PlayerBlockPlacement}
 
 trait Message
 
 object Message {
 
   case class ForwardToClient(obj:Any) extends Message
-  case class ForwardToWorld(obj: Any, entityId: Int) extends Message
+  case class BlockPlacedByUser(playerBlockPlacement: PlayerBlockPlacement, itemId: Int, username: String) extends Message
+  case class BlockBreakAtPosition(position: Position, playerId: Int) extends Message
+  case class PlayerAnimation(username:String, entityId: Int, animation: Animation)
+
   /* --------------------------------------------- Region and chunks --------------------------------------------- */
   case class  RequestChunkData(chunkX: Int, chunkZ: Int, fullChunk: Boolean = true) extends Message
   case object ChunkNotPresent extends Message
@@ -32,6 +36,6 @@ object Message {
 
   case class  OnlinePlayers(number: Int) extends Message
   
-  case class BlockBreakAtPosition(position: Position, playerId: Int) extends Message
+
 
 }
