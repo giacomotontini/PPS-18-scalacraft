@@ -20,8 +20,6 @@ object Message {
   case class  UserRegistered(entityId: Int, uuid: UUID, player: ActorRef) extends Message
   case class  RequestJoinGame(entityId: Int, userContext: ActorRef) extends Message
 
-  case object CanJoinGame
-
   // Sent by Player to inform world that player started playing
   case object JoiningGame extends Message
 

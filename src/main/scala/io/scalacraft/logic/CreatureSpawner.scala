@@ -4,20 +4,19 @@ import java.util.UUID
 
 import akka.actor.{Actor, Props}
 import akka.pattern._
+import com.typesafe.scalalogging.LazyLogging
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.creatures.FarmAnimal
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.BiomesToCreatureAndDensity
-import io.scalacraft.packets.DataTypes.{Angle, Position}
-import io.scalacraft.packets.Entities.Chicken
+import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
-import net.querz.nbt.CompoundTag
 
 import scala.concurrent.Future
 import scala.concurrent.Future._
-import scala.util.Success
+import scala.util.{Random, Success}
 
-class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout {
+class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout with LazyLogging {
   //Mantains the number of player in a chunk, this is identified by his x, z coordinates
   var numberOfPlayersInChunk: Map[(Int, Int), Int] = Map()
   //Mantains the habitation times of every habitated chunk
@@ -25,7 +24,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout {
   //Indicates if creatures have been spawned yet in a given chunk
   var spawnedMobFuturePerChunk: Map[(Int, Int), Future[_]] = Map()
   //used to spawn creatures randomly
-  val randomGenerator = scala.util.Random
+  val randomGenerator: Random.type = scala.util.Random
 
   //Update an indicator of a chunk (i.e numberOfPlayer, habitationTime) and get the actual number of player.
   private[this] def updateChunkIndicators(chunkMapToUpdate: Map[(Int, Int), Int], chunkX: Int, chunkZ: Int,
@@ -49,6 +48,16 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout {
     }
   }
 
+  private[this] def getMaximumSquareHeight(positions: List[Position], position: Position): Int = {
+    positions.collect {
+      case Position(x, y, z) if x == position.x + 1 && z == position.z ||
+        z == position.z + 1 && x == position.x ||
+        x == position.x + 1 && z == position.z + 1 =>
+        println("Original: ", position.x, position.y, position.z, "New :", x, y, z)
+        y
+    }.max
+  }
+
   override def receive: Receive = {
     case RequestMobsInChunk(chunkX, chunkZ) =>
       val senderRef = sender
@@ -60,19 +69,21 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout {
           case Success(biomeToSpawnPosition: Map[Int, List[(Position, Boolean)]]) =>
             for (biomeAndPosition <- biomeToSpawnPosition;
                  creatureInstance <- BiomesToCreatureAndDensity.creatureInstance
-                 if (creatureInstance.spawnableBiomes.keySet.contains(biomeAndPosition._1))) yield {
+                 if creatureInstance.spawnableBiomes.keySet.contains(biomeAndPosition._1)) yield {
               creatureInstance match {
                 case farmAnimal: FarmAnimal =>
-                  val spawnProbability = farmAnimal.spawnableBiomes(biomeAndPosition._1) / 256
+                  val spawnProbability = farmAnimal.spawnableBiomes(biomeAndPosition._1) //TODO: put /256
                   var positions = biomeAndPosition._2.filter {
                     case (_, isWater) => !isWater
                   }.map(_._1)
+                  println(positions)
                   if (randomGenerator.nextFloat() < spawnProbability) {
-                    for (i <- 0 to 3) {
+                    val position = positions(randomGenerator.nextInt(positions.length))
+                    for (_ <- 0 to 3) {
                       val uuid: UUID = UUID.randomUUID()
                       val entityId = randomGenerator.nextInt()
-                      val position = positions.head
-                      positions = positions.tail
+                      positions = positions.filter(elem => elem != position)
+                      logger.info("spawned mob in: "+ position.x+" " + position.y+ " " + position.z)
                       context.actorOf(farmAnimal.props(entityId, uuid, position.x, position.y, position.z,
                         randomGenerator.nextFloat() < farmAnimal.spawnBabyPercentage))
                     }

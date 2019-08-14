@@ -12,15 +12,14 @@ import net.querz.nbt.mca.{Chunk, MCAFile, MCAUtil}
 class Region(mca: MCAFile) extends Actor with ActorLogging {
   private[this] def firstSpawnableHeight(chunk: Chunk, x: Int, z: Int): Int = {
     var yIndex = 0
-    var lastIndexWithoutAir = 0
-    val airTag = new CompoundTag()
-    airTag.put("Name", new StringTag("minecraft:air"))
-    while (yIndex < 255 && chunk.getBlockStateAt(x, yIndex, z) != null) {
-      if(!chunk.getBlockStateAt(x, yIndex, z).equals(airTag))
-        lastIndexWithoutAir = yIndex
+    var lastSpawnableIndex = 0
+    while (yIndex <= 255 && chunk.getBlockStateAt(x, yIndex, z) != null) {
+      if(chunk.getBlockStateAt(x, yIndex, z).isSpawnableSurface()) {
+        lastSpawnableIndex = yIndex
+      }
       yIndex += 1
     }
-    lastIndexWithoutAir
+    lastSpawnableIndex
   }
 
   override def receive: Receive = {
@@ -40,7 +39,6 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
         val y = firstSpawnableHeight(chunkColumn, x, z)
         val biome = chunkColumn.getBiomeAt(x, z)
         val isWater = chunkColumn.getBlockStateAt(x, y, z).isWater()
-        println(chunkColumn.getBlockStateAt(x, y, z)," ", isWater)
         biome -> (Position(posX, y, posZ), isWater)
       }).groupBy(_._1).map {
         case (biomeIndex, values) => biomeIndex -> values.map(_._2).toList

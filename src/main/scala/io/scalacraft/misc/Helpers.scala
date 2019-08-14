@@ -63,10 +63,34 @@ private[scalacraft] object Helpers {
   def listTagToList[T <: Tag[_]](listTag: ListTag[T]): List[T] = listTag.iterator().asScala.toList
 
   implicit class RichNbtCompoundTag(nbtTag: CompoundTag) {
-    def isWater(): Boolean = {
+    private[this] def checkIfIsASpecificTypeOfBlock(tagValue: String):Boolean = {
       val waterStringTag = new StringTag()
-      waterStringTag.setValue("minecraft:water")
+      waterStringTag.setValue(tagValue)
       nbtTag.entrySet().stream().anyMatch(elem => elem.getValue.equals(waterStringTag))
+    }
+    def isWater(): Boolean = {
+     checkIfIsASpecificTypeOfBlock("minecraft:water")
+    }
+    def isAir(): Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:air") ||
+        checkIfIsASpecificTypeOfBlock("minecraft:cave_air")
+    }
+    def isGrass(): Boolean = {
+        checkIfIsASpecificTypeOfBlock("minecraft:grass")
+    }
+    def isTallGrass(): Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:tall_grass")
+    }
+    def isLeaves(): Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:birch_leaves") ||
+        checkIfIsASpecificTypeOfBlock("minecraft:oak_leaves")
+    }
+    def isWoodOfTree(): Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:birch_log") ||
+        checkIfIsASpecificTypeOfBlock("minecraft:oak_log")
+    }
+    def isSpawnableSurface(): Boolean = {
+      !isAir() && !isWoodOfTree() && !isLeaves() && !isTallGrass()
     }
   }
 

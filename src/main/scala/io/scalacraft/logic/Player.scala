@@ -1,15 +1,16 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
 import akka.pattern._
-import io.scalacraft.logic.messages.Message._
+import io.scalacraft.logic.messages.Message.{ChunkNotPresent, JoiningGame, LeavingGame, RemovePlayer, RequestChunkData, RequestJoinGame, RequestMobsInChunk}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets._
+import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, SpawnMob, SpawnPosition, TimeUpdate, UnloadChunk, WorldDimension}
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
+import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -26,9 +27,9 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   private var entityId: Int = _
   private var userContext: ActorRef = _
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = 0
+  private var posX: Int = -504
   private var posY: Int = 80
-  private var posZ: Int = -0
+  private var posZ: Int = 200
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   //private var digging: Boolean = false
@@ -120,10 +121,12 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       pitch =playerPositionAndLook.pitch
       onGround = playerPositionAndLook.onGround
       loadChunks()
+      world ! RequestMobsInChunk(MCAUtil.blockToChunk(posX), MCAUtil.blockToChunk(posZ))
     case timeUpdate: TimeUpdate => userContext forward timeUpdate
     case RemovePlayer =>
       world ! LeavingGame
       reset()
+    case spawnMobs: List[SpawnMob] => spawnMobs.foreach(spawnMob => userContext ! spawnMob)
   }
 
   override def receive: Receive = preStartBehaviour

@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import com.typesafe.scalalogging.LazyLogging
 import io.scalacraft.logic.World.TimeTick
-import io.scalacraft.logic.messages.Message._
+import io.scalacraft.logic.messages.Message.{ChunkNotPresent, JoiningGame, LeavingGame, RegisterUser, RequestChunkData, RequestEntityId, RequestMobsInChunk, RequestOnlinePlayers, RequestSpawnPoints, UserRegistered}
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import io.scalacraft.packets.clientbound.PlayPackets.TimeUpdate
 import net.querz.nbt.mca.MCAUtil
@@ -21,6 +21,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
 
   private var regions: Map[(Int, Int), ActorRef] = Map()
   private var players: Map[String, (UUID, ActorRef)] = Map()
+  private var creatureSpawner: ActorRef = _
   private var onlinePlayers: List[ActorRef] = List()
 
   private var worldAge: Long = 0
@@ -28,6 +29,8 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
   private val entityIdGenerator: Iterator[Int] = Helpers.linearCongruentialGenerator(System.nanoTime().toInt)
 
   override def preStart(): Unit = {
+    import World._
+    creatureSpawner = context.actorOf(CreatureSpawner.props, CreatureSpawner.name)
     timers.startPeriodicTimer(new Object(), TimeTick, 1 second)
   }
 
@@ -71,6 +74,9 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
 
       worldAge += ServerConfiguration.TicksInSecond
     case RequestEntityId => sender ! entityIdGenerator.next()
+    case requestMobs: RequestMobsInChunk =>
+      creatureSpawner forward requestMobs
+    case requestSpawnPoints @ RequestSpawnPoints(chunkX, chunkZ) => regions(MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ)) forward requestSpawnPoints
   }
 
 }
