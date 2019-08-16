@@ -1,8 +1,5 @@
 package io.scalacraft.logic.traits
 
-
-
-
 import io.scalacraft.logic.{Inventory, InventoryItem}
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
@@ -10,7 +7,7 @@ import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction.{LeftMous
 import net.querz.nbt.CompoundTag
 import org.slf4j.{Logger, LoggerFactory}
 
-trait ClickWindowActionManager{
+trait ClickWindowActionManager {
 
   private def log : Logger = LoggerFactory.getLogger(getClass)
 
