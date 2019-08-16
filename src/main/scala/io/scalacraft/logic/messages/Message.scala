@@ -11,6 +11,8 @@ trait Message
 
 object Message {
 
+  case class AskResponse(sender: ActorRef, responseObject: Any) extends Message
+  case class AskRequest(sender: ActorRef, requestObject: Any) extends Message
   /* --------------------------------------------- Region and chunks --------------------------------------------- */
   case class RequestChunkData(chunkX: Int, chunkZ: Int, fullChunk: Boolean = true) extends Message
 
@@ -35,9 +37,9 @@ object Message {
 
   case class RequestMobsInChunk(chunkX: Int, chunkZ: Int) extends Message
 
-  case class PlayerExitedFromChunk(chunkX: Int, chunkZ: Int) extends Message
+  case class PlayerUnloadedChunk(chunkX: Int, chunkZ: Int) extends Message
 
-  case class GetCreatureInChunk(chunkX: Int, chunkZ: Int)
+  case class GetCreatureInChunk(chunkX: Int, chunkZ: Int) extends Message
 
   case class RequestSpawnPoints(chunkX: Int, chunkZ: Int) extends Message
 

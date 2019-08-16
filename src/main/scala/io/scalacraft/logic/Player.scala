@@ -2,11 +2,11 @@ package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
 import akka.pattern._
-import io.scalacraft.logic.messages.Message.{ChunkNotPresent, JoiningGame, LeavingGame, RemovePlayer, RequestChunkData, RequestJoinGame, RequestMobsInChunk}
+import io.scalacraft.logic.messages.Message.{AskRequest, ChunkNotPresent, JoiningGame, LeavingGame, PlayerUnloadedChunk, RemovePlayer, RequestChunkData, RequestJoinGame, RequestMobsInChunk}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, JoinGame, SpawnMob, SpawnPosition, TimeUpdate, UnloadChunk, WorldDimension}
+import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, DestroyEntities, JoinGame, SpawnMob, SpawnPosition, TimeUpdate, UnloadChunk, WorldDimension}
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
@@ -62,7 +62,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       viewDistance = if (clientSettings.viewDistance > ServerConfiguration.MaxViewDistance)
         ServerConfiguration.MaxViewDistance else clientSettings.viewDistance
 
-      loadChunks() onComplete {
+      loadChunksAndMobs() onComplete {
         case Success(_) =>
           userContext ! SpawnPosition(Position(posX, posY, posZ))
 
@@ -112,7 +112,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       posY = playerPosition.feetY.toInt
       posZ = playerPosition.z.toInt
       onGround = playerPosition.onGround
-      loadChunks()
+      loadChunksAndMobs()
     case playerPositionAndLook: sb.PlayerPositionAndLook =>
       posX = playerPositionAndLook.x.toInt
       posY = playerPositionAndLook.feetY.toInt
@@ -120,14 +120,15 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       yaw = playerPositionAndLook.yaw
       pitch =playerPositionAndLook.pitch
       onGround = playerPositionAndLook.onGround
-      loadChunks()
+      loadChunksAndMobs()
     case timeUpdate: TimeUpdate => userContext forward timeUpdate
     case RemovePlayer =>
       world ! LeavingGame
       reset()
-    case spawnMobs: List[SpawnMob] => spawnMobs.foreach(spawnMob => userContext ! spawnMob)
+    /*case spawnMobs: List[SpawnMob] => spawnMobs.foreach(spawnMob => userContext ! spawnMob)
+    case destroyCreautures: List[DestroyEntities] => destroyCreautures.foreach(destroyCreaure => userContext ! destroyCreaure)
     case _: Animation=>
-      world ! RequestMobsInChunk(posX, posZ)
+      world ! RequestMobsInChunk(posX, posZ)*/
   }
 
   override def receive: Receive = preStartBehaviour
@@ -149,16 +150,46 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   }
 
   private var lastPosition: (Int, Int) = _
-  private def loadChunks(): Future[Unit] = {
+  private def loadChunksAndMobs(): Future[Unit] = {
     val timeout = 16 seconds
     def needLoadingChunks: Boolean = {
       math.abs(posX - lastPosition._1) > ServerConfiguration.LoadingChunksBlocksThreshold ||
         math.abs(posZ - lastPosition._2) > ServerConfiguration.LoadingChunksBlocksThreshold
     }
 
+    def loadChunks(toUnload: Set[(Int, Int)], toLoad: Set[(Int, Int)]): Future[Unit] = {
+      toUnload foreach { case (x, z) => userContext ! UnloadChunk(x, z) }
+      Future.sequence(toLoad map { case (x, z) =>
+        world.ask(RequestChunkData(x, z))(timeout) map {
+          case chunkData: ChunkData =>
+            userContext ! chunkData
+          case _ => // do nothing
+        }
+      }) map (_ => Unit)
+    }
+    def loadMobs(toUnload: Set[(Int, Int)], toLoad: Set[(Int, Int)]): Future[Unit] = {
+      val unloadFuture = Future.sequence(toUnload map { case (x, z) =>
+        world.ask(PlayerUnloadedChunk(x, z))(timeout) map {
+          case destroyCreatures: List[DestroyEntities] =>
+            destroyCreatures.foreach(destroyCreaure => userContext ! destroyCreaure)
+          case Nil => println("No mobs unloaded")
+          case _ => //do nothing
+        }
+      }) map (_ => Unit)
+      val loadFuture = Future.sequence(toLoad map { case (x, z) =>
+        world.ask(RequestMobsInChunk(x, z))(timeout) map {
+          case spawnMobs: List[SpawnMob] =>
+            spawnMobs.foreach(spawnMob => userContext ! spawnMob)
+          case Nil => println("No mobs loaded")
+          case _ => //do nothing
+        }
+      }) map (_ => Unit)
+      loadFuture.zipWith(unloadFuture)((_,_) => Future.unit)
+    }
+
     if (lastPosition == null || needLoadingChunks) {
       val chunkX = posX >> 4
-      val chunkZ = posZ >> 4
+      val chunkZ =  posZ >> 4
       lastPosition = (posX, posZ)
       val newChunks = (for (x <- chunkX - viewDistance until chunkX + viewDistance;
            z <- chunkZ - viewDistance until chunkZ + viewDistance) yield (x, z)).toSet
@@ -166,13 +197,9 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       val toLoad = newChunks diff loadedChunks
       loadedChunks = newChunks
 
-      toUnload foreach { case (x, z) => userContext ! UnloadChunk(x, z) }
-      Future.sequence(toLoad map { case (x, z) =>
-        world.ask(RequestChunkData(x, z))(timeout) map {
-          case chunkData: ChunkData => userContext ! chunkData
-          case _ => // do nothing
-        }
-      }) map (_ => Unit)
+      val loadChunksFuture = loadChunks(toUnload, toLoad)
+      val loadMobFuture = loadMobs(toUnload, toLoad)
+      loadChunksFuture.zipWith(loadMobFuture)((_,_) => Future.unit)
     } else Future.unit
   }
 

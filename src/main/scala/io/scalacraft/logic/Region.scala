@@ -9,6 +9,8 @@ import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
 import net.querz.nbt.{CompoundTag, StringTag}
 import net.querz.nbt.mca.{Chunk, MCAFile, MCAUtil}
 
+import scala.collection.mutable.ListBuffer
+
 class Region(mca: MCAFile) extends Actor with ActorLogging {
   private[this] def firstSpawnableHeight(chunk: Chunk, x: Int, z: Int): Int = {
     var yIndex = 255
@@ -37,7 +39,8 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
         val isWater = chunkColumn.getBlockStateAt(x, y-1, z).isWater()
         biome -> (Position(posX, y, posZ), isWater)
       }).groupBy(_._1).map {
-        case (biomeIndex, values) => biomeIndex -> values.map(_._2).toList
+        case (biomeIndex, values) =>
+          biomeIndex ->  values.map(_._2).toSet
       }
       sender ! biomeToSpawnPosition
   }
