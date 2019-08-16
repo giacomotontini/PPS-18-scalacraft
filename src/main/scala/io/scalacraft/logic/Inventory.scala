@@ -2,7 +2,6 @@ package io.scalacraft.logic
 
 import io.scalacraft.loaders.Items
 
-
 case class InventoryItem(itemId: Int, var quantity: Int = 0)
 
 sealed trait Inventory {
@@ -88,20 +87,20 @@ sealed trait Inventory {
 }
 
 sealed trait CraftingInventoty
-
 sealed trait ChestInventory
 
 object PlayerInventory {
   def Id = 0  //PlayerInventory
-  //TODO do the same with other windows
+
   //All range boundaries are inclusive by protocol
-  def CrafitingOutputSlot = 0
-  def CraftingInputSlotRange = Range(1, 4)
-  def ArmorSlotRange = Range(5, 8)
-  def MainInventorySlotRange = Range(9, 35)
-  def HotBarSlotRange = Range(36, 44)
-  def OffhandSlot = 45
+  private def CrafitingOutputSlot = 0
+  private def CraftingInputSlotRange = Range(1, 4)
+  private def ArmorSlotRange = Range(5, 8)
+  private def MainInventorySlotRange = Range(9, 35)
+  private def HotBarSlotRange = Range(36, 44)
+  private def OffhandSlot = 45
 }
+
 case class PlayerInventory() extends Inventory with CraftingInventoty {
   import PlayerInventory._
 
@@ -135,23 +134,31 @@ case class PlayerInventory() extends Inventory with CraftingInventoty {
   }
 }
 
-case class Chest() extends Inventory with ChestInventory {
+object Chest {
+  private def ChestSlotRange = Range(0, 26)
+  private def MainInventorySlotRange = Range(27, 53)
+  private def HotBarSlotRange = Range(54, 62)
+}
 
-  private val ChestSlotRange = Range(0, 26)
-  private val MainInventorySlotRange = Range(27, 53)
-  private val HotBarSlotRange = Range(54, 62)
+case class Chest() extends Inventory with ChestInventory {
+  import Chest._
+
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
 
   override def findAvailableIndex(): List[Int] = List()
 
   override def findItemsIndex(itemId: Int): List[Int] = List()
+}
+
+object LargeChest{
+  private def ChestSlotRange = Range(0, 53)
+  private def MainInventorySlotRange = Range(53, 80)
+  private def HotBarSlotRange = Range(81, 89)
 }
 
 case class LargeChest() extends Inventory with ChestInventory {
+  import LargeChest._
 
-  private val ChestSlotRange = Range(0, 53)
-  private val MainInventorySlotRange = Range(53, 80)
-  private val HotBarSlotRange = Range(81, 89)
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
 
   override def findAvailableIndex(): List[Int] = List()
@@ -159,12 +166,15 @@ case class LargeChest() extends Inventory with ChestInventory {
   override def findItemsIndex(itemId: Int): List[Int] = List()
 }
 
+object CraftingTable {
+  private def CrafitingOutputSlot = 0
+  private def CraftingInputSlotRange = Range(1, 9)
+  private def MainInventorySlotRange = Range(10, 36)
+  private def HotBarSlotRange = Range(37, 45)
+}
 case class CraftingTable() extends Inventory with CraftingInventoty {
+  import CraftingTable._
 
-  private val CrafitingOutputSlot = 0
-  private val CraftingInputSlotRange = Range(1, 9)
-  private val MainInventorySlotRange = Range(10, 36)
-  private val HotBarSlotRange = Range(37, 45)
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
 
   override def findAvailableIndex(): List[Int] = List()

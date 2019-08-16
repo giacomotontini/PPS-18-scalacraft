@@ -14,7 +14,7 @@ object DataTypes {
 
   case class VarInt(value: Int, length: Int)
   case class Position(x: Int, y: Int, z: Int)
-  case class SlotData(@boxed itemId: Int, @byte var itemCount: Int, nbt: Nbt)
+  case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt)
   case class Rotation(x: Float, y: Float, z: Float)
   case class Angle(value: Int) extends AnyVal
 
