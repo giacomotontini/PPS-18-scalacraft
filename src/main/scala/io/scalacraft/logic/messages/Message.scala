@@ -41,9 +41,9 @@ object Message {
 
   case class GetCreatureInChunk(chunkX: Int, chunkZ: Int) extends Message
 
-  case class RequestSpawnPoints(chunkX: Int, chunkZ: Int) extends Message
-
   case class DespawnCreature(chunkX: Int, chunkZ: Int) extends Message
-
+  case class RequestProbabilisticSpawnPositionsForBiomes(chunkX: Int,
+                                                         chunkZ: Int,
+                                                         biomeIndexesToSpawnProbability: Map[Int, Float]) extends Message
 
 }
