@@ -12,7 +12,7 @@ import net.querz.nbt.CompoundTag
 class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor with ActorLogging with DefaultTimeout with ImplicitContext with ClickWindowActionManager{
 
   override protected val inventory = PlayerInventory()
-  private var heldedSlot: Int = 0
+  private var heldSlot: Int = 0
 
   override def receive: Receive = {
     case AddItem(inventoryItem) =>
@@ -27,11 +27,11 @@ class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor with ActorLog
     case RetrieveAllItems =>
       updatePlayerInventory()
     case HeldItemChange(slot) =>
-      heldedSlot = slot
-    case RetrieveHeldedItemId =>
-      sender ! inventory.findHeldedItemId(heldedSlot)
-    case UseHeldedItem =>
-      sender ! inventory.removeUsedHeldedItem(heldedSlot)
+      heldSlot = slot
+    case RetrieveHeldItemId =>
+      sender ! inventory.findHeldItemId(heldSlot)
+    case UseHeldItem =>
+      sender ! inventory.useOneHeldItem(heldSlot)
     case click@ClickWindow(_, slot, _, actionNumber, _, clickedItem) =>
       handleAction(click.actionPerformed(), slot, clickedItem)
       playerActorRef ! ForwardToClient(ConfirmTransaction(PlayerInventory.Id, actionNumber, true))
@@ -63,9 +63,9 @@ object PlayerInventoryActor {
 
     case class RetrieveAllItems() extends Message
 
-    case class RetrieveHeldedItemId() extends Message
+    case class RetrieveHeldItemId() extends Message
 
-    case class UseHeldedItem() extends Message
+    case class UseHeldItem() extends Message
 
   }
 

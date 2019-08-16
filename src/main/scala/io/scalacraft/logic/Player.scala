@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
 import akka.pattern._
 import io.scalacraft.logic.DiggingManager.Message.PlayerDiggingWithItem
 import io.scalacraft.logic.Player.Message.CollectItemWithType
-import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldedItemId, UseHeldedItem}
+import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldItemId, UseHeldItem}
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
@@ -137,16 +137,17 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     case msg: sb.HeldItemChange => inventory.forward(msg)
     case playerDigging@PlayerDigging(status, position, face) =>
       digging = Some(status)
-      (inventory ? RetrieveHeldedItemId) map(_.asInstanceOf[Option[Int]]) onComplete {
-        case Success(heldedItemId) =>
-          world ! PlayerDiggingWithItem(playerEntityId, playerDigging, heldedItemId)
+      (inventory ? RetrieveHeldItemId) map(_.asInstanceOf[Option[Int]]) onComplete {
+        case Success(heldItemId) =>
+          world ! PlayerDiggingWithItem(playerEntityId, playerDigging, heldItemId)
           log.info("User: {} {} digging", username, status)
-        case Failure(exception) => log.warning("Failed to retrieve helded item.")
+        case Failure(exception) => log.warning("Failed to retrieve held item.")
       }
     case msg: PlayerBlockPlacement =>
-      (inventory ? UseHeldedItem).map(_.asInstanceOf[Int]) onComplete {
-        case Success(itemId) =>
+      (inventory ? UseHeldItem).map(_.asInstanceOf[Option[Int]]) onComplete {
+        case Success(Some(itemId)) =>
           world ! BlockPlacedByUser(msg, itemId, username)
+        case Success(None) => //held air
         case Failure(exception) => log.warning("Failed to retrieve placed block type.")
       }
     case animation: sb.Animation =>

@@ -61,21 +61,24 @@ sealed trait Inventory {
   }
 
   def removeItem(slot: Int, inventoryItem: InventoryItem): Unit = {
-    if (inventory(slot).isDefined && inventory(slot).get.itemId == inventoryItem.itemId) {
-      inventory(slot).get.quantity -= inventoryItem.quantity
-      if (inventory(slot).get.quantity <= 0)
-        inventory(slot) = None
+    inventory(slot) match {
+      case Some(item) if item.itemId == inventoryItem.itemId =>
+        inventory(slot).get.quantity -= inventoryItem.quantity
+        if (item.quantity <= 0)
+          inventory(slot) = None
     }
   }
 
   def moveItem(from: Int, to: Int, quantity: Int): Unit = {
-    if (inventory(from).isDefined && inventory(from).get.quantity >= quantity) {
-      inventory(from).get.quantity -= quantity
-      if (inventory(to).isDefined) {
-        inventory(to).get.quantity += quantity
-      } else {
-        inventory(to) = Some(InventoryItem(inventory(from).get.itemId, quantity))
-      }
+    inventory(from) match {
+      case Some(fromItem) =>
+        val quantityToBeMoved = math.min(fromItem.quantity, quantity)
+        val exceedQuantity = addItem(to, InventoryItem(fromItem.itemId, quantityToBeMoved))
+        fromItem.quantity -= quantityToBeMoved - exceedQuantity
+        if(fromItem.quantity == 0) {
+          inventory(from) = None
+        }
+      case None =>
     }
   }
 
@@ -93,12 +96,12 @@ object PlayerInventory {
   def Id = 0  //PlayerInventory
 
   //All range boundaries are inclusive by protocol
-  private def CrafitingOutputSlot = 0
-  private def CraftingInputSlotRange = Range(1, 4)
-  private def ArmorSlotRange = Range(5, 8)
-  private def MainInventorySlotRange = Range(9, 35)
-  private def HotBarSlotRange = Range(36, 44)
-  private def OffhandSlot = 45
+  private[logic] def CrafitingOutputSlot = 0
+  private[logic] def CraftingInputSlotRange = Range(1, 4)
+  private[logic] def ArmorSlotRange = Range(5, 8)
+  private[logic] def MainInventorySlotRange = Range(9, 35)
+  private[logic] def HotBarSlotRange = Range(36, 44)
+  private[logic] def OffhandSlot = 45
 }
 
 case class PlayerInventory() extends Inventory with CraftingInventoty {
@@ -106,16 +109,16 @@ case class PlayerInventory() extends Inventory with CraftingInventoty {
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(OffhandSlot + 1)(None: Option[InventoryItem])
 
-  def findHeldedItemId(hotSlot: Int): Option[Int] = {
+  def findHeldItemId(hotSlot: Int): Option[Int] = {
     inventory(hotSlot + HotBarSlotRange.start).map(_.itemId)
   }
 
-  def removeUsedHeldedItem(hotSlot: Int): Int = {
-    findHeldedItemId(hotSlot) match {
-      case Some(itemId) =>
+  def useOneHeldItem(hotSlot: Int): Option[Int] = {
+    findHeldItemId(hotSlot) match {
+      case id @ Some(itemId) =>
         removeItem(hotSlot + HotBarSlotRange.start, InventoryItem(itemId, 1))
-        itemId
-      case None => 0
+        id
+      case None => None
     }
   }
 
@@ -135,9 +138,9 @@ case class PlayerInventory() extends Inventory with CraftingInventoty {
 }
 
 object Chest {
-  private def ChestSlotRange = Range(0, 26)
-  private def MainInventorySlotRange = Range(27, 53)
-  private def HotBarSlotRange = Range(54, 62)
+  private[logic] def ChestSlotRange = Range(0, 26)
+  private[logic] def MainInventorySlotRange = Range(27, 53)
+  private[logic] def HotBarSlotRange = Range(54, 62)
 }
 
 case class Chest() extends Inventory with ChestInventory {
@@ -151,9 +154,9 @@ case class Chest() extends Inventory with ChestInventory {
 }
 
 object LargeChest{
-  private def ChestSlotRange = Range(0, 53)
-  private def MainInventorySlotRange = Range(53, 80)
-  private def HotBarSlotRange = Range(81, 89)
+  private[logic] def ChestSlotRange = Range(0, 53)
+  private[logic] def MainInventorySlotRange = Range(53, 80)
+  private[logic] def HotBarSlotRange = Range(81, 89)
 }
 
 case class LargeChest() extends Inventory with ChestInventory {
@@ -167,10 +170,10 @@ case class LargeChest() extends Inventory with ChestInventory {
 }
 
 object CraftingTable {
-  private def CrafitingOutputSlot = 0
-  private def CraftingInputSlotRange = Range(1, 9)
-  private def MainInventorySlotRange = Range(10, 36)
-  private def HotBarSlotRange = Range(37, 45)
+  private[logic] def CrafitingOutputSlot = 0
+  private[logic] def CraftingInputSlotRange = Range(1, 9)
+  private[logic] def MainInventorySlotRange = Range(10, 36)
+  private[logic] def HotBarSlotRange = Range(37, 45)
 }
 case class CraftingTable() extends Inventory with CraftingInventoty {
   import CraftingTable._
