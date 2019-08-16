@@ -165,7 +165,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       world ! LeavingGame
       reset()
       self ! PoisonPill
-    case anyOther => //println("Not handled", anyOther)
+    case anyOther => println("Not handled", anyOther)
   }
 
   override def receive: Receive = preStartBehaviour

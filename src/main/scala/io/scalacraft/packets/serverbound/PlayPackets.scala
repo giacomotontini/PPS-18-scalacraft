@@ -88,17 +88,18 @@ object PlayPackets {
     def actionPerformed(): ClickWindowAction = {
       import ClickWindowAction._
       mode match {
-        case 1 =>
+        case 0 =>
           button match {
             case 0 => LeftMouseClick()
             case 1 => RightMouseClick()
           }
-        case 2 =>
+        case 1 =>
           button match {
             case 0 => ShiftLeftMouseClick
             case 1 => ShiftRightMouseClick
           }
-        case 3 => NumberKey(button)
+        case 2 => NumberKey(button)
+        case 3 => MiddleMouseClick
         case 4 =>
           button match {
             case 0 if slot == -999 => LeftMouseClick(true)

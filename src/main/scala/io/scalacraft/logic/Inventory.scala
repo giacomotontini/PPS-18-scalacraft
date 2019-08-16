@@ -32,6 +32,11 @@ sealed trait Inventory {
       quantity
   }
 
+  def addItem(slot: Int, inventoryItem: InventoryItem): Int = {
+    val stackSize = Items.getStorableItemById(inventoryItem.itemId).stackSize
+    fillSlot(slot, inventoryItem.quantity, stackSize, inventoryItem.itemId)
+  }
+
   def addItem(inventoryItem: InventoryItem): Unit = {
 
     def fillSlotsWithSameItem(stackSize: Int, inventoryItem: InventoryItem): Int = {
