@@ -4,8 +4,14 @@ import io.scalacraft.loaders.Items
 
 case class InventoryItem(itemId: Int, var quantity: Int = 0)
 
-sealed trait Inventory {
+trait MainHotInventory {
+  private[logic] def MainInventorySlotRange: Range
+  private[logic] def HotBarSlotRange: Range
+}
+
+trait Inventory {
   protected val inventory: Array[Option[InventoryItem]]
+  protected val mainHotInventoryRange: MainHotInventory
 
   private def fillSlot(slot: Int, quantity: Int, slotCapacity: Int, itemId: Int): Int = {
     val stockedQuantity = inventory(slot) match {
@@ -36,7 +42,7 @@ sealed trait Inventory {
     fillSlot(slot, inventoryItem.quantity, stackSize, inventoryItem.itemId)
   }
 
-  def addItem(inventoryItem: InventoryItem): Unit = {
+  def addItem(inventoryItem: InventoryItem): Int = {
 
     def fillSlotsWithSameItem(stackSize: Int, inventoryItem: InventoryItem): Int = {
       var leftQuantity = inventoryItem.quantity
@@ -47,12 +53,13 @@ sealed trait Inventory {
       leftQuantity
     }
 
-    def fillFreeSlots(stackSize: Int, quantity: Int, inventoryItem: InventoryItem): Unit = {
+    def fillFreeSlots(stackSize: Int, quantity: Int, inventoryItem: InventoryItem): Int = {
       var leftQuantity = quantity
       val freeSlots = findAvailableIndex()
       for (slot <- freeSlots if leftQuantity > 0) {
         leftQuantity = fillSlot(slot, leftQuantity, stackSize, inventoryItem.itemId)
       }
+      leftQuantity
     }
 
     val stackSize = Items.getStorableItemById(inventoryItem.itemId).stackSize
@@ -82,21 +89,30 @@ sealed trait Inventory {
     }
   }
 
+  //Retrieve all items, included non inventory one (like crafting output, armors etc.)
   def retrieveAllItems(): List[Option[InventoryItem]] = inventory.toList
 
-  def findAvailableIndex(): List[Int]
+  def retrieveInventoryItems(): List[Option[InventoryItem]] = {
+    inventory.takeRight(mainHotInventoryRange.HotBarSlotRange.end - mainHotInventoryRange.MainInventorySlotRange.start + 1).toList
+  }
 
-  def findItemsIndex(itemId: Int): List[Int]
+  def findAvailableIndex(): List[Int] = List()
+
+  def findItemsIndex(itemId: Int): List[Int] = List()
 }
 
-sealed trait CraftingInventoty
-sealed trait ChestInventory
+trait InventoryWithPlayerInventory extends Inventory {
+  //When an inventory with inventory section is opened, the player inventory should be moved here
+  def addPlayerInventory(playerInventory: PlayerInventory): Unit = {
+    playerInventory.retrieveInventoryItems().zipWithIndex.foreach(i => inventory.update(i._2 + mainHotInventoryRange.MainInventorySlotRange.start, i._1))
+  }
+}
 
-object PlayerInventory {
+object PlayerInventory extends MainHotInventory {
   def Id = 0  //PlayerInventory
 
   //All range boundaries are inclusive by protocol
-  private[logic] def CrafitingOutputSlot = 0
+  private[logic] def CraftingOutputSlot = 0
   private[logic] def CraftingInputSlotRange = Range(1, 4)
   private[logic] def ArmorSlotRange = Range(5, 8)
   private[logic] def MainInventorySlotRange = Range(9, 35)
@@ -104,10 +120,11 @@ object PlayerInventory {
   private[logic] def OffhandSlot = 45
 }
 
-case class PlayerInventory() extends Inventory with CraftingInventoty {
+case class PlayerInventory() extends Inventory {
   import PlayerInventory._
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(OffhandSlot + 1)(None: Option[InventoryItem])
+  override protected val mainHotInventoryRange: MainHotInventory = PlayerInventory
 
   def findHeldItemId(hotSlot: Int): Option[Int] = {
     inventory(hotSlot + HotBarSlotRange.start).map(_.itemId)
@@ -135,54 +152,50 @@ case class PlayerInventory() extends Inventory with CraftingInventoty {
       if inventory(i).isDefined && inventory(i).get.itemId == itemId
     } yield i).toList
   }
+
+  override def retrieveInventoryItems(): List[Option[InventoryItem]] = {
+    inventory.dropRight(1).takeRight(HotBarSlotRange.end - MainInventorySlotRange.start + 1).toList
+  }
 }
 
-object Chest {
+object Chest extends MainHotInventory {
   private[logic] def ChestSlotRange = Range(0, 26)
   private[logic] def MainInventorySlotRange = Range(27, 53)
   private[logic] def HotBarSlotRange = Range(54, 62)
 }
 
-case class Chest() extends Inventory with ChestInventory {
+case class Chest() extends Inventory {
   import Chest._
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
+  override protected val mainHotInventoryRange: MainHotInventory = Chest
 
-  override def findAvailableIndex(): List[Int] = List()
-
-  override def findItemsIndex(itemId: Int): List[Int] = List()
 }
 
-object LargeChest{
+object LargeChest extends MainHotInventory {
   private[logic] def ChestSlotRange = Range(0, 53)
   private[logic] def MainInventorySlotRange = Range(53, 80)
   private[logic] def HotBarSlotRange = Range(81, 89)
 }
-
-case class LargeChest() extends Inventory with ChestInventory {
+case class LargeChest() extends Inventory {
   import LargeChest._
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
-
-  override def findAvailableIndex(): List[Int] = List()
-
-  override def findItemsIndex(itemId: Int): List[Int] = List()
+  override protected val mainHotInventoryRange: MainHotInventory = LargeChest
 }
 
-object CraftingTable {
-  private[logic] def CrafitingOutputSlot = 0
+object CraftingTable extends MainHotInventory {
+  private[logic] def CraftingOutput = 0
   private[logic] def CraftingInputSlotRange = Range(1, 9)
   private[logic] def MainInventorySlotRange = Range(10, 36)
   private[logic] def HotBarSlotRange = Range(37, 45)
 }
-case class CraftingTable() extends Inventory with CraftingInventoty {
+case class CraftingTable() extends Inventory {
   import CraftingTable._
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
+  override protected val mainHotInventoryRange: MainHotInventory = CraftingTable
 
-  override def findAvailableIndex(): List[Int] = List()
-
-  override def findItemsIndex(itemId: Int): List[Int] = List()
 }
 
 
