@@ -3,10 +3,17 @@ package io.scalacraft.logic.messages
 import java.util.UUID
 
 import akka.actor.ActorRef
+import io.scalacraft.packets.DataTypes.Position
+import io.scalacraft.packets.serverbound.PlayPackets.{Animation, PlayerBlockPlacement}
 
 trait Message
 
 object Message {
+
+  case class ForwardToClient(obj:Any) extends Message
+  case class BlockPlacedByUser(playerBlockPlacement: PlayerBlockPlacement, itemId: Int, username: String) extends Message
+  case class BlockBreakAtPosition(position: Position, playerId: Int) extends Message
+  case class PlayerAnimation(username:String, entityId: Int, animation: Animation)
 
   /* --------------------------------------------- Region and chunks --------------------------------------------- */
   case class  RequestChunkData(chunkX: Int, chunkZ: Int, fullChunk: Boolean = true) extends Message
@@ -27,6 +34,9 @@ object Message {
   // Sent by UserContext to World to ask the number of players online
   case object RequestOnlinePlayers extends Message
 
+  case class  OnlinePlayers(number: Int) extends Message
+  
   case object RequestEntityId extends Message
+
 
 }

@@ -2,48 +2,89 @@ package io.scalacraft.loaders
 
 import io.circe.generic.auto._
 import io.circe.parser
+import io.scalacraft.misc.Helpers
 import net.querz.nbt.CompoundTag
 
 import scala.io.Source
 
 object Blocks {
 
-  private case class State(properties: Option[Map[String, String]], id: Int, default: Option[Boolean])
+  case class State(name: String,
+                   `type`: String,
+                   values: Option[List[String]],
+                   num_values: Int)
 
-  private case class Block(states: List[State], properties: Option[Map[String, List[String]]])
+  case class Block(id: Int,
+                   displayName: String,
+                   name: String,
+                   hardness: Double,
+                   minStateId: Int,
+                   maxStateId: Int,
+                   states: List[State],
+                   drops: List[Int],
+                   diggable: Boolean,
+                   transparent: Boolean,
+                   filterLight: Int,
+                   emitLight: Int,
+                   boundingBox: String,
+                   stackSize: Int,
+                   material: Option[String],
+                   harvestTools: Option[Map[String, Boolean]])
 
-  //The index represents the block id, the compound tag represents the block state
-  private lazy val compoundTagList = {
-    val content = Source.fromInputStream(getClass.getResourceAsStream("/blocks.json")).mkString
-    val Right(blocksMap) = parser.decode[Map[String, Block]](content)
+  private lazy val blocks = {
+    val content = Source.fromInputStream(getClass.getResourceAsStream("/data/blocks.json")).mkString
+    val Right(blocks) = parser.decode[List[Block]](content)
+    blocks
+  }
 
-    blocksMap.flatMap {
-      case (blockName, blockObject) =>
-        blockObject.states map { blockState => {
+   private lazy val compoundTagList = {
+    blocks.flatMap {
+      block: Block =>
+        val allStatesLists = block.states.map(state => state.`type` match {
+          case "bool" => List(true, false)
+          case "int" => List.range(0, state.num_values)
+          case _ => state.values.get
+        })
+        val properties = Helpers.cartesianProduct(allStatesLists: _*)
+
+        for (stateId <- block.minStateId to block.maxStateId) yield {
+          val actualState = stateId - block.minStateId
           val compoundTag = new CompoundTag()
-
-          compoundTag.putString("Name", blockName)
-          blockState.properties map { property =>
-            val innerTag = new CompoundTag()
-
-            property.foreach {
-              case (name, value) => innerTag.putString(name, value)
+          val innerTag = new CompoundTag
+          compoundTag.putString("Name", "minecraft:" + block.name)
+          if (properties.nonEmpty) {
+            properties(actualState).zipWithIndex.foreach {
+              case (value, index) => innerTag.putString(block.states(index).name, value.toString)
             }
-
-            innerTag
-          } foreach { compoundTag.put("Properties", _) }
-          blockState.id -> compoundTag
+            compoundTag.put("Properties", innerTag)
+          }
+          stateId -> compoundTag
         }
-      }
-    }.toList sortBy(_._1) map(_._2)
+    }.sortBy(_._1) map(_._2)
   }
 
-  def compoundTagFromId(id: Int): CompoundTag = {
-    compoundTagList(id)
+
+  def compoundTagFromBlockName(name: String): CompoundTag = {
+    compoundTagList.reverse
+      .filter(_.containsKey("Name"))
+      .filter(_.getString("Name").equals("minecraft:" + name)).head
   }
 
-  def idFromCompoundTag(compoundTag: CompoundTag): Int = {
+  def compoundTagFromBlockStateId(blockStateId: Int): CompoundTag = {
+    compoundTagList(blockStateId)
+  }
+
+
+  def stateIdFromCompoundTag(compoundTag: CompoundTag): Int = {
     compoundTagList.indexOf(compoundTag)
+  }
+
+  def blockFromStateId(stateId: Int): Block = {
+      blocks.filter(b => stateId >= b.minStateId && stateId <= b.maxStateId).head
+  }
+
+  def blockFromBlockId(blockId: Int): Block = {
+    blocks(blockId)
   }
 
 }
