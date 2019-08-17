@@ -7,10 +7,13 @@ import scala.io.Source
 
 object Recipes {
 
-  sealed trait Recipe
+  sealed trait Recipe {
+    def hasShape: Boolean = this.isInstanceOf[ShapeRecipe]
+    def result: RecipeResult
+  }
   case class RecipeResult(count: Int, id: Int)
-  case class ShapelessRecipe(ingredients: List[Int], result: RecipeResult) extends Recipe
-  case class ShapeRecipe(inShape: List[List[Int]], result: RecipeResult) extends Recipe
+  case class ShapelessRecipe(ingredients: List[Int], override val result: RecipeResult) extends Recipe
+  case class ShapeRecipe(inShape: List[List[Int]], override val result: RecipeResult) extends Recipe
 
   object Recipe {
     implicit val decodeData: Decoder[Recipe] =
@@ -25,6 +28,3 @@ object Recipes {
   }
 }
 
-object Test extends App {
-  import Recipes._
-}

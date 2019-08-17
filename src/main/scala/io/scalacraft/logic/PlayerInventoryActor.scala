@@ -9,7 +9,7 @@ import io.scalacraft.packets.clientbound.PlayPackets.{ConfirmTransaction, SetSlo
 import io.scalacraft.packets.serverbound.PlayPackets.{ClickWindow, HeldItemChange}
 import net.querz.nbt.CompoundTag
 
-class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor with ActorLogging with DefaultTimeout with ImplicitContext with ClickWindowActionManager{
+class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor with ActorLogging with DefaultTimeout with ImplicitContext with ClickWindowActionManager {
 
   override protected val inventory = PlayerInventory()
   private var heldSlot: Int = 0
@@ -34,7 +34,7 @@ class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor with ActorLog
       sender ! inventory.useOneHeldItem(heldSlot)
     case click@ClickWindow(_, slot, _, actionNumber, _, clickedItem) =>
       handleAction(click.actionPerformed(), slot, clickedItem)
-      playerActorRef ! ForwardToClient(ConfirmTransaction(PlayerInventory.Id, actionNumber, true))
+      playerActorRef ! ForwardToClient(ConfirmTransaction(PlayerInventory.Id, actionNumber, accepted = true))
       updatePlayerInventory()
   }
 

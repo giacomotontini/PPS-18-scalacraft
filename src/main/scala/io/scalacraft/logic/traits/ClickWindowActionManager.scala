@@ -12,7 +12,7 @@ trait ClickWindowActionManager {
   private def log : Logger = LoggerFactory.getLogger(getClass)
 
   protected val inventory: Inventory
-  private var holdedItems: Slot = None  //items that are being moved throw mouse cursor
+  private var holdItems: Slot = None  //items that are being moved throw mouse cursor
 
 
   private def groupItems(slot: Int, holdingItems: SlotData): Option[SlotData] = {
@@ -66,32 +66,32 @@ trait ClickWindowActionManager {
       case LeftMouseClick(_) | LeftMouseDrag(true, false) =>
         slotItems match {
           case Some(slotItems) =>
-            holdedItems match {
+            holdItems match {
               case Some(holdedItems) if holdedItems.itemId == slotItems.itemId =>
-                this.holdedItems = groupItems(slot, holdedItems)
+                this.holdItems = groupItems(slot, holdedItems)
               case Some(holdedItems) =>
-                this.holdedItems = swapHoldedItems(slot, holdedItems, slotItems)
+                this.holdItems = swapHoldedItems(slot, holdedItems, slotItems)
               case None =>
-                holdedItems = holdNewItems(slot, slotItems)
+                holdItems = holdNewItems(slot, slotItems)
             }
-          case None if holdedItems.isDefined =>
-            holdedItems = releaseNewItems(slot, holdedItems.get)
+          case None if holdItems.isDefined =>
+            holdItems = releaseNewItems(slot, holdItems.get)
           case None =>
         }
 
       case RightMouseClick(_) | RightMouseDrag(true, false) =>
         slotItems match {
           case Some(slotItems) =>
-            holdedItems match {
+            holdItems match {
               case Some(holdedItems) if holdedItems.itemId == slotItems.itemId =>
-                this.holdedItems = releaseNewItems(slot, holdedItems, oneByOne = true)
+                this.holdItems = releaseNewItems(slot, holdedItems, oneByOne = true)
               case Some(holdedItems) =>
-                this.holdedItems = swapHoldedItems(slot, holdedItems, slotItems)
+                this.holdItems = swapHoldedItems(slot, holdedItems, slotItems)
               case None =>
-                holdedItems = splitSlotItems(slot, slotItems)
+                holdItems = splitSlotItems(slot, slotItems)
           }
-          case None if holdedItems.isDefined =>
-            holdedItems = releaseNewItems(slot, holdedItems.get , oneByOne = true)
+          case None if holdItems.isDefined =>
+            holdItems = releaseNewItems(slot, holdItems.get , oneByOne = true)
           case None =>
         }
       case _ => //ignored
