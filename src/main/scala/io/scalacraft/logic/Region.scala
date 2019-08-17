@@ -34,10 +34,10 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
                                        z <- 0 to 15) yield {
         val posX = MCAUtil.chunkToBlock(chunkX) + x
         val posZ = MCAUtil.chunkToBlock(chunkZ) + z
-        val y = firstSpawnableHeight(chunkColumn, x, z)
+        val posY = firstSpawnableHeight(chunkColumn, x, z)
         val biome = chunkColumn.getBiomeAt(x, z)
-        val isWater = chunkColumn.getBlockStateAt(x, y-1, z).isWater()
-        biome -> (Position(posX, y, posZ), isWater)
+        val isWater = chunkColumn.getBlockStateAt(x, posY-1, z).isWater()
+        biome -> (Position(posX, posY, posZ), isWater)
       }).groupBy(_._1).map {
         case (biomeIndex, values) =>
           biomeIndex ->  values.map(_._2).toSet

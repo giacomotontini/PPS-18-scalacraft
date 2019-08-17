@@ -4,6 +4,7 @@ import java.util.UUID
 
 import akka.actor.ActorRef
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations.{boxed, fromContext, short}
+import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.packets.DataTypes.{Angle, Position}
 import io.scalacraft.packets.Entities.MobEntity
 
@@ -45,5 +46,19 @@ object Message {
 
   case class DespawnCreature(chunkX: Int, chunkZ: Int) extends Message
 
+  object SkyUpdateState extends Enumeration {
+    type SkyUpdateState = Value
+    val Sunrise, Noon, Sunset, MidNight = Value
+
+    def timeUpdateStateFromTime(timeOfDay: Long): SkyUpdateState = {
+      timeOfDay match {
+        case _: Long if timeOfDay>=0 && timeOfDay < 6000  => Sunrise
+        case _: Long if timeOfDay>=6000 && timeOfDay < 12000  => Noon
+        case _: Long if timeOfDay>=12000 && timeOfDay < 18000  => Sunset
+        case _: Long if timeOfDay>=18000 && timeOfDay < 24000  => MidNight
+      }
+    }
+  }
+  case class SkyStateUpdate(state: SkyUpdateState) extends Message
 
 }

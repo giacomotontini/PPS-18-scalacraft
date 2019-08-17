@@ -151,7 +151,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
 
   private var lastPosition: (Int, Int) = _
   private def loadChunksAndMobs(): Future[Unit] = {
-    val timeout = 16 seconds
+    val timeout = 30 seconds
     def needLoadingChunks: Boolean = {
       math.abs(posX - lastPosition._1) > ServerConfiguration.LoadingChunksBlocksThreshold ||
         math.abs(posZ - lastPosition._2) > ServerConfiguration.LoadingChunksBlocksThreshold

@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import com.typesafe.scalalogging.LazyLogging
 import io.scalacraft.logic.World.TimeTick
-import io.scalacraft.logic.messages.Message.{AskRequest, ChunkNotPresent, DespawnCreature, JoiningGame, LeavingGame, PlayerUnloadedChunk, RegisterUser, RequestChunkData, RequestEntityId, RequestMobsInChunk, RequestOnlinePlayers, RequestSpawnPoints, UserRegistered}
+import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import io.scalacraft.packets.clientbound.PlayPackets.TimeUpdate
 import net.querz.nbt.mca.MCAUtil
@@ -71,7 +71,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
         val timeUpdate = TimeUpdate(worldAge, timeOfDay)
         onlinePlayers foreach { _ ! timeUpdate}
       }
-
+      creatureSpawner ! SkyStateUpdate(SkyUpdateState.timeUpdateStateFromTime(timeOfDay))
       worldAge += ServerConfiguration.TicksInSecond
     case RequestEntityId => sender ! entityIdGenerator.next()
     case requestMobs: RequestMobsInChunk =>
