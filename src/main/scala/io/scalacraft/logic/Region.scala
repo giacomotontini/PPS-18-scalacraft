@@ -31,18 +31,19 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
     case RequestProbabilisticSpawnPositionsForBiomes(chunkX, chunkZ, biomeIndexesToSpawnProbability) =>
       val randomGenerator: Random.type = scala.util.Random
       val chunkColumn = mca.getChunk(chunkX, chunkZ)
-      val spawnPositions =
-        (for(x <- 0 to 15;
-          z <- 0 to 15
-            if biomeIndexesToSpawnProbability.keySet.contains(chunkColumn.getBiomeAt(x, z)) &&
-              randomGenerator.nextFloat() < biomeIndexesToSpawnProbability(chunkColumn.getBiomeAt(x, z))/256) yield {
-          val posX = MCAUtil.chunkToBlock(chunkX) + x
-          val posZ = MCAUtil.chunkToBlock(chunkZ) + z
-          val posY = firstSpawnableHeight(chunkColumn, x, z)
-          val isWater = chunkColumn.getBlockStateAt(posX, posY-1, posZ).isWater()
-          (Position(posX, posY, posZ), isWater)
-        }).toList
-      sender ! spawnPositions
+      val biomeToSpawnPosition = (for (x <- 0 to 15;
+                                       z <- 0 to 15) yield {
+        val posX = MCAUtil.chunkToBlock(chunkX) + x
+        val posZ = MCAUtil.chunkToBlock(chunkZ) + z
+        val posY = firstSpawnableHeight(chunkColumn, x, z)
+        val biome = chunkColumn.getBiomeAt(x, z)
+        val isWater = chunkColumn.getBlockStateAt(x, posY-1, z).isWater()
+        biome -> (Position(posX, posY, posZ), isWater)
+      }).groupBy(_._1).map {
+        case (biomeIndex, values) =>
+          biomeIndex ->  values.map(_._2).toSet
+      }
+      sender ! biomeToSpawnPosition
   }
 
 }

@@ -1,11 +1,10 @@
 package io.scalacraft.logic
 
-import java.util.UUID
-
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import io.scalacraft.logic.messages.Message
+import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.creatures.FarmAnimal
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
@@ -28,7 +27,8 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
   //used to spawn creatures randomly
   var spawnedActor: Set[ActorRef] = Set()
   val randomGenerator: Random.type = scala.util.Random
-  val timeout: FiniteDuration = 10 seconds
+  val timeout: FiniteDuration = 15 seconds
+  var isDay: Boolean = _
 
   //Update an indicator of a chunk (i.e numberOfPlayer, habitationTime) and get the actual number of player.
   private[this] def updateChunkIndicators(chunkMapToUpdate: Map[(Int, Int), Int], chunkX: Int, chunkZ: Int,
@@ -40,14 +40,12 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
       chunkMapToUpdate - ((chunkX, chunkZ))
     else
       chunkMapToUpdate.updated((chunkX, chunkZ), updatedParameter)
-
-
     (updatedMap, updatedParameter)
   }
 
   private[this] def askSomethingToCreatures[T](request: Message, onResult: List[T] => Unit, removeActor: Boolean = false): Unit = {
     sequence(spawnedActor.map(mobActor => mobActor.ask(request)(timeout)).toList).onComplete {
-      case Success(mobResponse: List[AskResponse]) =>
+      case Success(mobResponse) =>
         onResult(mobResponse.collect {
           case AskResponse(senderRef, response) if response.isInstanceOf[Some[_]] =>
             if (removeActor) {
@@ -60,56 +58,30 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
     }
   }
 
-  private[this] def maximumSquareHeight(positions: Set[Position], position: Position): Int = {
-    positions.collect {
-      case Position(x, y, z) if x == position.x - 1 && z == position.z ||
-        z == position.z - 1 && x == position.x ||
-        x == position.x - 1 && z == position.z - 1 ||
-        x == position.x && z == position.z =>
-        y
-    }.max
-  }
-
-  private[this] def creatureAlreadySpawnedInChunk(chunkX: Int, chunkZ: Int): Boolean = {
-    spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && spawnedMobFuturePerChunk(chunkX, chunkZ).isCompleted
-  }
-
-  private[this] def spawnFarmAnimal(farmAnimal: FarmAnimal, spawnPosition: Position): Unit = {
-    for (_ <- 0 to 3) {
-      val uuid: UUID = UUID.randomUUID()
-      val entityId = randomGenerator.nextInt()
-      val actorRef = context.actorOf(farmAnimal.props(entityId, uuid, spawnPosition.x, spawnPosition.y, spawnPosition.z,
-        randomGenerator.nextFloat() < farmAnimal.spawnBabyPercentage))
-      spawnedActor += actorRef
-    }
-  }
-
   override def receive: Receive = {
     case RequestMobsInChunk(chunkX, chunkZ) =>
       val senderRef = sender
       val (updatedMap, _) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
       numberOfPlayersInChunk = updatedMap
-      if (!creatureAlreadySpawnedInChunk(chunkX, chunkZ)) {
-        val spawnedMobFuture = Future.sequence(creatureInstances.map {
-          case farmAnimal: FarmAnimal =>
-            (context.parent ? RequestProbabilisticSpawnPositionsForBiomes(chunkX, chunkZ,
-              farmAnimal.spawnableBiomesToDensity)).andThen {
-              case Success(spawnPositions: List[(Position, Boolean)]) =>
-                val positions = spawnPositions.collect {
-                  case (position, isWater) if !isWater => position
+      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ)) {
+        val spawnedMobFuture = (context.parent ? RequestSpawnPoints(chunkX, chunkZ)).andThen {
+          case Success(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]]) =>
+            var spawnablePosition = biomeToSpawnPosition
+            BiomesToCreatureAndDensity.creatureInstance.foreach {
+              case farmAnimal: FarmAnimal if isDay =>
+                val spawnResult = farmAnimal.spawn(spawnablePosition)
+                spawnablePosition = spawnResult.updatedPosition
+                spawnedActor ++= spawnResult.actorToSpawn.map {
+                  case (props: Props, name: String) => context.actorOf(props, name)
                 }
-                positions.foreach(spawnPosition => {
-                  spawnFarmAnimal(farmAnimal, spawnPosition)
-                  //chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)
-                })
-                askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
             }
         })
         spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)
       } else {
         spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete {
           case Success(_) => askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
+          case _ => //do nothing
         }
       }
 
@@ -118,11 +90,17 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
       val (updatedMap, actualNumberOfPlayerInChunk) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ - 1, removeEntryPredicate = _ == 0)
       numberOfPlayersInChunk = updatedMap
-      if (creatureAlreadySpawnedInChunk(chunkX, chunkZ) && actualNumberOfPlayerInChunk == 0) {
-        //chunkHabitationTime = chunkHabitationTime - ((chunkX, chunkZ))
+      if (spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && actualNumberOfPlayer == 0) {
+        chunkHabitationTime = chunkHabitationTime - ((chunkX, chunkZ))
         askSomethingToCreatures[DespawnCreature](DespawnCreature(chunkX, chunkZ), despawnCreature => senderRef ! despawnCreature)
         spawnedMobFuturePerChunk = spawnedMobFuturePerChunk - ((chunkX, chunkZ))
       }
+    case SkyStateUpdate(state: SkyUpdateState) => state match {
+      case SkyUpdateState.Sunrise => isDay = true
+      case SkyUpdateState.Noon => isDay = true
+      case SkyUpdateState.Sunset => isDay = false
+      case SkyUpdateState.MidNight => isDay = false
+    }
   }
 }
 

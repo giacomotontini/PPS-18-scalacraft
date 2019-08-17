@@ -71,7 +71,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
         val timeUpdate = TimeUpdate(worldAge, timeOfDay)
         onlinePlayers foreach { _ ! timeUpdate}
       }
-
+      creatureSpawner ! SkyStateUpdate(SkyUpdateState.timeUpdateStateFromTime(timeOfDay))
       worldAge += ServerConfiguration.TicksInSecond
     case RequestEntityId => sender ! entityIdGenerator.next()
     case requestMobs: RequestMobsInChunk =>
