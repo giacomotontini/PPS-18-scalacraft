@@ -87,8 +87,12 @@ private[scalacraft] object Helpers {
       checkIfIsASpecificTypeOfBlock("minecraft:birch_log") ||
         checkIfIsASpecificTypeOfBlock("minecraft:oak_log")
     }
+    def isLava(): Boolean = {
+      checkIfIsASpecificTypeOfBlock("lava") ||
+        checkIfIsASpecificTypeOfBlock("flowing_lava")
+    }
     def isSpawnableSurface(): Boolean = {
-      !isAir() && !isWoodOfTree() && !isLeaves() && !isGrass()
+      !isAir() && !isWoodOfTree() && !isLeaves() && !isGrass() && !isLava()
     }
   }
 

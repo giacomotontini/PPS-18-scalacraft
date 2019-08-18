@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.scalacraft.logic.World.TimeTick
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
-import io.scalacraft.packets.clientbound.PlayPackets.TimeUpdate
+import io.scalacraft.packets.clientbound.PlayPackets.{EntityRelativeMove, TimeUpdate}
 import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.duration._
@@ -76,10 +76,12 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
     case RequestEntityId => sender ! entityIdGenerator.next()
     case requestMobs: RequestMobsInChunk =>
       creatureSpawner forward requestMobs
-    case requestSpawnPoints @ RequestProbabilisticSpawnPositionsForBiomes(chunkX, chunkZ, _, _) =>
-      regions(MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ)) forward requestSpawnPoints
+    case requestSpawnPoints @ RequestSpawnPoints(chunkX, chunkZ) => regions(MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ)) forward requestSpawnPoints
     case unloadedChunk: PlayerUnloadedChunk =>
       creatureSpawner forward unloadedChunk
+    case entityRelativeMove: EntityRelativeMove =>
+      players.foreach(player => player._2._2 forward entityRelativeMove)
+
   }
 
 }

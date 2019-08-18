@@ -3,10 +3,7 @@ package io.scalacraft.logic.messages
 import java.util.UUID
 
 import akka.actor.ActorRef
-import io.scalacraft.core.marshalling.annotations.PacketAnnotations.{boxed, fromContext, short}
 import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
-import io.scalacraft.packets.DataTypes.{Angle, Position}
-import io.scalacraft.packets.Entities.MobEntity
 
 trait Message
 
@@ -43,9 +40,7 @@ object Message {
   case class GetCreatureInChunk(chunkX: Int, chunkZ: Int) extends Message
 
   case class DespawnCreature(chunkX: Int, chunkZ: Int) extends Message
-  case class RequestProbabilisticSpawnPositionsForBiomes(chunkX: Int,
-                                                         chunkZ: Int,
-                                                         biomeIndexesToSpawnProbability: Map[Int, Float]) extends Message
+  case class RequestSpawnPoints(chunkX: Int,chunkZ: Int) extends Message
 
   object SkyUpdateState extends Enumeration {
     type SkyUpdateState = Value
@@ -61,5 +56,6 @@ object Message {
     }
   }
   case class SkyStateUpdate(state: SkyUpdateState) extends Message
+  case class RequestNearbyPoints(x:Int, y:Int, z:Int) extends Message
 
 }

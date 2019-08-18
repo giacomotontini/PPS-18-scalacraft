@@ -1,16 +1,15 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
-import io.scalacraft.logic.messages.Message.{AskRequest, ChunkNotPresent, JoiningGame, LeavingGame, PlayerUnloadedChunk, RemovePlayer, RequestChunkData, RequestJoinGame, RequestMobsInChunk}
+import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets.{ChunkData, DestroyEntities, JoinGame, SpawnMob, SpawnPosition, TimeUpdate, UnloadChunk, WorldDimension}
+import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
-import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -125,6 +124,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     case RemovePlayer =>
       world ! LeavingGame
       reset()
+    case entityRelativeMove: EntityRelativeMove => userContext ! entityRelativeMove
     /*case spawnMobs: List[SpawnMob] => spawnMobs.foreach(spawnMob => userContext ! spawnMob)
     case destroyCreautures: List[DestroyEntities] => destroyCreautures.foreach(destroyCreaure => userContext ! destroyCreaure)
     case _: Animation=>

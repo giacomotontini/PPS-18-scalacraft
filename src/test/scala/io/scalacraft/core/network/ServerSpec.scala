@@ -4,7 +4,6 @@ import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.scalacraft.misc.Helpers
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-import scala.util.Random
 
 class ServerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 

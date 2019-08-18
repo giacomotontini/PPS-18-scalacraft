@@ -8,7 +8,7 @@ import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.creatures.FarmAnimal
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.misc.CreatureInstance._
+import io.scalacraft.misc.CreatureInstances
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
 
@@ -21,7 +21,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
   //Mantains the number of player in a chunk, this is identified by his x, z coordinates
   var numberOfPlayersInChunk: Map[(Int, Int), Int] = Map()
   //Mantains the habitation times of every habitated chunk
-  //var chunkHabitationTime: Map[(Int, Int), Int] = Map() TODO: Understand well how to use
+  var chunkHabitationTime: Map[(Int, Int), Int] = Map()
   //Indicates if creatures have been spawned yet in a given chunk
   var spawnedMobFuturePerChunk: Map[(Int, Int), Future[_]] = Map()
   //used to spawn creatures randomly
@@ -68,15 +68,17 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
         val spawnedMobFuture = (context.parent ? RequestSpawnPoints(chunkX, chunkZ)).andThen {
           case Success(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]]) =>
             var spawnablePosition = biomeToSpawnPosition
-            BiomesToCreatureAndDensity.creatureInstance.foreach {
+            CreatureInstances.creatureInstances.foreach {
               case farmAnimal: FarmAnimal if isDay =>
-                val spawnResult = farmAnimal.spawn(spawnablePosition)
+                val spawnResult = farmAnimal.spawn(spawnablePosition, context.parent)
                 spawnablePosition = spawnResult.updatedPosition
                 spawnedActor ++= spawnResult.actorToSpawn.map {
                   case (props: Props, name: String) => context.actorOf(props, name)
                 }
             }
-        })
+            askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
+            chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)
+        }
         spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)
       } else {
         spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete {
@@ -87,7 +89,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
 
     case PlayerUnloadedChunk(chunkX, chunkZ) =>
       val senderRef = sender
-      val (updatedMap, actualNumberOfPlayerInChunk) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
+      val (updatedMap, actualNumberOfPlayer) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ - 1, removeEntryPredicate = _ == 0)
       numberOfPlayersInChunk = updatedMap
       if (spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && actualNumberOfPlayer == 0) {
