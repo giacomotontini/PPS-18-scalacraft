@@ -141,13 +141,24 @@ trait CraftingInventory extends Inventory {
     addItem(craftingRange.CraftingOutputSlot, item)
   }
 
+  def clearCrafted(): Unit = {
+    clearSlot(craftingRange.CraftingOutputSlot)
+  }
+
   def craftingAccepted(): Unit = {
+    clearCrafted()
     craftingRange.CraftingInputSlotRange.foreach (removeItem(_, 1))
+
   }
 
   def inventoryClosed(): Unit = {
-    retrieveCraftingItems().collect { case Some(item) => addItem(item) }
-    craftingRange.CraftingInputSlotRange.foreach(_ => inventory(_) = None)
+    println("inventory closed")
+    retrieveCraftingItems().zip(craftingRange.CraftingInputSlotRange).foreach {
+      case (Some(item), index) =>
+        clearSlot(index)
+        addItem(item) //cannot be a move, need to find free slots or group with other
+      case _ =>
+    }
   }
 }
 

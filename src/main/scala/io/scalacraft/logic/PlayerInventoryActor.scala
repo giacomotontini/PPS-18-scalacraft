@@ -30,7 +30,9 @@ class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor with ActorLog
       sender ! inventory.findHeldItemId(heldSlot)
     case UseHeldItem =>
       sender ! inventory.useOneHeldItem(heldSlot)
-    case CloseWindow => inventory.inventoryClosed()
+    case CloseWindow(_) =>
+      inventory.inventoryClosed()
+      updatePlayerInventory()
     case click@ClickWindow(_, slot, _, actionNumber, _, clickedItem) =>
       slot match {
         case _ if slot == PlayerInventory.CraftingOutputSlot =>
@@ -55,10 +57,11 @@ class PlayerInventoryActor(playerActorRef: ActorRef) extends Actor with ActorLog
 
   private def scanCraftingArea(): Unit = {
     val craftingItems = inventory.retrieveCraftingItems()
-    if(!craftingItems.forall(_.isEmpty)) {
+    inventory.clearCrafted()
+    if (!craftingItems.forall(_.isEmpty)) {
       RecipeManager.checkForRecipes(craftingItems) match {
         case Some(recipe) => inventory.addCrafted(InventoryItem(recipe.id, recipe.count))
-        case None => inventory.clearSlot(PlayerInventory.CraftingOutputSlot)
+        case None => inventory.clearCrafted()
       }
     }
   }
