@@ -125,10 +125,16 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       world ! LeavingGame
       reset()
     case entityRelativeMove: EntityRelativeMove => userContext ! entityRelativeMove
+    case entityLookAndRelativeMove: EntityLockAndRelativeMove => userContext ! entityLookAndRelativeMove
+    case entityVelocity: EntityVelocity => userContext ! entityVelocity
+    case entityLook: EntityLook => userContext ! entityLook
+    case entityHeadLook: EntityHeadLook =>
+     userContext ! entityHeadLook
     /*case spawnMobs: List[SpawnMob] => spawnMobs.foreach(spawnMob => userContext ! spawnMob)
-    case destroyCreautures: List[DestroyEntities] => destroyCreautures.foreach(destroyCreaure => userContext ! destroyCreaure)
-    case _: Animation=>
-      world ! RequestMobsInChunk(posX, posZ)*/
+    case destroyCreautures: List[DestroyEntities] => destroyCreautures.foreach(destroyCreaure => userContext ! destroyCreaure)*/
+    case _: sb.Animation=>
+      world ! Height(posX, posY,posZ)
+    case pos: List[Some[Position]] => println(pos)
   }
 
   override def receive: Receive = preStartBehaviour
@@ -172,7 +178,6 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
         world.ask(PlayerUnloadedChunk(x, z))(timeout) map {
           case destroyCreatures: List[DestroyEntities] =>
             destroyCreatures.foreach(destroyCreaure => userContext ! destroyCreaure)
-          case Nil => println("No mobs unloaded")
           case _ => //do nothing
         }
       }) map (_ => Unit)
@@ -180,7 +185,6 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
         world.ask(RequestMobsInChunk(x, z))(timeout) map {
           case spawnMobs: List[SpawnMob] =>
             spawnMobs.foreach(spawnMob => userContext ! spawnMob)
-          case Nil => println("No mobs loaded")
           case _ => //do nothing
         }
       }) map (_ => Unit)

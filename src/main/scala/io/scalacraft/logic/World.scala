@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.scalacraft.logic.World.TimeTick
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
-import io.scalacraft.packets.clientbound.PlayPackets.{EntityRelativeMove, TimeUpdate}
+import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLockAndRelativeMove, EntityLook, EntityRelativeMove, EntityVelocity, TimeUpdate}
 import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.duration._
@@ -81,7 +81,16 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
       creatureSpawner forward unloadedChunk
     case entityRelativeMove: EntityRelativeMove =>
       players.foreach(player => player._2._2 forward entityRelativeMove)
-
+    case entityLookAndRelativeMove: EntityLockAndRelativeMove =>
+      players.foreach(player => player._2._2 forward entityLookAndRelativeMove)
+    case entityVelocity: EntityVelocity =>
+      players.foreach(player => player._2._2 forward entityVelocity)
+    case requestNearbyPoints @ RequestNearbyPoints(posX,_, posZ, _,_,_) => regions(MCAUtil.blockToRegion(posX), MCAUtil.blockToRegion(posZ)) forward requestNearbyPoints
+    case entityLook: EntityLook =>
+      players.foreach(player => player._2._2 forward entityLook)
+    case entityHeadLook: EntityHeadLook =>
+      players.foreach(player => player._2._2 forward entityHeadLook)
+    case height @ Height(x,_,z) => regions(MCAUtil.blockToRegion(x), MCAUtil.blockToRegion(z)) forward height
   }
 
 }

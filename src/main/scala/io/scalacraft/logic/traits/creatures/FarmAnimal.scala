@@ -26,7 +26,7 @@ trait Creature {
          if spawnableBiomes.keySet.contains(biomeAndPosition._1)) yield {
       var positions = spawnCreatureParameters.positionFilter(biomeAndPosition._2)
       val biome = biomeAndPosition._1
-      val spawnProbability = spawnableBiomes(biome)
+      val spawnProbability = spawnableBiomes(biome) // /256
       if (randomGenerator.nextFloat() < spawnProbability && positions.nonEmpty) {
         val position = positions.toVector(randomGenerator.nextInt(positions.size))
         actorToSpawn ++= spawnCreatureParameters.spawnPolicy(position)

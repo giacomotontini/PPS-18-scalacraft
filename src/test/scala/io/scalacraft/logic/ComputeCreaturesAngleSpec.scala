@@ -29,4 +29,10 @@ class ComputeCreaturesAngleSpec extends FlatSpec with Matchers{
     computeYawAndPitch(-1, 0, 0) shouldBe((Angle(64), Angle(0)))
   }
 
+  it should "get the correct pitch angle" in {
+    println(computeYawAndPitch(deltaX = -14, deltaY = 0 , deltaZ = -251))
+    println(computeYawAndPitch(deltaX = 0, deltaY = 1 , deltaZ = 0)._2) //-64
+    println(computeYawAndPitch(deltaX = 0, deltaY = -1 , deltaZ = 0)._2) //64
+  }
+
 }

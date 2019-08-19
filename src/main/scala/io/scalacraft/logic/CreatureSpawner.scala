@@ -1,5 +1,7 @@
 package io.scalacraft.logic
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
@@ -11,6 +13,7 @@ import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.CreatureInstances
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
+import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.Future
 import scala.concurrent.Future._
@@ -27,7 +30,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
   //used to spawn creatures randomly
   var spawnedActor: Set[ActorRef] = Set()
   val randomGenerator: Random.type = scala.util.Random
-  val timeout: FiniteDuration = 15 seconds
+  val timeout: FiniteDuration = 20 seconds
   var isDay: Boolean = _
 
   //Update an indicator of a chunk (i.e numberOfPlayer, habitationTime) and get the actual number of player.
@@ -44,7 +47,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
   }
 
   private[this] def askSomethingToCreatures[T](request: Message, onResult: List[T] => Unit, removeActor: Boolean = false): Unit = {
-    sequence(spawnedActor.map(mobActor => mobActor.ask(request)(timeout)).toList).onComplete {
+    sequence(spawnedActor.map(mobActor => mobActor.ask(request)).toList).onComplete {
       case Success(mobResponse) =>
         onResult(mobResponse.collect {
           case AskResponse(senderRef, response) if response.isInstanceOf[Some[_]] =>
@@ -61,11 +64,19 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
   override def receive: Receive = {
     case RequestMobsInChunk(chunkX, chunkZ) =>
       val senderRef = sender
-      val (updatedMap, _) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
+     val (updatedMap, _) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
       numberOfPlayersInChunk = updatedMap
-      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ)) {
-        val spawnedMobFuture = (context.parent ? RequestSpawnPoints(chunkX, chunkZ)).andThen {
+      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && chunkX == MCAUtil.blockToChunk(240) && chunkZ == MCAUtil.blockToChunk(162)) {
+        CreatureInstances.creatureInstances.foreach{
+          case farmAnimal: FarmAnimal =>
+            val uuid = UUID.randomUUID()
+            val actor = context.actorOf(farmAnimal.props(123, uuid, 240, 64, 162, world = context.parent), farmAnimal.name(uuid))
+            spawnedActor ++= Set(actor)
+        }
+        askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
+        chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)
+       /* val spawnedMobFuture = (context.parent.ask(RequestSpawnPoints(chunkX, chunkZ))(timeout)).andThen {
           case Success(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]]) =>
             var spawnablePosition = biomeToSpawnPosition
             CreatureInstances.creatureInstances.foreach {
@@ -79,12 +90,13 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
             askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
             chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)
         }
-        spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)
+        spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)*/
       } else {
-        spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete {
+        /*spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete {
           case Success(_) => askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
           case _ => //do nothing
-        }
+        }*/
+        senderRef ! List[SpawnMob]()
       }
 
     case PlayerUnloadedChunk(chunkX, chunkZ) =>
