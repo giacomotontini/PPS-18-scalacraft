@@ -64,14 +64,14 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
   override def receive: Receive = {
     case RequestMobsInChunk(chunkX, chunkZ) =>
       val senderRef = sender
-     val (updatedMap, _) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
+      val (updatedMap, _) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
       numberOfPlayersInChunk = updatedMap
-      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && chunkX == MCAUtil.blockToChunk(240) && chunkZ == MCAUtil.blockToChunk(162)) {
+      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && chunkX == MCAUtil.blockToChunk(1019) && chunkZ == MCAUtil.blockToChunk(1067)) {
         CreatureInstances.creatureInstances.foreach{
           case farmAnimal: FarmAnimal =>
             val uuid = UUID.randomUUID()
-            val actor = context.actorOf(farmAnimal.props(123, uuid, 240, 64, 162, world = context.parent), farmAnimal.name(uuid))
+            val actor = context.actorOf(farmAnimal.props(123, uuid, 1019, 65, 1067, world = context.parent), farmAnimal.name(uuid))
             spawnedActor ++= Set(actor)
         }
         askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
@@ -97,7 +97,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
           case _ => //do nothing
         }*/
         senderRef ! List[SpawnMob]()
-      }
+     }
 
     case PlayerUnloadedChunk(chunkX, chunkZ) =>
       val senderRef = sender

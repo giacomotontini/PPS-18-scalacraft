@@ -36,7 +36,7 @@ class ChickenImpl(entityId: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boo
   private var oldPosZ = z
   val randomGenerator: Random.type = scala.util.Random
 
-  private val movementTickPeriod = 12 seconds
+  private val movementTickPeriod = 5 seconds
 
   private[this] def isMyChunk(chunkX: Int, chunkZ: Int): Boolean = {
     MCAUtil.blockToChunk(x) == chunkX && MCAUtil.blockToChunk(z) == chunkZ

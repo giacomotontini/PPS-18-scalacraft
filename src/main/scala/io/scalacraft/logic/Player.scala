@@ -26,9 +26,9 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   private var entityId: Int = _
   private var userContext: ActorRef = _
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = 200
-  private var posY: Int = 80
-  private var posZ: Int = 200
+  private var posX: Int = 1018
+  private var posY: Int = 65
+  private var posZ: Int = 1066
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   //private var digging: Boolean = false
