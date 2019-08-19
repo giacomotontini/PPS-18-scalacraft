@@ -26,7 +26,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   import Player._
 
   private val world = context.parent
-  private val inventory = context.actorOf(PlayerInventoryActor.props(self))
+  private val inventoryActor = context.actorOf(PlayerInventoryActor.props(self))
   private var userContext: ActorRef = _
 
   private var playerEntityId = 0
@@ -135,17 +135,17 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       this.yaw = yaw
       this.pitch = pitch
       this.onGround = onGround
-    case msg: sb.HeldItemChange => inventory.forward(msg)
+    case msg: sb.HeldItemChange => inventoryActor.forward(msg)
     case playerDigging@PlayerDigging(status, position, face) =>
       digging = Some(status)
-      (inventory ? RetrieveHeldItemId) map(_.asInstanceOf[Option[Int]]) onComplete {
+      (inventoryActor ? RetrieveHeldItemId) map(_.asInstanceOf[Option[Int]]) onComplete {
         case Success(heldItemId) =>
           world ! PlayerDiggingWithItem(playerEntityId, playerDigging, heldItemId)
           log.info("User: {} {} digging", username, status)
         case Failure(exception) => log.warning("Failed to retrieve held item.")
       }
     case msg: PlayerBlockPlacement =>
-      (inventory ? UseHeldItem).map(_.asInstanceOf[Option[Int]]) onComplete {
+      (inventoryActor ? UseHeldItem).map(_.asInstanceOf[Option[Int]]) onComplete {
         case Success(Some(itemId)) =>
           world ! BlockPlacedByUser(msg, itemId, username)
         case Success(None) => //held air
@@ -157,11 +157,12 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       case CollectItemWithType(collectItem, itemId) =>
         userContext.forward(collectItem)
         if (collectItem.collectorEntityId == playerEntityId) {
-          inventory ! AddItem(InventoryItem(itemId, collectItem.pickUpItemCount))
+          inventoryActor ! AddItem(InventoryItem(itemId, collectItem.pickUpItemCount))
         }
       case _ => userContext ! msg
     }
-    case msg: ClickWindow if msg.windowId == PlayerInventory.Id => inventory forward(msg)
+    case msg: ClickWindow if msg.windowId == PlayerInventory.Id => inventoryActor forward(msg)
+    case msg: CloseWindow if msg.windowId == PlayerInventory.Id => inventoryActor forward(msg)
     case timeUpdate: TimeUpdate => userContext forward timeUpdate
     case RemovePlayer =>
       world ! LeavingGame

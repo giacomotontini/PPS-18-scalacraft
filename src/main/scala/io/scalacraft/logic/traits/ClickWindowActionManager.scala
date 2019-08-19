@@ -1,6 +1,6 @@
 package io.scalacraft.logic.traits
 
-import io.scalacraft.logic.{Inventory, InventoryItem}
+import io.scalacraft.logic.{CraftingInventory, Inventory, InventoryItem}
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction.{LeftMouseClick, LeftMouseDrag, RightMouseClick, RightMouseDrag}
@@ -9,10 +9,10 @@ import org.slf4j.{Logger, LoggerFactory}
 
 trait ClickWindowActionManager {
 
-  private def log : Logger = LoggerFactory.getLogger(getClass)
+  private def log: Logger = LoggerFactory.getLogger(getClass)
 
   protected val inventory: Inventory
-  private var holdItems: Slot = None  //items that are being moved throw mouse cursor
+  private var holdItems: Slot = None //items that are being moved throw mouse cursor
 
 
   private def groupItems(slot: Int, holdingItems: SlotData): Option[SlotData] = {
@@ -26,8 +26,8 @@ trait ClickWindowActionManager {
     }
   }
 
-  private def swapHoldedItems(slot: Int, holdingItems: SlotData, slotItems: SlotData): Slot = {
-    log.debug("Swap holded items")
+  private def swapHoldItems(slot: Int, holdingItems: SlotData, slotItems: SlotData): Slot = {
+    log.debug("Swap hold items")
     inventory.removeItem(slot, InventoryItem(slotItems.itemId, slotItems.itemCount))
     inventory.addItem(slot, InventoryItem(holdingItems.itemId, holdingItems.itemCount))
     Some(slotItems)
@@ -40,13 +40,13 @@ trait ClickWindowActionManager {
   }
 
   private def releaseNewItems(slot: Int, holdingItems: SlotData, oneByOne: Boolean = false): Slot = {
-    if(oneByOne) {
-        log.debug("Release new items one by one.")
+    if (oneByOne) {
+      log.debug("Release new items one by one.")
       inventory.addItem(slot, InventoryItem(holdingItems.itemId, 1))
       (holdingItems.itemCount - 1) match {
-         case left if left > 0 => Some(SlotData(holdingItems.itemId, left, new CompoundTag()))
-         case _ => None
-       }
+        case left if left > 0 => Some(SlotData(holdingItems.itemId, left, new CompoundTag()))
+        case _ => None
+      }
     } else {
       log.debug("Release new items.")
       inventory.addItem(slot, InventoryItem(holdingItems.itemId, holdingItems.itemCount))
@@ -67,10 +67,10 @@ trait ClickWindowActionManager {
         slotItems match {
           case Some(slotItems) =>
             holdItems match {
-              case Some(holdedItems) if holdedItems.itemId == slotItems.itemId =>
-                this.holdItems = groupItems(slot, holdedItems)
-              case Some(holdedItems) =>
-                this.holdItems = swapHoldedItems(slot, holdedItems, slotItems)
+              case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
+                this.holdItems = groupItems(slot, holdItems)
+              case Some(holdItems) =>
+                this.holdItems = swapHoldItems(slot, holdItems, slotItems)
               case None =>
                 holdItems = holdNewItems(slot, slotItems)
             }
@@ -83,16 +83,35 @@ trait ClickWindowActionManager {
         slotItems match {
           case Some(slotItems) =>
             holdItems match {
-              case Some(holdedItems) if holdedItems.itemId == slotItems.itemId =>
-                this.holdItems = releaseNewItems(slot, holdedItems, oneByOne = true)
-              case Some(holdedItems) =>
-                this.holdItems = swapHoldedItems(slot, holdedItems, slotItems)
+              case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
+                this.holdItems = releaseNewItems(slot, holdItems, oneByOne = true)
+              case Some(holdItems) =>
+                this.holdItems = swapHoldItems(slot, holdItems, slotItems)
               case None =>
                 holdItems = splitSlotItems(slot, slotItems)
-          }
+            }
           case None if holdItems.isDefined =>
-            holdItems = releaseNewItems(slot, holdItems.get , oneByOne = true)
-          case None =>
+            holdItems = releaseNewItems(slot, holdItems.get, oneByOne = true)
+          case None => //ignored
+        }
+      case _ => //ignored
+    }
+  }
+
+
+  def handleActionOnCraftingSlot(action: ClickWindowAction, craftingSlot: Int, slotItems: Slot): Unit = {
+    action match {
+      case LeftMouseClick(_) | LeftMouseDrag(true, false) | RightMouseClick(_) | RightMouseDrag(true, false) =>
+        slotItems match {
+          case Some(slotItems) =>
+            holdItems match {
+              case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
+                this.holdItems = Some(SlotData(holdItems.itemId, holdItems.itemCount + slotItems.itemCount, new CompoundTag))
+              case None =>
+                holdItems = holdNewItems(craftingSlot, slotItems)
+            }
+            inventory.asInstanceOf[CraftingInventory].craftingAccepted()
+          case None => //ignored
         }
       case _ => //ignored
     }
