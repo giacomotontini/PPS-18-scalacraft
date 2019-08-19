@@ -3,7 +3,7 @@ package io.scalacraft.logic
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import io.scalacraft.logic.PlayerInventoryActor.Message._
 import io.scalacraft.logic.messages.Message.ForwardToClient
-import io.scalacraft.logic.traits.{ClickWindowActionManager, DefaultTimeout, ImplicitContext, RecipeManager}
+import io.scalacraft.logic.traits.{ClickWindowActionManager, DefaultTimeout, ImplicitContext}
 import io.scalacraft.packets.DataTypes.SlotData
 import io.scalacraft.packets.clientbound.PlayPackets.{ConfirmTransaction, SetSlot}
 import io.scalacraft.packets.serverbound.PlayPackets.{ClickWindow, CloseWindow, HeldItemChange}

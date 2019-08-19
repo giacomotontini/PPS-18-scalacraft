@@ -1,8 +1,7 @@
-package io.scalacraft.logic.traits
+package io.scalacraft.logic
 
 import io.scalacraft.loaders.Recipes
 import io.scalacraft.loaders.Recipes.{RecipeResult, ShapeRecipe, ShapelessRecipe}
-import io.scalacraft.logic.InventoryItem
 
 object RecipeManager {
 
@@ -73,14 +72,4 @@ object RecipeManager {
     _checkForRecipes(craftingItems)
   }
 
-
-}
-
-object test extends App {
-  /*
-  import RecipeManager._
-
-  val myIngredients = List(None, None, Some(InventoryItem(33,1)), None)
-  println(checkForRecipes(myIngredients))
-  */
 }
