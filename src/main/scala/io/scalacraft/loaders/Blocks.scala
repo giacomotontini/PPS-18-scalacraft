@@ -54,7 +54,7 @@ object Blocks {
           compoundTag.putString("Name", "minecraft:" + block.name)
           if (properties.nonEmpty) {
             properties(actualState).zipWithIndex.foreach {
-              case (value, index) => innerTag.putString(block.states(index).name, value.toString)
+              case (value, index) => innerTag.putString(block.states(index).name.toLowerCase, value.toString.toLowerCase)
             }
             compoundTag.put("Properties", innerTag)
           }
