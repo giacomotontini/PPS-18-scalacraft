@@ -31,7 +31,7 @@ case class RecipeManagerSpec() extends FlatSpec with Matchers {
       (recipe._2 collect {
         case alternative: ShapeRecipe => alternative
       }).foreach(alternative => {
-        val items = alternative.inShape.map(_.map(item => Some(InventoryItem(item, 1))).zipWithIndex).zipWithIndex
+        val items = alternative.inShapeSorted.map(_.map(item => Some(InventoryItem(item, 1))).zipWithIndex).zipWithIndex
         val myInventory = Array.fill(CraftingTableInventory.CraftingInputSlotRange.length)(Option.empty[InventoryItem])(classTag[Option[InventoryItem]])
 
         items.foreach { row =>

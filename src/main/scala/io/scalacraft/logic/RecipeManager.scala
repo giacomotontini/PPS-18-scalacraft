@@ -14,9 +14,9 @@ object RecipeManager {
     def checkStartingAt(fromX: Int, fromY: Int): Boolean = {
       var found = true
       var checkedIndex = List[(Int, Int)]()
-      for (y <- shaped.inShape.indices if found) {
-         for(x <- shaped.inShape(y).indices if found) {
-           if(fromY + shaped.inShape.size > craftingItems.size  || fromX + shaped.inShape(y).size > craftingItems.size || craftingItems(fromY + y)(fromX + x) != shaped.inShape(y)(x)) {
+      for (y <- shaped.inShapeSorted.indices if found) {
+         for(x <- shaped.inShapeSorted(y).indices if found) {
+           if(fromY + shaped.inShapeSorted.size > craftingItems.size  || fromX + shaped.inShapeSorted(y).size > craftingItems.size || craftingItems(fromY + y)(fromX + x) != shaped.inShapeSorted(y)(x)) {
              found = false
            } else {
              checkedIndex = checkedIndex.+:((fromX + x,fromY + y))
@@ -26,12 +26,11 @@ object RecipeManager {
       if(found) { //check if unchecked inventory slot are empty
         val mappedIndex = checkedIndex.map(index => index._2 * craftingItems.size + index._1)
         found = !craftingItems.flatten.zipWithIndex.filter(zippedIndex => !mappedIndex.contains(zippedIndex._2)).exists(_._1 != -1)
-        // println(fromX, fromY, checkedIndex, mappedIndex)
       }
       found
     }
 
-    val neededItems = shaped.inShape
+    val neededItems = shaped.inShapeSorted
     if(craftingItems.size < neededItems.size || craftingItems.head.size < neededItems.map(_.size).max) { //check if crafting grid is smaller than necessary (i.e.playerInventory)
       false
     } else {

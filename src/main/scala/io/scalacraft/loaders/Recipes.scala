@@ -12,8 +12,13 @@ object Recipes {
     def result: RecipeResult
   }
   case class RecipeResult(count: Int, id: Int)
-  case class ShapelessRecipe(ingredients: List[Int], override val result: RecipeResult) extends Recipe
-  case class ShapeRecipe(inShape: List[List[Int]], override val result: RecipeResult) extends Recipe
+  case class ShapelessRecipe(ingredients: List[Int], result: RecipeResult) extends Recipe
+  case class ShapeRecipe(inShape: List[List[Int]], result: RecipeResult) extends Recipe {
+    //cannot make a getter for "inShape" since it must be public and named as it is. Parsing would not works otherwise.
+    def inShapeSorted: List[List[Int]] = {
+      inShape.reverse
+    }
+  }
 
   object Recipe {
     implicit val decodeData: Decoder[Recipe] =
