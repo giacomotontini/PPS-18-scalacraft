@@ -1,9 +1,7 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
-import io.scalacraft.logic.DiggingManager.Message.PlayerDiggingWithItem
-import io.scalacraft.logic.Player.Message.CollectItemWithType
 import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldItemId, UseHeldItem}
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
@@ -49,6 +47,8 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
 
   private val randomGenerator = Random
 
+  override def receive: Receive = preStartBehaviour
+
   private def preStartBehaviour: Receive = {
     case RequestJoinGame(playerEntityId, playerUserContext) =>
       this.playerEntityId = playerEntityId
@@ -57,7 +57,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       userContext ! JoinGame(playerEntityId, serverConfiguration.gameMode, worldDimension,
         serverConfiguration.serverDifficulty, serverConfiguration.maxPlayers, serverConfiguration.levelTypeBiome,
         serverConfiguration.reducedDebugInfo)
-      world ! JoiningGame
+      world ! JoiningGame(playerEntityId)
       // userContext ! cb.PluginMessage("minecraft:brand", Array(7, 118, 97, 110, 105, 108, 108, 97))
       // userContext ! cb.PlayerAbilities(0)
 
@@ -79,8 +79,10 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
           context.become(confirmTeleport(positionAndLook))
         case Failure(e) => log.error(e, "Cannot load chunks.")
       }
+
     case clientStatus: ClientStatus if clientStatus.action == ClientStatusAction.PerformRespawn =>
       log.warning("Respawn not to be handled on login.")
+
     case clientStatus: ClientStatus if clientStatus.action == ClientStatusAction.RequestStats =>
       log.warning("User request statistics, not handled.")
   }
@@ -104,54 +106,68 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       if (!timers.isTimerActive(KeepAliveTimeoutKey)) {
         timers.startSingleTimer(KeepAliveTimeoutKey, KeepAliveTimeout, 30.seconds)
       }
+
     case KeepAliveTimeout =>
       timers.cancel(KeepAliveTickKey)
+
     case sb.KeepAlive(keepAliveId) if keepAliveId == lastKeepAliveId =>
       timers.cancel(KeepAliveTimeoutKey)
-    case keepAlive: sb.KeepAlive if keepAlive.keepAliveId != lastKeepAliveId =>
 
-    case player: Player =>
-      onGround = player.onGround
-    case sb.KeepAlive(keepAliveId) if keepAliveId != lastKeepAliveId =>
-      log.warning("Client keep alive id invalid.")
     case sb.Player(onGround) =>
       this.onGround = onGround
-    case sb.PlayerPosition(x, feetY, z, onGround) =>
-      this.posX = x.toInt
-      this.posY = feetY.toInt
-      this.posZ = z.toInt
+
+    case sb.KeepAlive(keepAliveId) if keepAliveId != lastKeepAliveId =>
+      log.warning("Client keep alive id invalid.")
+
+    case sb.Player(onGround) =>
       this.onGround = onGround
+
+    case sb.PlayerPosition(x, feetY, z, onGround) =>
+      posX = x.toInt
+      posY = feetY.toInt
+      posZ = z.toInt
+      this.onGround = onGround
+      world ! PlayerMoved(playerEntityId, Position(posX, posY, posZ))
       loadChunks()
+
     case sb.PlayerPositionAndLook(x, feetY, z, yaw, pitch, onGround) =>
-      this.posX = x.toInt
-      this.posY = feetY.toInt
-      this.posZ = z.toInt
+      posX = x.toInt
+      posY = feetY.toInt
+      posZ = z.toInt
       this.yaw = yaw
       this.pitch = pitch
       this.onGround = onGround
+      world ! PlayerMoved(playerEntityId, Position(posX, posY, posZ))
       loadChunks()
+
     case sb.PlayerLook(yaw, pitch, onGround) =>
       this.yaw = yaw
       this.pitch = pitch
       this.onGround = onGround
     case msg: sb.HeldItemChange => inventory.forward(msg)
-    case playerDigging@PlayerDigging(status, position, face) =>
-      digging = Some(status)
-      (inventory ? RetrieveHeldItemId) map(_.asInstanceOf[Option[Int]]) onComplete {
+
+    case playerDigging: PlayerDigging =>
+      (inventory ? RetrieveHeldItemId) map (_.asInstanceOf[Option[Int]]) onComplete {
         case Success(heldItemId) =>
-          world ! PlayerDiggingWithItem(playerEntityId, playerDigging, heldItemId)
-          log.info("User: {} {} digging", username, status)
-        case Failure(exception) => log.warning("Failed to retrieve held item.")
+          world ! PlayerDiggingHoldingItem(playerEntityId, Position(posX, posY, posZ), playerDigging, heldItemId)
+        case Failure(ex) => log.error(ex, "Failed to retrieve held item.")
       }
+
     case msg: PlayerBlockPlacement =>
       (inventory ? UseHeldItem).map(_.asInstanceOf[Option[Int]]) onComplete {
         case Success(Some(itemId)) =>
           world ! BlockPlacedByUser(msg, itemId, username)
         case Success(None) => //held air
-        case Failure(exception) => log.warning("Failed to retrieve placed block type.")
+        case Failure(ex) => log.error(ex, "Failed to retrieve placed block type.")
       }
-    case animation: sb.Animation =>
-      world ! PlayerAnimation(username, playerEntityId, animation)
+
+    case sb.Animation(Hand.MainHand) =>
+      world ! SendToAllExclude(playerEntityId, cb.Animation(playerEntityId, AnimationType.SwingMainArm))
+    case sb.Animation(Hand.OffHand) =>
+      world ! SendToAllExclude(playerEntityId, cb.Animation(playerEntityId, AnimationType.SwingOffHand))
+
+    case sb.ChatMessage(message) => handleDebugCommand(message)
+
     case ForwardToClient(msg) => msg match {
       case CollectItemWithType(collectItem, itemId) =>
         userContext.forward(collectItem)
@@ -160,16 +176,18 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
         }
       case _ => userContext ! msg
     }
-    case msg: ClickWindow if msg.windowId == PlayerInventory.Id => inventory forward(msg)
-    case timeUpdate: TimeUpdate => userContext forward timeUpdate
-    case RemovePlayer =>
-      world ! LeavingGame
-      reset()
-      self ! PoisonPill
-    case anyOther => println("Not handled", anyOther)
-  }
 
-  override def receive: Receive = preStartBehaviour
+    case msg: ClickWindow if msg.windowId == PlayerInventory.Id => inventory forward(msg)
+
+    case timeUpdate: TimeUpdate => userContext forward timeUpdate
+
+    case RemovePlayer =>
+      world ! LeavingGame(playerEntityId)
+      reset()
+
+    case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
+
+  }
 
   private def playerPositionAndLookFlags(xRelative: Boolean, yRelative: Boolean, zRelative: Boolean, Y_ROT: Boolean, X_ROT: Boolean): Byte = {
     var flags: Byte = 0x00
@@ -215,17 +233,18 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     } else Future.unit
   }
 
+  implicit class Regex(sc: StringContext) {
+    def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
+  }
+
+  private def handleDebugCommand(message: String): Unit = message match {
+    case r"/sb (-?\d+)$x (-?\d+)$y (-?\d+)$z" => println(x, y, z)
+    case _ => println("nope")
+  }
+
 }
 
 object Player {
-
-  sealed trait Message
-
-  object Message {
-
-    case class CollectItemWithType(collectItem: CollectItem, itemId: Int) extends Message
-
-  }
 
   private case object KeepAliveTickKey
 

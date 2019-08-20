@@ -11,9 +11,29 @@ object DataTypes {
   type Identifier = String
   type Slot = Option[SlotData]
   type Nbt = Tag[_]
+  type EntityId = Int
+  type BlockStateId = Int
+  type ItemId = Int
 
   case class VarInt(value: Int, length: Int)
-  case class Position(x: Int, y: Int, z: Int)
+
+  case class Position(x: Int, y: Int, z: Int) {
+
+    def |(position: Position): Position = position match {
+      case Position(px, py, pz) => Position(math.abs(x - px), math.abs(y - py), math.abs(z - pz))
+    }
+
+    def ~(position: Position): Double = {
+      val Position(rx, ry, rz) = this | position
+      math.sqrt(rx*rx + ry*ry + rz*rz)
+    }
+
+    def withX(f: Int => Int): Position = Position(f(x), y, z)
+    def withY(f: Int => Int): Position = Position(x, f(y), z)
+    def withZ(f: Int => Int): Position = Position(x, y, f(z))
+
+  }
+
   case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt)
   case class Rotation(x: Float, y: Float, z: Float)
   case class Angle(value: Int) extends AnyVal

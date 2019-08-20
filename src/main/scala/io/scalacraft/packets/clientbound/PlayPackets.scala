@@ -16,12 +16,12 @@ object PlayPackets {
                          x: Double,
                          y: Double,
                          z: Double,
-                         pitch: Angle,
-                         yaw: Angle,
+                         pitch: Angle = Angle(0),
+                         yaw: Angle = Angle(0),
                          data: Int,
-                         @short velocityX: Int,
-                         @short velocityY: Int,
-                         @short velocityZ: Int) extends Structure
+                         @short velocityX: Int = 0,
+                         @short velocityY: Int = 0,
+                         @short velocityZ: Int = 0) extends Structure
 
   @packet(id = 0x01)
   case class SpawnExperienceOrb(@boxed entityId: Int,
