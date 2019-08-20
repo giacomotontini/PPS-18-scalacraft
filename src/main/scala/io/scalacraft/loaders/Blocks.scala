@@ -2,6 +2,7 @@ package io.scalacraft.loaders
 
 import io.circe.generic.auto._
 import io.circe.parser
+import io.scalacraft.packets.DataTypes.BlockStateId
 import net.querz.nbt.CompoundTag
 
 import scala.io.Source
@@ -9,7 +10,7 @@ import scala.language.postfixOps
 
 object Blocks extends App {
 
-  case class State(default: Boolean, id: Int, properties: Map[String, String])
+  case class State(default: Boolean, id: BlockStateId, properties: Map[String, String])
 
   case class BreakingProperties(canBeHarvested: Boolean, dropSomething: Boolean, value: Float)
 
@@ -58,13 +59,10 @@ object Blocks extends App {
     } sortBy { case (id, _) => id } map { case (_, tag) => tag }
   }
 
-  def compoundTagFromBlockName(name: String): CompoundTag = {
-    compoundTagList find { _.getString("Name") == s"minecraft:$name" } get
-  }
+  def defaultCompoundTagFromName(name: String): Option[CompoundTag] =
+    blocks find { _.name == name } flatMap { _.states.find(_.default) } map { s => compoundTagFromBlockStateId(s.id) }
 
-  def compoundTagFromBlockStateId(blockStateId: Int): CompoundTag = {
-    compoundTagList(blockStateId)
-  }
+  def compoundTagFromBlockStateId(blockStateId: BlockStateId): CompoundTag = compoundTagList(blockStateId)
 
   def compoundTagFromBlockId(blockId: Int): CompoundTag = {
     val defaultStateId = (blocks find { _.blockId == blockId } flatMap { _.states.find(_.default) } map { _.id }).get
@@ -79,12 +77,8 @@ object Blocks extends App {
     stateId
   }
 
-  def blockFromStateId(stateId: Int): Block = {
-    blocks find { _.states.exists(_.id == stateId) } get
-  }
+  def blockFromStateId(stateId: BlockStateId): Block = blocks find { _.states.exists(_.id == stateId) } get
 
-  def blockFromBlockId(blockId: Int): Block = {
-    blocks(blockId)
-  }
+  def blockFromBlockId(blockId: Int): Block = blocks(blockId)
 
 }

@@ -3,11 +3,13 @@ package io.scalacraft.logic
 import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.World.TimeTick
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import io.scalacraft.packets.DataTypes.{EntityId, Position}
-import io.scalacraft.packets.clientbound.PlayPackets.TimeUpdate
+import io.scalacraft.packets.clientbound.PlayPackets.{BlockChange, TimeUpdate}
+import io.scalacraft.packets.serverbound.PlayPackets.{Face, PlayerBlockPlacement}
 import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.duration._
@@ -76,9 +78,21 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
 
     case request @ RequestBlockState(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
 
-    case msg @ BlockPlacedByUser(playerBlockPlacement, _,_) =>
-      val (relativeX, relativeZ) = (MCAUtil.blockToRegion(playerBlockPlacement.position.x), MCAUtil.blockToRegion(playerBlockPlacement.position.z))
-      regions(relativeX, relativeZ) forward msg
+    case PlayerPlaceBlockWithItemId(playerId, PlayerBlockPlacement(Position(x, y, z), face, _, _, _, _), itemId) =>
+      val blockState = Blocks.defaultCompoundTagFromName(Items.getStorableItemById(itemId).name)
+      blockState foreach { tag => // if defined
+        val position = face match {
+          case Face.Bottom => Position(x, y - 1, z)
+          case Face.Top => Position(x, y + 1, z)
+          case Face.North => Position(x, y, z - 1)
+          case Face.South => Position(x, y, z + 1)
+          case Face.West => Position(x - 1, y, z)
+          case Face.East => Position(x + 1, y, z)
+        }
+
+        regions(x >> 9, z >> 9) forward ChangeBlock(position, tag)
+        self ! SendToAllExclude(playerId, BlockChange(position, Blocks.stateIdFromCompoundTag(tag)))
+      }
 
     case request @ FindFirstSolidBlockPositionUnder(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
 

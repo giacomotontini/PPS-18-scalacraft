@@ -8,7 +8,7 @@ import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.DiggingManager.BreakingBlock
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, ItemId}
+import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, ItemId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, Effect, EffectId}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggingStatus}
 import net.querz.nbt.CompoundTag
@@ -26,7 +26,7 @@ class DiggingManager(dropManager: ActorRef) extends Actor
   private val world = context.parent
   private val materialAndTool = """(wooden|stone|iron|golden|diamond)_(axe|pickaxe|sword|shovel)""".r
   private val randomGenerator = new Random
-  private val breakingBlocks: mutable.Map[EntityId, BreakingBlock] = mutable.Map()
+  private val breakingBlocks: mutable.Map[Position, BreakingBlock] = mutable.Map()
 
   override def receive: Receive = {
 
@@ -36,30 +36,33 @@ class DiggingManager(dropManager: ActorRef) extends Actor
           val blockStateId = Blocks.stateIdFromCompoundTag(tag)
           val block = Blocks.blockFromStateId(blockStateId)
           val bProperties = breakingProperties(block, brokeToolId.map(id => Items.getStorableItemById(id)))
-          bProperties foreach { props =>
-            val stageInterval = props.value * 100 // * 1000 / 10
-            var destroyStage = 1
-            val cancellable = context.system.scheduler.schedule(stageInterval millis, stageInterval millis) {
-              world ! SendToAllExclude(playerId, BlockBreakAnimation(entityId, blockPosition, destroyStage))
-              destroyStage += 1
+          if (bProperties.isDefined && bProperties.get.value > 0) {
+            breakingBlocks(blockPosition) = BreakingBlock(entityId, blockStateId, block, bProperties)
+
+            val stageInterval = bProperties.get.value * 100 // * 1000 / 10
+            def showBreakAnimation(destroyStage: Int): Unit = {
+              context.system.scheduler.scheduleOnce(stageInterval millis) {
+                if (breakingBlocks.contains(blockPosition) && destroyStage <= 10) {
+                  world ! SendToAllExclude(playerId, BlockBreakAnimation(entityId, blockPosition, destroyStage))
+                  showBreakAnimation(destroyStage + 1)
+                }
+              }
             }
-            breakingBlocks(playerId) = BreakingBlock(entityId, blockStateId, block, bProperties, cancellable)
+
+            showBreakAnimation(1)
           }
         case Failure(ex) => log.error(ex, "Unable to complete PlayerDiggingWithItem request")
       }
 
     case PlayerDiggingHoldingItem(playerId, _, PlayerDigging(CancelledDigging, blockPosition, _), _) =>
-      if (breakingBlocks.contains(playerId)) {
-        val BreakingBlock(entityId, _, _, _, cancellable) = breakingBlocks(playerId)
-        cancellable.cancel()
+      if (breakingBlocks.contains(blockPosition)) {
+        val entityId = breakingBlocks.remove(blockPosition).get.entityId
         world ! SendToAllExclude(playerId, BlockBreakAnimation(entityId, blockPosition, -1))
-        breakingBlocks.remove(playerId)
       }
 
     case PlayerDiggingHoldingItem(playerId, playerPosition, PlayerDigging(FinishedDigging, blockPosition, _), _) =>
-      if (breakingBlocks.contains(playerId)) {
-        val BreakingBlock(_, blockStateId, block, bProperties, cancellable) = breakingBlocks(playerId)
-        cancellable.cancel()
+      if (breakingBlocks.contains(blockPosition)) {
+        val BreakingBlock(_, blockStateId, block, bProperties) = breakingBlocks.remove(blockPosition).get
         world ! BreakBlockAtPosition(blockPosition)
 
         (bProperties match {
@@ -72,8 +75,6 @@ class DiggingManager(dropManager: ActorRef) extends Actor
 
         world ! SendToAll(Effect(EffectId.BlockBreakWithSound, blockPosition, blockStateId, disableRelativeVolume = false))
         world ! SendToAll(BlockChange(blockPosition, 0))
-
-        breakingBlocks.remove(playerId)
       }
 
   }
@@ -105,7 +106,7 @@ class DiggingManager(dropManager: ActorRef) extends Actor
 object DiggingManager {
 
   private case class BreakingBlock(entityId: EntityId, blockStateId: BlockStateId, block: Block,
-                                   breakingProperties: Option[BreakingProperties], cancellable: Cancellable)
+                                   breakingProperties: Option[BreakingProperties])
 
   def props(dropManager: ActorRef): Props = Props(new DiggingManager(dropManager))
   def name: String = "DiggingManager"

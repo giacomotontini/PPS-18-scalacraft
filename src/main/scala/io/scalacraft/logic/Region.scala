@@ -36,13 +36,9 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
       cleanupNeeded = true
       world ! BlockBrokenAtPosition(Position(x, y, z))
 
-    case BlockPlacedByUser(playerBlockPlacement, itemId, _) =>
-      val position = playerBlockPlacement.position
-      val item = Items.getStorableItemById(itemId)
-      val tag = Blocks.compoundTagFromBlockId(itemId)
-      val (chunkX, chunkZ) = (position.x >> 4, position.z >> 4)
-      println(tag)
-      mca.getChunk(chunkX, chunkZ).setBlockStateAt(position.x, position.y + 1, position.z, tag, false)
+    case ChangeBlock(Position(x, y, z), tag) =>
+      mca.getChunk(x >> 4, z >> 4).setBlockStateAt(x, y, z, tag, false)
+      cleanupNeeded = true
 
     case FindFirstSolidBlockPositionUnder(Position(x, y, z)) =>
       val chunk = mca.getChunk(x >> 4, z >> 4)
