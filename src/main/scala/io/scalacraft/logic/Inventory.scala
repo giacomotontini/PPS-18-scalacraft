@@ -110,10 +110,10 @@ trait Inventory {
   }
 
   //Retrieve all items, included non inventory one (like crafting output, armors etc.)
-  def retrieveAllItems(): List[Option[InventoryItem]] = inventory.toList
+  def retrieveAllItems(): List[Option[InventoryItem]] = inventory.map(identity).toList
 
   def retrieveInventoryItems(): List[Option[InventoryItem]] = {
-    inventory.takeRight(mainHotInventoryRange.HotBarSlotRange.length + mainHotInventoryRange.MainInventorySlotRange.length).toList
+    inventory.takeRight(mainHotInventoryRange.HotBarSlotRange.length + mainHotInventoryRange.MainInventorySlotRange.length).map(identity).toList
   }
 
   def findAvailableIndex(): List[Int] = List()
@@ -127,6 +127,20 @@ trait InventoryWithPlayerInventory extends Inventory {
   //When an inventory with inventory section is opened, the player inventory's items should be moved here
   def addPlayerInventory(playerInventoryItems: List[Option[InventoryItem]]): Unit = {
     playerInventoryItems.zipWithIndex.foreach(item => inventory.update(item._2 + mainHotInventoryRange.MainInventorySlotRange.start, item._1))
+  }
+
+  override def findAvailableIndex(): List[Int] = {
+    (for {
+      i <- (mainHotInventoryRange.HotBarSlotRange ++ mainHotInventoryRange.MainInventorySlotRange)
+      if inventory(i).isEmpty
+    } yield i).toList
+  }
+
+  override def findItemsIndex(itemId: Int): List[Int] = {
+    (for {
+      i <- (mainHotInventoryRange.HotBarSlotRange ++ mainHotInventoryRange.MainInventorySlotRange)
+      if inventory(i).isDefined && inventory(i).get.itemId == itemId
+    } yield i).toList
   }
 }
 
@@ -173,13 +187,13 @@ object PlayerInventory extends MainHotRange with CraftingRange {
   private[logic] def OffhandSlot = 45
 }
 
-case class PlayerInventory() extends InventoryWithCrafting {
+case class PlayerInventory() extends InventoryWithPlayerInventory with InventoryWithCrafting {
   import PlayerInventory._
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(OffhandSlot + 1)(None: Option[InventoryItem])
   override protected val mainHotInventoryRange: MainHotRange = PlayerInventory
   override protected val craftingRange: CraftingRange = PlayerInventory
-  def id: Int = PlayerInventory.Id
+  override def id: Int = PlayerInventory.Id
 
   def findHeldItemId(hotSlot: Int): Option[Int] = {
     inventory(hotSlot + HotBarSlotRange.start).map(_.itemId)
@@ -194,30 +208,9 @@ case class PlayerInventory() extends InventoryWithCrafting {
     }
   }
 
-  //used when and inventory like CraftingTableInventory is closed: the player inventory items must be moved back here.
-  def replaceInventoryItems(inventoryItems: List[Option[InventoryItem]]): Unit = {
-    inventoryItems.zipWithIndex.foreach(item => inventory.update(item._2 + mainHotInventoryRange.MainInventorySlotRange.start, item._1))
-  }
-
-  override def findAvailableIndex(): List[Int] = {
-    (for {
-      i <- (HotBarSlotRange ++ MainInventorySlotRange)
-      if inventory(i).isEmpty
-    } yield i).toList
-  }
-
-  override def findItemsIndex(itemId: Int): List[Int] = {
-    (for {
-      i <- (HotBarSlotRange ++ MainInventorySlotRange)
-      if inventory(i).isDefined && inventory(i).get.itemId == itemId
-    } yield i).toList
-  }
-
   override def retrieveInventoryItems(): List[Option[InventoryItem]] = {
     inventory.dropRight(1).takeRight(HotBarSlotRange.length + MainInventorySlotRange.length).toList
   }
-
-
 }
 
 
@@ -231,7 +224,7 @@ object CraftingTableInventory extends MainHotRange with CraftingRange {
 case class CraftingTableInventory(id: Int) extends InventoryWithPlayerInventory with InventoryWithCrafting {
   import CraftingTableInventory._
 
-  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end)(None: Option[InventoryItem])
+  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
   override protected val mainHotInventoryRange: MainHotRange = CraftingTableInventory
   override protected val craftingRange: CraftingRange = CraftingTableInventory
 }
@@ -244,7 +237,7 @@ object Chest extends MainHotRange {
 case class Chest(id: Int) extends InventoryWithPlayerInventory {
   import Chest._
 
-  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end)(None: Option[InventoryItem])
+  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
   override protected val mainHotInventoryRange: MainHotRange = Chest
   override def inventoryClosed(): Any = {}
 }
@@ -257,7 +250,7 @@ object LargeChest extends MainHotRange {
 case class LargeChest(id: Int) extends InventoryWithPlayerInventory {
   import LargeChest._
 
-  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end)(None: Option[InventoryItem])
+  override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
   override protected val mainHotInventoryRange: MainHotRange = LargeChest
   override def inventoryClosed(): Any = {}
 

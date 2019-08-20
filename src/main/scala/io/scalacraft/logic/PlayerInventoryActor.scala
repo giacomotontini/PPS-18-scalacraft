@@ -1,12 +1,14 @@
 package io.scalacraft.logic
 
 import akka.actor.{ActorRef, Props}
-import io.scalacraft.logic.messages.Message.{RetrieveHeldItemId, UseHeldItem}
+import io.scalacraft.logic.messages.Message.{PopulatePlayerInventory, RetrieveHeldItemId, UseHeldItem}
+import io.scalacraft.logic.traits.CraftingInventoryActor
 import io.scalacraft.packets.serverbound.PlayPackets.HeldItemChange
 
-class PlayerInventoryActor(override protected val playerActorRef: ActorRef) extends CraftingInventoryActor(PlayerInventory.Id, playerActorRef) {
-  override protected val inventory: PlayerInventory = PlayerInventory()
-  override protected val craftingOutputSlot: Int = PlayerInventory.CraftingOutputSlot
+class PlayerInventoryActor(val playerActorRef: ActorRef) extends CraftingInventoryActor {
+  protected val inventory = PlayerInventory()
+  protected val craftingOutputSlot: Int = PlayerInventory.CraftingOutputSlot
+  protected val id: Int = PlayerInventory.Id
   private var heldSlot: Int = 0
 
 
@@ -17,6 +19,9 @@ class PlayerInventoryActor(override protected val playerActorRef: ActorRef) exte
       sender ! inventory.findHeldItemId(heldSlot)
     case UseHeldItem =>
       sender ! inventory.useOneHeldItem(heldSlot)
+    case PopulatePlayerInventory(inventoryItems: List[Option[InventoryItem]]) =>
+      inventory.addPlayerInventory(inventoryItems)
+      updateClientInventory()
   }
 
   override def receive: Receive = playerInventoryReceive orElse defaultBehaviour

@@ -1,17 +1,14 @@
-package io.scalacraft.logic
+package io.scalacraft.logic.traits
 
-import akka.actor.{ActorRef, Props}
-import io.scalacraft.logic.messages.Message.{ForwardToClient, _}
-import io.scalacraft.logic.traits.InventoryActor
+import io.scalacraft.logic.messages.Message.ForwardToClient
+import io.scalacraft.logic.{InventoryItem, InventoryWithCrafting, RecipeManager}
 import io.scalacraft.packets.DataTypes.Slot
 import io.scalacraft.packets.clientbound.PlayPackets.ConfirmTransaction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindow
 
-class CraftingInventoryActor(val id: Int, protected val playerActorRef: ActorRef) extends InventoryActor {
-  override protected val inventory: InventoryWithCrafting = CraftingTableInventory(id)
-  protected val craftingOutputSlot: Int = CraftingTableInventory.CraftingOutputSlot
-
-  override def receive: Receive = defaultBehaviour
+trait CraftingInventoryActor extends InventoryActor {
+  protected val inventory: InventoryWithCrafting
+  protected val craftingOutputSlot: Int
 
   override def addItem(inventoryItem: InventoryItem): Unit = {
     super.addItem(inventoryItem)
@@ -32,6 +29,11 @@ class CraftingInventoryActor(val id: Int, protected val playerActorRef: ActorRef
     updateClientInventory()
   }
 
+  override def closeWindow(): Unit = {
+    inventory.clearSlot(craftingOutputSlot)
+    super.closeWindow()
+  }
+
   private def scanCraftingArea(): Unit = {
     val craftingItems = inventory.retrieveCraftingItems()
     inventory.clearCrafted()
@@ -42,11 +44,4 @@ class CraftingInventoryActor(val id: Int, protected val playerActorRef: ActorRef
       }
     }
   }
-}
-
-object CraftingInventoryActor {
-
-  def props(id: Int, userContext: ActorRef): Props = Props(new CraftingInventoryActor(id, userContext))
-
-  def name(id: Int): String = s"CraftingInventory-$id"
 }

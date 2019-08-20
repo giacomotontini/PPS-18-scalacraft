@@ -24,13 +24,12 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   import Player._
 
   private val world = context.parent
-  private val inventoryActor = context.actorOf(PlayerInventoryActor.props(self))
   private var userContext: ActorRef = _
 
   private var playerEntityId = 0
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = -20
-  private var posY: Int = 80
+  private var posX: Int = -10
+  private var posY: Int = 70
   private var posZ: Int = 20
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
@@ -45,8 +44,10 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   private var lastKeepAliveId: Long = _
 
   private var loadedChunks: Set[(Int, Int)] = Set()
+  private var activeInventories: Map[Int, ActorRef] = Map(PlayerInventory.Id -> context.actorOf(PlayerInventoryActor.props(self)))
 
   private val randomGenerator = Random
+  private var lastWindowId = 1
 
   private def preStartBehaviour: Receive = {
     case RequestJoinGame(playerEntityId, playerUserContext) =>
@@ -59,7 +60,6 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       world ! JoiningGame
       // userContext ! cb.PluginMessage("minecraft:brand", Array(7, 118, 97, 110, 105, 108, 108, 97))
       // userContext ! cb.PlayerAbilities(0)
-
     case clientSettings: ClientSettings =>
       locale = clientSettings.locale
       mainHand = clientSettings.mainHand
@@ -133,20 +133,21 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       this.yaw = yaw
       this.pitch = pitch
       this.onGround = onGround
-    case msg: sb.HeldItemChange => inventoryActor.forward(msg)
+    case msg: sb.HeldItemChange => activeInventories(PlayerInventory.Id).forward(msg)
     case playerDigging@PlayerDigging(status, position, face) =>
       digging = Some(status)
-      (inventoryActor ? RetrieveHeldItemId) map(_.asInstanceOf[Option[Int]]) onComplete {
+      ( activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId) map(_.asInstanceOf[Option[Int]]) onComplete {
         case Success(heldItemId) =>
           world ! PlayerDiggingWithItem(playerEntityId, playerDigging, heldItemId)
           log.info("User: {} {} digging", username, status)
         case Failure(exception) => log.warning("Failed to retrieve held item.")
       }
     case msg: PlayerBlockPlacement =>
-      (inventoryActor ? UseHeldItem).map(_.asInstanceOf[Option[Int]]) onComplete {
+      ( activeInventories(PlayerInventory.Id) ? UseHeldItem).map(_.asInstanceOf[Option[Int]]) onComplete {
         case Success(Some(itemId)) =>
           world ! BlockPlacedByUser(msg, itemId, username)
-        case Success(None) => //held air
+        case Success(None) => //interaction with entities
+         lastWindowId = openCraftingTableWindow()  // TODO: do only if is a crafting table
         case Failure(exception) => log.warning("Failed to retrieve placed block type.")
       }
     case animation: sb.Animation =>
@@ -155,12 +156,14 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       case CollectItemWithType(collectItem, itemId) =>
         userContext.forward(collectItem)
         if (collectItem.collectorEntityId == playerEntityId) {
-          inventoryActor ! AddItem(InventoryItem(itemId, collectItem.pickUpItemCount))
+          activeInventories(PlayerInventory.Id) ! AddItem(InventoryItem(itemId, collectItem.pickUpItemCount))
         }
       case _ => userContext ! msg
     }
-    case msg: ClickWindow if msg.windowId == PlayerInventory.Id => inventoryActor forward(msg)
-    case msg: CloseWindow if msg.windowId == PlayerInventory.Id => inventoryActor forward(msg)
+    case msg: ClickWindow if activeInventories.contains(msg.windowId) =>
+      activeInventories(msg.windowId) forward(msg)
+    case msg: CloseWindow if activeInventories.contains(msg.windowId) =>
+      activeInventories(msg.windowId) forward(msg)
     case timeUpdate: TimeUpdate => userContext forward timeUpdate
     case RemovePlayer =>
       world ! LeavingGame
@@ -179,6 +182,19 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     if (Y_ROT) flags = (flags | 0x08).toByte
     if (X_ROT) flags = (flags | 0x10).toByte
     flags
+  }
+
+  private def openCraftingTableWindow(): Int = {
+    val windowId = lastWindowId + 1
+    val playerInventoryActorRef = activeInventories(PlayerInventory.Id)
+    activeInventories +=  (windowId -> context.actorOf(CraftingTableActor.props(windowId, self, playerInventoryActorRef)))
+    (activeInventories(PlayerInventory.Id) ? RetrieveInventoryItems).map(_.asInstanceOf[List[Option[InventoryItem]]]) onComplete {
+      case Success(inventory) =>
+        activeInventories(windowId) ! PopulatePlayerInventory(inventory)
+      case _ => log.warning("Failed to retrieve inventory items.")
+    }
+    userContext ! OpenWindows(windowId, CraftingTable("{\"translate\":\"block.minecraft.crafting_table.name\"}", 0))
+    windowId
   }
 
   private def reset(): Unit = {

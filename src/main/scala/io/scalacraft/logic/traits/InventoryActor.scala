@@ -1,7 +1,7 @@
 package io.scalacraft.logic.traits
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
-import io.scalacraft.logic.messages.Message.{AddItem, ForwardToClient, RemoveItem, RetrieveAllItems}
+import io.scalacraft.logic.messages.Message.{AddItem, ForwardToClient, RemoveItem, RetrieveAllItems, RetrieveInventoryItems}
 import io.scalacraft.logic.{Inventory, InventoryItem}
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}
 import io.scalacraft.packets.clientbound.PlayPackets.{ConfirmTransaction, SetSlot}
@@ -20,6 +20,8 @@ trait InventoryActor extends Actor with ActorLogging with DefaultTimeout with Im
       removeItem(slotIndex, inventoryItem)
     case RetrieveAllItems =>
       sender ! inventory.retrieveAllItems()
+    case RetrieveInventoryItems =>
+      sender ! inventory.retrieveInventoryItems()
     case CloseWindow(_) =>
       closeWindow()
     case click@ClickWindow(_, slot, _, actionNumber, _, clickedItem) =>

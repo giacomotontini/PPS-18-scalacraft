@@ -48,9 +48,13 @@ object Message {
 
   case class RetrieveAllItems() extends Message
 
+  case class RetrieveInventoryItems() extends Message
+
   case class RetrieveHeldItemId() extends Message
 
   case class UseHeldItem() extends Message
+
+  case class PopulatePlayerInventory(inventory: List[Option[InventoryItem]])
 
 
 }
