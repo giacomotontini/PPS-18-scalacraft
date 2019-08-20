@@ -43,5 +43,6 @@ lazy val dependencies = Seq(
   "io.circe"                   %% "circe-core"      % circeVersion,
   "io.circe"                   %% "circe-generic"   % circeVersion,
   "io.circe"                   %% "circe-parser"    % circeVersion,
-  "com.github.scopt"           %% "scopt"           % scoptVersion
+  "com.github.scopt"           %% "scopt"           % scoptVersion,
+  "it.unibo.alice.tuprolog"    %  "tuprolog"        % "3.3.0"
 )

@@ -65,9 +65,12 @@ private[scalacraft] object Helpers {
   implicit class RichNbtCompoundTag(nbtTag: CompoundTag) {
     val treeTypes = List("birch","oak","spruce")
     private[this] def checkIfIsASpecificTypeOfBlock(tagValue: String):Boolean = {
-      val waterStringTag = new StringTag()
-      waterStringTag.setValue(tagValue)
-      nbtTag.entrySet().stream().anyMatch(elem => elem.getValue.equals(waterStringTag))
+      if(nbtTag != null) {
+        val waterStringTag = new StringTag()
+        waterStringTag.setValue(tagValue)
+        nbtTag.entrySet().stream().anyMatch(elem => elem.getValue.equals(waterStringTag))
+      }
+      else false
     }
     def isWater: Boolean = {
      checkIfIsASpecificTypeOfBlock("minecraft:water")
@@ -104,6 +107,9 @@ private[scalacraft] object Helpers {
     }
     def areFlowers: Boolean = {
       isDandelion || isGrass || isOxyeDaisy || isPoppy
+    }
+    def emptyCube: Boolean = {
+      areFlowers || isAir || isGrass
     }
   }
 

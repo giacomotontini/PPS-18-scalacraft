@@ -56,7 +56,7 @@ object Message {
     }
   }
   case class SkyStateUpdate(state: SkyUpdateState) extends Message
-  case class RequestNearbyPoints(x:Int, y:Int, z:Int, oldX:Int, oldY:Int, oldZ:Int) extends Message
+  case class RequestNearbyPoints(x:Int, y:Int, z:Int, oldX:Int, oldZ:Int) extends Message
   case class Height(x:Int, y:Int, z:Int) extends Message
 
 }

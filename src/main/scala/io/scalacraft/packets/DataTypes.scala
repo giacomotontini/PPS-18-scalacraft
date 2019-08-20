@@ -6,8 +6,6 @@ import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations._
 import net.querz.nbt.Tag
 
-import scala.reflect.api.Positions
-
 object DataTypes {
   type Chat = String
   type Identifier = String

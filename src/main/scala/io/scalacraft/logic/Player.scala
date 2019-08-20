@@ -195,8 +195,8 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       val chunkX = posX >> 4
       val chunkZ =  posZ >> 4
       lastPosition = (posX, posZ)
-      val newChunks = (for (x <- chunkX - viewDistance until chunkX + viewDistance;
-           z <- chunkZ - viewDistance until chunkZ + viewDistance) yield (x, z)).toSet
+      val newChunks = (for (x <- chunkX - viewDistance to chunkX + viewDistance;
+           z <- chunkZ - viewDistance to chunkZ + viewDistance) yield (x, z)).toSet
       val toUnload = loadedChunks diff newChunks
       val toLoad = newChunks diff loadedChunks
       loadedChunks = newChunks

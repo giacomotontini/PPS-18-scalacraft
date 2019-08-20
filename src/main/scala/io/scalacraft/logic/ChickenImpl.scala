@@ -89,7 +89,7 @@ class ChickenImpl(entityId: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boo
     }
     for(i <- 1 to 8) {
       context.system.scheduler.scheduleOnce(i * 250 millisecond) {
-        world.ask(RequestNearbyPoints(posX, posY, posZ, oldPosX, oldPosY, oldPosZ))(timeout = 10000 millisecond) onComplete {
+        world.ask(RequestNearbyPoints(posX, posY, posZ, oldPosX, oldPosZ))(timeout = 10000 millisecond) onComplete {
           case Success(nearbyPoints: List[Position]) =>
             if (nearbyPoints.nonEmpty) {
               doMove(nearbyPoints(randomGenerator.nextInt(nearbyPoints.size)))
