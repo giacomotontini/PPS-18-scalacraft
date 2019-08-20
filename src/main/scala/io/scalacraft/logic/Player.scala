@@ -4,7 +4,6 @@ import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Timers}
 import akka.pattern._
 import io.scalacraft.logic.DiggingManager.Message.PlayerDiggingWithItem
 import io.scalacraft.logic.Player.Message.CollectItemWithType
-import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldItemId, UseHeldItem}
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
@@ -13,7 +12,6 @@ import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
-import net.querz.nbt.CompoundTag
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

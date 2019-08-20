@@ -3,6 +3,7 @@ package io.scalacraft.logic.messages
 import java.util.UUID
 
 import akka.actor.ActorRef
+import io.scalacraft.logic.InventoryItem
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.serverbound.PlayPackets.{Animation, PlayerBlockPlacement}
 
@@ -37,6 +38,19 @@ object Message {
   case class  OnlinePlayers(number: Int) extends Message
   
   case object RequestEntityId extends Message
+
+
+  /* ------------------------------------------------ Inventories -------------------------------------------------- */
+
+  case class AddItem(inventoryItem: InventoryItem) extends Message
+
+  case class RemoveItem(slotIndex: Int, inventoryItem: InventoryItem) extends Message
+
+  case class RetrieveAllItems() extends Message
+
+  case class RetrieveHeldItemId() extends Message
+
+  case class UseHeldItem() extends Message
 
 
 }

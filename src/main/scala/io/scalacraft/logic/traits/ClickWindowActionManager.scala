@@ -1,6 +1,6 @@
 package io.scalacraft.logic.traits
 
-import io.scalacraft.logic.{CraftingInventory, Inventory, InventoryItem}
+import io.scalacraft.logic.{InventoryWithCrafting, Inventory, InventoryItem}
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction.{LeftMouseClick, LeftMouseDrag, RightMouseClick, RightMouseDrag}
@@ -54,68 +54,74 @@ trait ClickWindowActionManager {
     }
   }
 
-  def splitSlotItems(slot: Int, slotItems: SlotData): Slot = {
+  private def splitSlotItems(slot: Int, slotItems: SlotData): Slot = {
     log.debug("Splitting items.")
     val movingQuantityLeft: Int = (slotItems.itemCount + 1) / 2 // the highest half of items are kept on hand
     inventory.removeItem(slot, InventoryItem(slotItems.itemId, movingQuantityLeft))
     Some(SlotData(slotItems.itemId, movingQuantityLeft, new CompoundTag()))
   }
 
-  def handleAction(action: ClickWindowAction, slot: Int, slotItems: Slot): Unit = {
-    action match {
-      case LeftMouseClick(_) | LeftMouseDrag(true, false) =>
-        slotItems match {
-          case Some(slotItems) =>
-            holdItems match {
-              case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
-                this.holdItems = groupItems(slot, holdItems)
-              case Some(holdItems) =>
-                this.holdItems = swapHoldItems(slot, holdItems, slotItems)
-              case None =>
-                holdItems = holdNewItems(slot, slotItems)
-            }
-          case None if holdItems.isDefined =>
-            holdItems = releaseNewItems(slot, holdItems.get)
-          case None =>
-        }
+  def handleAction(action: ClickWindowAction, slot: Int, slotItems: Slot, craftingSlot: Boolean = false): Unit = {
 
-      case RightMouseClick(_) | RightMouseDrag(true, false) =>
-        slotItems match {
-          case Some(slotItems) =>
-            holdItems match {
-              case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
-                this.holdItems = releaseNewItems(slot, holdItems, oneByOne = true)
-              case Some(holdItems) =>
-                this.holdItems = swapHoldItems(slot, holdItems, slotItems)
-              case None =>
-                holdItems = splitSlotItems(slot, slotItems)
-            }
-          case None if holdItems.isDefined =>
-            holdItems = releaseNewItems(slot, holdItems.get, oneByOne = true)
-          case None => //ignored
-        }
-      case _ => //ignored
-    }
-  }
+    def _handleAction(): Unit = {
+      action match {
+        case LeftMouseClick(_) | LeftMouseDrag(true, false) =>
+          slotItems match {
+            case Some(slotItems) =>
+              holdItems match {
+                case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
+                  this.holdItems = groupItems(slot, holdItems)
+                case Some(holdItems) =>
+                  this.holdItems = swapHoldItems(slot, holdItems, slotItems)
+                case None =>
+                  holdItems = holdNewItems(slot, slotItems)
+              }
+            case None if holdItems.isDefined =>
+              holdItems = releaseNewItems(slot, holdItems.get)
+            case None =>
+          }
 
-
-  def handleActionOnCraftingSlot(action: ClickWindowAction, craftingSlot: Int, slotItems: Slot): Unit = {
-    action match {
-      case LeftMouseClick(_) | LeftMouseDrag(true, false) | RightMouseClick(_) | RightMouseDrag(true, false) =>
-        slotItems match {
-          case Some(slotItems) =>
-            holdItems match {
-              case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
-                this.holdItems = Some(SlotData(holdItems.itemId, holdItems.itemCount + slotItems.itemCount, new CompoundTag))
-              case None =>
-                holdItems = holdNewItems(craftingSlot, slotItems)
-            }
-            inventory.asInstanceOf[CraftingInventory].craftingAccepted()
-          case None => //ignored
-        }
-      case _ => //ignored
+        case RightMouseClick(_) | RightMouseDrag(true, false) =>
+          slotItems match {
+            case Some(slotItems) =>
+              holdItems match {
+                case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
+                  this.holdItems = releaseNewItems(slot, holdItems, oneByOne = true)
+                case Some(holdItems) =>
+                  this.holdItems = swapHoldItems(slot, holdItems, slotItems)
+                case None =>
+                  holdItems = splitSlotItems(slot, slotItems)
+              }
+            case None if holdItems.isDefined =>
+              holdItems = releaseNewItems(slot, holdItems.get, oneByOne = true)
+            case None => //ignored
+          }
+        case _ => //ignored
+      }
     }
 
-  }
+    def _handleActionOnCraftingSlot(): Unit = {
+      action match {
+        case LeftMouseClick(_) | LeftMouseDrag(true, false) | RightMouseClick(_) | RightMouseDrag(true, false) =>
+          slotItems match {
+            case Some(slotItems) =>
+              holdItems match {
+                case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
+                  this.holdItems = Some(SlotData(holdItems.itemId, holdItems.itemCount + slotItems.itemCount, new CompoundTag))
+                case None =>
+                  holdItems = holdNewItems(slot, slotItems)
+              }
+              inventory.asInstanceOf[InventoryWithCrafting].craftingAccepted()
+            case None => //ignored
+          }
+        case _ => //ignored
+      }
+    }
 
+    if (craftingSlot) {
+      _handleActionOnCraftingSlot()
+    } else {
+      _handleAction()
+    }
+  }
 }
