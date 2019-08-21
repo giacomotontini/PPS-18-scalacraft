@@ -2,7 +2,9 @@ package io.scalacraft.loaders
 
 import io.circe.parser
 import io.circe.generic.auto._
+
 import scala.io.Source
+import scala.language.postfixOps
 
 object Items {
 
@@ -20,4 +22,9 @@ object Items {
   def getStorableItemById(itemId: Int): StorableItem = {
     storableItems(itemId)
   }
+
+  def getItemByNamespace(name: String): StorableItem = {
+    storableItems find { "minecraft:" + _.name == name } get
+  }
+
 }
