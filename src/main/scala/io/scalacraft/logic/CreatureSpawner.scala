@@ -11,7 +11,6 @@ import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.CreatureInstances
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
-import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.Future
 import scala.concurrent.Future._
@@ -65,7 +64,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
       val (updatedMap, _) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
       numberOfPlayersInChunk = updatedMap
-      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && chunkX == MCAUtil.blockToChunk(1015) && chunkZ == MCAUtil.blockToChunk(1068)) {
+      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ)) {
         val spawnedMobFuture = context.parent.ask(RequestSpawnPoints(chunkX, chunkZ))(timeout).andThen {
           case Success(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]]) =>
             var spawnablePosition = biomeToSpawnPosition
@@ -82,11 +81,10 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
         }
         spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)
       } else {
-        /*spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete {
+        spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete {
           case Success(_) => askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
           case _ => //do nothing
-        }*/
-        senderRef ! List[SpawnMob]()
+        }
       }
 
     case PlayerUnloadedChunk(chunkX, chunkZ) =>

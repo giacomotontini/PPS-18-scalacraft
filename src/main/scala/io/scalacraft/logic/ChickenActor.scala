@@ -5,18 +5,17 @@ import java.util.UUID
 import akka.actor.{Actor, ActorRef, Props, Timers}
 import io.scalacraft.logic.messages.Message.{AskResponse, DespawnCreature, GetCreatureInChunk}
 import io.scalacraft.logic.traits.ai.ChickenAI
-import io.scalacraft.logic.traits.creatures.FarmAnimal
-import io.scalacraft.logic.traits.entities.ChickenEntity
+import io.scalacraft.logic.traits.creatures.{CreatureParameters, FarmAnimal}
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.packets.DataTypes.Angle
 import io.scalacraft.packets.clientbound.PlayPackets._
 import net.querz.nbt.mca.MCAUtil
 
 class ChickenActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
-  extends Actor with Timers with ImplicitContext with DefaultTimeout with ChickenEntity with ChickenAI {
+  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters with ChickenAI {
   world = worldRef
-  entityId = id
-  uuid = UUID
+  val entityId: Int = id
+  val uuid: UUID = UUID
   metaData.isBaby = isBaby
   posX = x
   posY = y
@@ -24,6 +23,8 @@ class ChickenActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean,
   oldPosX = x
   oldPosY = y
   oldPosZ = z
+  val speed = 800 //speed u.d.m is 1/8000 block per 50ms: chicken's speed is 2 block/s
+  val pathMovesNumber = 8
 
   private[this] def sendAnOptionAskResponseIfIsMyChunk[T](chunkX: Int, chunkZ: Int, sender: ActorRef, response: T): Unit = {
     def isMyChunk(chunkX: Int, chunkZ: Int): Boolean = {
@@ -48,7 +49,7 @@ class ChickenActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean,
       sendAnOptionAskResponseIfIsMyChunk[DestroyEntities](chunkX, chunkZ, sender, destroyEntityPacket)
   }
 
-  override def receive: Receive = baseBehaviour orElse (movementAiBehaviour)
+  override def receive: Receive = baseBehaviour orElse (aiBehaviour)
 }
 
 object ChickenActor extends FarmAnimal {
