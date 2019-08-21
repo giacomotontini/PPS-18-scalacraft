@@ -3,7 +3,6 @@ package io.scalacraft.logic.traits.creatures
 import java.util.UUID
 
 import akka.actor.{ActorRef, Props}
-import io.scalacraft.logic.World
 import io.scalacraft.packets.DataTypes
 import io.scalacraft.packets.DataTypes.Position
 
@@ -22,7 +21,7 @@ trait Creature {
   def spawn(spawnCreatureParameters: SpawnCreatureParameters): SpawnCreatureResult= {
     var unusedPositions: Map[Int, Set[(Position, Boolean)]] = Map()
     var actorToSpawn: Set[(Props, String)] = Set()
-    for (biomeAndPosition <- spawnCreatureParameters.biomeToSpawnPosition
+    /*for (biomeAndPosition <- spawnCreatureParameters.biomeToSpawnPosition
          if spawnableBiomes.keySet.contains(biomeAndPosition._1)) yield {
       var positions = spawnCreatureParameters.positionFilter(biomeAndPosition._2)
       val biome = biomeAndPosition._1
@@ -33,13 +32,14 @@ trait Creature {
         positions -= position
         unusedPositions ++= Map(biome -> biomeAndPosition._2.diff(positions.map(position => (position, false))))
       }
-    }
+    }*/
+    actorToSpawn ++= spawnCreatureParameters.spawnPolicy(Position(1015, 65, 1068))
     SpawnCreatureResult(unusedPositions, actorToSpawn)
   }
 }
 trait FarmAnimal extends Creature {
   override def spawnableBiomes: Map[Int, Double] = Map(1 -> 0.33, 4 -> 0.25, 5 -> 0.13 )
-  val spawnNumber = 4
+  val spawnNumber = 1 //4
   val spawnBabyPercentage = 0.1
   def spawn(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]], world: ActorRef): SpawnCreatureResult = {
     val spawnGroup: Position => Set[(Props, String)] = {

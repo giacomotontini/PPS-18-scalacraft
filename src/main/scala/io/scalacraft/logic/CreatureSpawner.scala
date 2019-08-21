@@ -1,7 +1,5 @@
 package io.scalacraft.logic
 
-import java.util.UUID
-
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
@@ -67,16 +65,8 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
       val (updatedMap, _) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
       numberOfPlayersInChunk = updatedMap
-      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && chunkX == MCAUtil.blockToChunk(1019) && chunkZ == MCAUtil.blockToChunk(1067)) {
-        /*CreatureInstances.creatureInstances.foreach{
-          case farmAnimal: FarmAnimal =>
-            val uuid = UUID.randomUUID()
-            val actor = context.actorOf(farmAnimal.props(123, uuid, 1019, 65, 1067, world = context.parent), farmAnimal.name(uuid))
-            spawnedActor ++= Set(actor)
-        }
-        askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
-        chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)*/
-       /* val spawnedMobFuture = (context.parent.ask(RequestSpawnPoints(chunkX, chunkZ))(timeout)).andThen {
+      if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && chunkX == MCAUtil.blockToChunk(1015) && chunkZ == MCAUtil.blockToChunk(1068)) {
+        val spawnedMobFuture = context.parent.ask(RequestSpawnPoints(chunkX, chunkZ))(timeout).andThen {
           case Success(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]]) =>
             var spawnablePosition = biomeToSpawnPosition
             CreatureInstances.creatureInstances.foreach {
@@ -90,14 +80,14 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
             askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
             chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)
         }
-        spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)*/
+        spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)
       } else {
         /*spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete {
           case Success(_) => askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
           case _ => //do nothing
         }*/
         senderRef ! List[SpawnMob]()
-     }
+      }
 
     case PlayerUnloadedChunk(chunkX, chunkZ) =>
       val senderRef = sender

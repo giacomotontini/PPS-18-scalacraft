@@ -85,7 +85,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
       players.foreach(player => player._2._2 forward entityLookAndRelativeMove)
     case entityVelocity: EntityVelocity =>
       players.foreach(player => player._2._2 forward entityVelocity)
-    case requestNearbyPoints @ RequestNearbyPoints(posX,_, posZ, _,_,_) => regions(MCAUtil.blockToRegion(posX), MCAUtil.blockToRegion(posZ)) forward requestNearbyPoints
+    case requestNearbyPoints @ RequestNearbyPoints(posX,_, posZ, _,_) => regions(MCAUtil.blockToRegion(posX), MCAUtil.blockToRegion(posZ)) forward requestNearbyPoints
     case entityLook: EntityLook =>
       players.foreach(player => player._2._2 forward entityLook)
     case entityHeadLook: EntityHeadLook =>
