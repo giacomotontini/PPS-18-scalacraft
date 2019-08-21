@@ -4,10 +4,15 @@ import java.io.{InputStream, OutputStream}
 
 import io.scalacraft.packets.DataTypes.VarInt
 import net.querz.nbt.{CompoundTag, ListTag, StringTag, Tag}
+import io.scalacraft.packets.DataTypes.{Angle, VarInt}
+import net.querz.nbt.{ListTag, Tag}
 
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 private[scalacraft] object Helpers {
+
+  private val random = new Random
 
   def hex2bytes(hex: String): Array[Byte] = {
     hex.replaceAll("[^0-9A-Fa-f]", "")
@@ -61,6 +66,10 @@ private[scalacraft] object Helpers {
   }
 
   def listTagToList[T <: Tag[_]](listTag: ListTag[T]): List[T] = listTag.iterator().asScala.toList
+
+  def randomAngle: Angle = Angle(random.nextInt() % 256)
+
+  def randomVelocity: Int = random.nextInt(4096) - 2048
 
   implicit class RichNbtCompoundTag(nbtTag: CompoundTag) {
     val treeTypes = List("birch","oak","spruce")

@@ -3,7 +3,6 @@ package io.scalacraft.logic
 import java.io.FileInputStream
 
 import alice.tuprolog.{Prolog, SolveInfo, Struct, Term, Theory}
-import io.scalacraft.Scala2P
 import io.scalacraft.packets.DataTypes.Position
 
 private[this] object ScalaToProlog {
@@ -49,7 +48,7 @@ private[this] object ScalaToProlog {
 }
 
 class ComputeCreatureMoves(toAssert: Seq[String]) {
-  import Scala2P._
+  import ScalaToProlog._
   val FileName = "src/main/resources/computeMoves.pl"
   private val engine = mkPrologEngine(new Theory(new FileInputStream(FileName)))
   assertions(toAssert)

@@ -4,7 +4,7 @@ import io.scalacraft.packets.DataTypes.Angle
 import org.scalatest.{FlatSpec, Matchers}
 import io.scalacraft.logic.traits.ai.general.Movement._
 class ComputeCreaturesAngleSpec extends FlatSpec with Matchers{
-  
+
   behavior of("A method that computes creature angle")
 
   it should "get the correct yaw angle" in {

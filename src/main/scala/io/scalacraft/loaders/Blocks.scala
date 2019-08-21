@@ -2,48 +2,83 @@ package io.scalacraft.loaders
 
 import io.circe.generic.auto._
 import io.circe.parser
+import io.scalacraft.packets.DataTypes.BlockStateId
 import net.querz.nbt.CompoundTag
 
 import scala.io.Source
+import scala.language.postfixOps
 
-object Blocks {
+object Blocks extends App {
 
-  private case class State(properties: Option[Map[String, String]], id: Int, default: Option[Boolean])
+  case class State(default: Boolean, id: BlockStateId, properties: Map[String, String])
 
-  private case class Block(states: List[State], properties: Option[Map[String, List[String]]])
+  case class BreakingProperties(canBeHarvested: Boolean, dropSomething: Boolean, value: Float)
 
-  //The index represents the block id, the compound tag represents the block state
+  case class Drop(minDrop: Option[Float], maxDrop: Option[Float], namespace: String, `type`: String)
+
+  case class Block(blastResistance: Option[Float],
+                   blockId: Int,
+                   breaking: Map[String, BreakingProperties],
+                   drops: List[Drop],
+                   gravity: Boolean,
+                   hardness: Option[Float],
+                   light: Int,
+                   name: String,
+                   namespace: String,
+                   renewable: Boolean,
+                   stackable: Int,
+                   states: List[State],
+                   tool: Option[String],
+                   tool2: Option[String],
+                   transparent: Boolean,
+                   `type`: Option[String])
+
+
+  private lazy val blocks = {
+    val content = Source.fromInputStream(getClass.getResourceAsStream("/data/blocks.json")).mkString
+    val Right(blocks) = parser.decode[List[Block]](content)
+    blocks
+  }
+
   private lazy val compoundTagList = {
-    val content = Source.fromInputStream(getClass.getResourceAsStream("/blocks.json")).mkString
-    val Right(blocksMap) = parser.decode[Map[String, Block]](content)
+    blocks.flatMap { block =>
+      block.states map { state =>
+        val compoundTag = new CompoundTag()
+        compoundTag.putString("Name", block.namespace)
 
-    blocksMap.flatMap {
-      case (blockName, blockObject) =>
-        blockObject.states map { blockState => {
-          val compoundTag = new CompoundTag()
-
-          compoundTag.putString("Name", blockName)
-          blockState.properties map { property =>
-            val innerTag = new CompoundTag()
-
-            property.foreach {
-              case (name, value) => innerTag.putString(name, value)
-            }
-
-            innerTag
-          } foreach { compoundTag.put("Properties", _) }
-          blockState.id -> compoundTag
+        if (state.properties.nonEmpty) {
+          val innerTag = new CompoundTag
+          state.properties foreach {
+            case (name, value) => innerTag.putString(name, value)
+          }
+          compoundTag.put("Properties", innerTag)
         }
+
+        state.id -> compoundTag
       }
-    }.toList sortBy(_._1) map(_._2)
+    } sortBy { case (id, _) => id } map { case (_, tag) => tag }
   }
 
-  def compoundTagFromId(id: Int): CompoundTag = {
-    compoundTagList(id)
+  def defaultCompoundTagFromName(name: String): Option[CompoundTag] =
+    blocks find { _.name == name } flatMap { _.states.find(_.default) } map { s => compoundTagFromBlockStateId(s.id) }
+
+  def compoundTagFromBlockStateId(blockStateId: BlockStateId): CompoundTag = compoundTagList(blockStateId)
+
+  def compoundTagFromBlockId(blockId: Int): CompoundTag = {
+    val defaultStateId = (blocks find { _.blockId == blockId } flatMap { _.states.find(_.default) } map { _.id }).get
+    compoundTagList(defaultStateId)
   }
 
-  def idFromCompoundTag(compoundTag: CompoundTag): Int = {
-    compoundTagList.indexOf(compoundTag)
+  def blockFromCompoundTag(compoundTag: CompoundTag): Block = blockFromStateId(stateIdFromCompoundTag(compoundTag))
+
+  def stateIdFromCompoundTag(compoundTag: CompoundTag): Int = {
+    val stateId = compoundTagList.indexOf(compoundTag)
+    assert(stateId >= 0)
+    stateId
   }
+
+  def blockFromStateId(stateId: BlockStateId): Block = blocks find { _.states.exists(_.id == stateId) } get
+
+  def blockFromBlockId(blockId: Int): Block = blocks(blockId)
 
 }

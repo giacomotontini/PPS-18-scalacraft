@@ -1,15 +1,21 @@
 package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, Props}
-import io.scalacraft.ComputeMoves
-import io.scalacraft.loaders.Chunks
-import io.scalacraft.logic.messages.Message.{Height, RequestChunkData, RequestNearbyPoints, RequestSpawnPoints}
+import io.scalacraft.loaders.{Blocks, Chunks}
+import io.scalacraft.logic.messages.Message.{RequestChunkData, RequestNearbyPoints, RequestSpawnPoints, _}
+import io.scalacraft.misc.Helpers
 import io.scalacraft.misc.Helpers._
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
+import net.querz.nbt.CompoundTag
 import net.querz.nbt.mca.{Chunk, MCAFile, MCAUtil}
 
 class Region(mca: MCAFile) extends Actor with ActorLogging {
+
+  private val airTag = Blocks.compoundTagFromBlockStateId(0)
+  private val world = context.parent
+
+  private var cleanupNeeded: Boolean = false
 
   private[this] def firstSpawnableHeight(chunk: Chunk, x: Int, z: Int): Int = {
     var yIndex = 255
@@ -28,12 +34,34 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
+
     case RequestChunkData(chunkX, chunkZ, fullChunk) =>
       val chunk = mca.getChunk(chunkX, chunkZ)
-      val (data, primaryBitMask) = Chunks.buildChunkDataStructureAndBitmask(chunk)
-      val entities = listTagToList(chunk.getEntities)
-      val chunkData = ChunkData(chunkX, chunkZ, fullChunk, primaryBitMask, data, entities)
-      sender ! chunkData
+      if (cleanupNeeded) chunk.cleanupPalettesAndBlockStates()
+
+      sender ! (if (chunk == null) ChunkNotPresent else {
+        val (data, primaryBitMask) = Chunks.buildChunkDataStructureAndBitmask(chunk)
+        val entities = Helpers.listTagToList(chunk.getEntities)
+
+        ChunkData(chunkX, chunkZ, fullChunk, primaryBitMask, data, entities)
+      })
+
+    case RequestBlockState(Position(x, y, z)) => sender ! mca.getChunk(x >> 4, z >> 4).getBlockStateAt(x, y, z)
+
+    case BreakBlockAtPosition(Position(x, y, z)) =>
+      mca.getChunk(x >> 4, z >> 4).setBlockStateAt(x, y, z, airTag, false)
+      cleanupNeeded = true
+      world ! BlockBrokenAtPosition(Position(x, y, z))
+
+    case ChangeBlock(Position(x, y, z), tag) =>
+      mca.getChunk(x >> 4, z >> 4).setBlockStateAt(x, y, z, tag, false)
+      cleanupNeeded = true
+
+    case FindFirstSolidBlockPositionUnder(Position(x, y, z)) =>
+      val chunk = mca.getChunk(x >> 4, z >> 4)
+      var currentY = y
+      while (!isSolidBlock(chunk.getBlockStateAt(x, currentY, z))) currentY -= 1
+      sender ! Position(x, currentY, z)
 
     case RequestSpawnPoints(chunkX, chunkZ) =>
       val chunkColumn = mca.getChunk(chunkX, chunkZ)
@@ -61,17 +89,16 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
       }
       val computeCreaturesMoves = new ComputeCreatureMoves(cubeStatesAssertions)
       sender ! computeCreaturesMoves.computeMoves(x,y,z)
-    case Height(x:Int, y:Int, z:Int) =>
-      val chunk = mca.getChunk(MCAUtil.blockToChunk(x), MCAUtil.blockToChunk(z))
-      val computeMoves = new ComputeMoves("src/main/resources/computeMoves.pl")
-      var cubeStatesAssertions = Seq[String]()
-      for(xzPair <- List((-1,0),(1,0),(0,1),(0,-1))){
-        val states = cubeStates(chunk, x+xzPair._1, y, z+xzPair._2)
-        cubeStatesAssertions ++= states
-      }
-      computeMoves.assertions(cubeStatesAssertions)
-      sender ! computeMoves.computeMoves(x,y,z)
+
+    case unhandled => log.warning(s"Unhandled message in Region: $unhandled")
   }
+
+  private def isSolidBlock(tag: CompoundTag): Boolean = tag match {
+    case `airTag` => false
+    case null => false
+    case _ => true
+  }
+
 }
 
 object Region {

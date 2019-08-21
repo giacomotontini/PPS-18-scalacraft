@@ -3,30 +3,34 @@ package io.scalacraft.logic
 import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
-import com.typesafe.scalalogging.LazyLogging
+import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.World.TimeTick
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
-import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLockAndRelativeMove, EntityLook, EntityRelativeMove, EntityVelocity, TimeUpdate}
+import io.scalacraft.packets.DataTypes.{EntityId, Position}
+import io.scalacraft.packets.clientbound.PlayPackets._
+import io.scalacraft.packets.serverbound.PlayPackets.{Face, PlayerBlockPlacement}
 import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLogging with ActorLogging with Timers {
+class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLogging with Timers {
 
   private val TimeUpdateInterval: Int = ServerConfiguration.TicksInSecond * 20
   private val TicksInDay: Int = 24000
 
   private var regions: Map[(Int, Int), ActorRef] = Map()
   private var players: Map[String, (UUID, ActorRef)] = Map()
+  private var onlinePlayers: Map[EntityId, ActorRef] = Map()
+  private val dropManager: ActorRef = context.actorOf(DropManager.props, DropManager.name)
+  private val diggingManager: ActorRef = context.actorOf(DiggingManager.props(dropManager), DiggingManager.name)
   private var creatureSpawner: ActorRef = _
-  private var onlinePlayers: List[ActorRef] = List()
 
   private var worldAge: Long = 0
 
-  private val entityIdGenerator: Iterator[Int] = Helpers.linearCongruentialGenerator(System.nanoTime().toInt)
+  private val entityIdGenerator: Iterator[EntityId] = Helpers.linearCongruentialGenerator(System.nanoTime().toInt)
 
   override def preStart(): Unit = {
     import World._
@@ -35,7 +39,9 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
   }
 
   override def receive: Receive = {
+
     /* ----------------------------------------------- Users ----------------------------------------------- */
+
     case RegisterUser(username) =>
       val (uuid, player) = if (players.contains(username)) players(username)
       else {
@@ -46,9 +52,15 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
       }
 
       sender ! UserRegistered(entityIdGenerator.next(), uuid, player)
-    case JoiningGame => onlinePlayers +:= sender
-    case LeavingGame => onlinePlayers = onlinePlayers filter {_ != sender}
+
+    case JoiningGame(playerId) => onlinePlayers += playerId -> sender
+
+    case LeavingGame(playerId) => onlinePlayers -= playerId
+
     case RequestOnlinePlayers => sender ! onlinePlayers.size
+
+    /* ----------------------------------------------- Regions ----------------------------------------------- */
+
     case request @ RequestChunkData(chunkX, chunkZ, _) =>
       val (relativeX, relativeZ) = (MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ))
       if (regions.contains((relativeX, relativeZ))) {
@@ -64,16 +76,59 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
             sender ! ChunkNotPresent
         }
       }
+
+    case request @ BreakBlockAtPosition(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
+
+    case request @ RequestBlockState(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
+
+    case PlayerPlaceBlockWithItemId(playerId, PlayerBlockPlacement(Position(x, y, z), face, _, _, _, _), itemId) =>
+      val blockState = Blocks.defaultCompoundTagFromName(Items.getStorableItemById(itemId).name)
+      blockState foreach { tag => // if defined
+        val position = face match {
+          case Face.Bottom => Position(x, y - 1, z)
+          case Face.Top => Position(x, y + 1, z)
+          case Face.North => Position(x, y, z - 1)
+          case Face.South => Position(x, y, z + 1)
+          case Face.West => Position(x - 1, y, z)
+          case Face.East => Position(x + 1, y, z)
+        }
+
+        regions(x >> 9, z >> 9) forward ChangeBlock(position, tag)
+        self ! SendToAllExclude(playerId, BlockChange(position, Blocks.stateIdFromCompoundTag(tag)))
+      }
+
+    case request @ FindFirstSolidBlockPositionUnder(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
+
+    /* ----------------------------------------------- Time ----------------------------------------------- */
+
     case TimeTick =>
       val timeOfDay = worldAge % TicksInDay
-
       if (worldAge % TimeUpdateInterval == 0) {
-        val timeUpdate = TimeUpdate(worldAge, timeOfDay)
-        onlinePlayers foreach { _ ! timeUpdate}
+        self ! SendToAll(TimeUpdate(worldAge, timeOfDay))
       }
       creatureSpawner ! SkyStateUpdate(SkyUpdateState.timeUpdateStateFromTime(timeOfDay))
       worldAge += ServerConfiguration.TicksInSecond
     case RequestEntityId => sender ! entityIdGenerator.next()
+
+    case SendToPlayer(playerId, obj) => onlinePlayers(playerId) ! ForwardToClient(obj)
+    case SendToAll(obj) => onlinePlayers.values foreach (_ ! ForwardToClient(obj))
+    case SendToAllExclude(excludeId, obj) => onlinePlayers foreach {
+      case (playerId, ref) if playerId != excludeId => ref ! ForwardToClient(obj)
+      case _ =>
+    }
+
+    /* ----------------------------------------------- Drop manager ----------------------------------------------- */
+
+    case blockBroken: BlockBrokenAtPosition => dropManager ! blockBroken
+
+    case message: PlayerMoved => dropManager forward message
+
+    /* ----------------------------------------------- Digging manager ----------------------------------------------- */
+
+    case msg: PlayerDiggingHoldingItem => diggingManager forward msg
+
+    /* ----------------------------------------------- Default ----------------------------------------------- */
+
     case requestMobs: RequestMobsInChunk =>
       creatureSpawner forward requestMobs
     case requestSpawnPoints @ RequestSpawnPoints(chunkX, chunkZ) => regions(MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ)) forward requestSpawnPoints
@@ -90,7 +145,8 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with LazyLog
       players.foreach(player => player._2._2 forward entityLook)
     case entityHeadLook: EntityHeadLook =>
       players.foreach(player => player._2._2 forward entityHeadLook)
-    case height @ Height(x,_,z) => regions(MCAUtil.blockToRegion(x), MCAUtil.blockToRegion(z)) forward height
+    //case height @ Height(x,_,z) => regions(MCAUtil.blockToRegion(x), MCAUtil.blockToRegion(z)) forward height
+    case unhandled => log.warning(s"Unhandled message in World: $unhandled")
   }
 
 }
@@ -100,6 +156,7 @@ object World {
   private case object TimeTick
 
   def props(serverConfiguration: ServerConfiguration): Props = Props(new World(serverConfiguration))
+
   def name: String = "world"
 
 }

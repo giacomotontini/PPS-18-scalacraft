@@ -14,7 +14,7 @@ object Chunks {
   def buildChunkDataStructureAndBitmask(chunkColumn: Chunk): (Array[Byte], Int) = {
     def writePaletteArray(palette: ListTag[CompoundTag])(implicit dataOutputStream: DataOutputStream): Unit = {
       writeVarInt(palette.size, dataOutputStream)
-      palette.forEach(paletteName => writeVarInt(Blocks.idFromCompoundTag(paletteName), dataOutputStream))
+      palette.forEach(paletteName => writeVarInt(Blocks.stateIdFromCompoundTag(paletteName), dataOutputStream))
     }
 
     def writeLongArray(dataArray: Array[Long], valueMarshaller: LongMarshaller)(implicit dataOutputStream: DataOutputStream): Unit = {

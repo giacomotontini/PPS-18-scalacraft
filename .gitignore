@@ -34,3 +34,5 @@ logs/
 world/
 report.xml
 src/main/scala/io/scalacraft/Test.scala
+
+*.mca

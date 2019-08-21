@@ -66,9 +66,62 @@ object PlayPackets {
   @packet(0x07)
   case class EnchantItem(@byte enchantItem: Int, @byte windowId: Int) extends Structure
 
+  trait ClickWindowAction
+  object ClickWindowAction {
+    case class LeftMouseClick(outsideWindows: Boolean = false) extends ClickWindowAction
+    case class RightMouseClick(outsideWindows: Boolean = false) extends ClickWindowAction
+    case object ShiftLeftMouseClick extends ClickWindowAction
+    case object ShiftRightMouseClick extends ClickWindowAction
+    case class NumberKey(keyNum:Int) extends ClickWindowAction
+    case object MiddleMouseClick extends ClickWindowAction
+    case object DropKey extends ClickWindowAction
+    case object ControlDropKey extends ClickWindowAction
+    case class LeftMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+    case class RightMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+    case class MiddleMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+    case object DoubleClick extends ClickWindowAction
+  }
   @packet(0x08)
   case class ClickWindow(@byte windowId: Int, @short slot: Int, @byte button: Int, @short actionNumber: Int,
-                         @boxed mode: Int, clickedItem: Slot) extends Structure
+                         @boxed mode: Int, clickedItem: Slot) extends Structure {
+
+    def actionPerformed(): ClickWindowAction = {
+      import ClickWindowAction._
+      mode match {
+        case 0 =>
+          button match {
+            case 0 => LeftMouseClick()
+            case 1 => RightMouseClick()
+          }
+        case 1 =>
+          button match {
+            case 0 => ShiftLeftMouseClick
+            case 1 => ShiftRightMouseClick
+          }
+        case 2 => NumberKey(button)
+        case 3 => MiddleMouseClick
+        case 4 =>
+          button match {
+            case 0 if slot == -999 => LeftMouseClick(true)
+            case 1 if slot == -999 => RightMouseClick(true)
+            case 0 => DropKey
+            case 1 => ControlDropKey
+          }
+        case 5 => button match {
+          case 0 if slot == -999 => LeftMouseDrag()
+          case 4 if slot == -999 => RightMouseDrag()
+          case 8 if slot == -999 => MiddleMouseDrag()
+          case 1 => LeftMouseDrag(addSlot = true)
+          case 5 => RightMouseDrag(addSlot = true)
+          case 9 => MiddleMouseDrag(addSlot = true)
+          case 2 => LeftMouseDrag(endDrag = true)
+          case 6 => RightMouseDrag(endDrag = true)
+          case 10 => MiddleMouseDrag(endDrag = true)
+        }
+        case 6 if button == 0 => DoubleClick
+      }
+    }
+  }
 
   @packet(0x09)
   case class CloseWindow(@byte windowId: Int) extends Structure
@@ -133,23 +186,23 @@ object PlayPackets {
   @packet(0x17)
   case class PlayerAbilities(@byte flags: Int, flyingSpeed: Float, walkingSpeed: Float) extends Structure
 
-  sealed trait Status
+  sealed trait PlayerDiggingStatus
 
-  object Status {
+  object PlayerDiggingStatus {
 
-    @enumValue(0) case object StartedDigging extends Status
+    @enumValue(0) case object StartedDigging extends PlayerDiggingStatus
 
-    @enumValue(1) case object CancelledDigging extends Status
+    @enumValue(1) case object CancelledDigging extends PlayerDiggingStatus
 
-    @enumValue(2) case object FinishedDigging extends Status
+    @enumValue(2) case object FinishedDigging extends PlayerDiggingStatus
 
-    @enumValue(3) case object DropItemStack extends Status
+    @enumValue(3) case object DropItemStack extends PlayerDiggingStatus
 
-    @enumValue(4) case object DropItem extends Status
+    @enumValue(4) case object DropItem extends PlayerDiggingStatus
 
-    @enumValue(5) case object ShootArrowOrFinishEating extends Status
+    @enumValue(5) case object ShootArrowOrFinishEating extends PlayerDiggingStatus
 
-    @enumValue(6) case object SwapItemInHand extends Status
+    @enumValue(6) case object SwapItemInHand extends PlayerDiggingStatus
 
   }
 
@@ -165,7 +218,7 @@ object PlayPackets {
   }
 
   @packet(0x18)
-  case class PlayerDigging(@enumType[VarInt] status: Status, location: Position, @enumType[Byte] face: Face) extends Structure
+  case class PlayerDigging(@enumType[VarInt] status: PlayerDiggingStatus, position: Position, @enumType[Byte] face: Face) extends Structure
 
   sealed trait ActionID
 
@@ -346,9 +399,9 @@ object PlayPackets {
   case class Spectate(targetPlayer: UUID) extends Structure
 
   @packet(0x29)
-  case class PlayerBlockPlacement(location: Position, @enumType[VarInt] face: Face, @enumType[VarInt] hand: Hand,
+  case class PlayerBlockPlacement(position: Position, @enumType[VarInt] face: Face, @enumType[VarInt] hand: Hand,
                                   cursorPositionX: Float, cursorPositionY: Float,
-                                  cursorPosiontZ: Float) extends Structure
+                                  cursorPositionZ: Float) extends Structure
 
   @packet(0x2A)
   case class UseItem(@enumType[VarInt] hand: Hand) extends Structure
