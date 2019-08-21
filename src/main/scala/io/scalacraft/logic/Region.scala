@@ -1,7 +1,7 @@
 package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, Props}
-import io.scalacraft.loaders.{Blocks, Chunks, Items}
+import io.scalacraft.loaders.{Blocks, Chunks}
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.DataTypes.Position
@@ -11,8 +11,7 @@ import net.querz.nbt.mca.MCAFile
 
 class Region(mca: MCAFile) extends Actor with ActorLogging {
 
-  private val airTag = Blocks.compoundTagFromBlockStateId(0)
-  private val world = context.parent
+  private val airTag = Blocks.defaultCompoundTagFromName("air").get
 
   private var cleanupNeeded: Boolean = false
 
@@ -31,12 +30,7 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
 
     case RequestBlockState(Position(x, y, z)) => sender ! mca.getChunk(x >> 4, z >> 4).getBlockStateAt(x, y, z)
 
-    case BreakBlockAtPosition(Position(x, y, z)) =>
-      mca.getChunk(x >> 4, z >> 4).setBlockStateAt(x, y, z, airTag, false)
-      cleanupNeeded = true
-      world ! BlockBrokenAtPosition(Position(x, y, z))
-
-    case ChangeBlock(Position(x, y, z), tag) =>
+    case ChangeBlockState(Position(x, y, z), tag) =>
       mca.getChunk(x >> 4, z >> 4).setBlockStateAt(x, y, z, tag, false)
       cleanupNeeded = true
 

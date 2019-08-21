@@ -18,7 +18,7 @@ object Message {
   case object ChunkNotPresent extends RegionMessage
   case class  RequestBlockState(position: Position) extends Message
   case class  FindFirstSolidBlockPositionUnder(position: Position) extends RegionMessage
-  case class  ChangeBlock(position: Position, tag: CompoundTag)
+  case class  ChangeBlockState(position: Position, tag: CompoundTag)
 
   case class  RegisterUser(username: String) extends Message
   case class  UserRegistered(entityId: EntityId, uuid: UUID, player: ActorRef) extends Message

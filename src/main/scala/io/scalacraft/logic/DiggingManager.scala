@@ -1,11 +1,10 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks.{Block, BreakingProperties, Drop}
 import io.scalacraft.loaders.Items.StorableItem
 import io.scalacraft.loaders.{Blocks, Items}
-import io.scalacraft.logic.DiggingManager.BreakingBlock
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, ItemId, Position}
@@ -14,6 +13,7 @@ import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggi
 import net.querz.nbt.CompoundTag
 
 import scala.collection.mutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
@@ -21,6 +21,7 @@ import scala.util.{Failure, Random, Success}
 class DiggingManager(dropManager: ActorRef) extends Actor
   with ActorLogging with Timers with DefaultTimeout with ImplicitContext {
 
+  import DiggingManager._
   import PlayerDiggingStatus._
 
   private val world = context.parent
@@ -63,10 +64,10 @@ class DiggingManager(dropManager: ActorRef) extends Actor
     case PlayerDiggingHoldingItem(playerId, playerPosition, PlayerDigging(FinishedDigging, blockPosition, _), _) =>
       if (breakingBlocks.contains(blockPosition)) {
         val BreakingBlock(_, blockStateId, block, bProperties) = breakingBlocks.remove(blockPosition).get
-        world ! BreakBlockAtPosition(blockPosition)
+
 
         (bProperties match {
-          case bProperties @ Some(BreakingProperties(true, true, _)) => itemsToDrop(block, bProperties.get)
+          case bProperties@Some(BreakingProperties(true, true, _)) => itemsToDrop(block, bProperties.get)
           case _ => Map.empty
         }) foreach {
           case (dropItemId, quantity) =>
@@ -74,19 +75,23 @@ class DiggingManager(dropManager: ActorRef) extends Actor
         }
 
         world ! SendToAll(Effect(EffectId.BlockBreakWithSound, blockPosition, blockStateId, disableRelativeVolume = false))
-        world ! SendToAll(BlockChange(blockPosition, 0))
+        world ! BlockBrokenAtPosition(blockPosition)
+        world ! ChangeBlockState(blockPosition, AirTag)
+        world ! SendToAll(BlockChange(blockPosition, Blocks.stateIdFromCompoundTag(AirTag)))
+        slideFluid(blockPosition, AirTag)
       }
 
   }
 
   private def breakingProperties(block: Block, brokeTool: Option[StorableItem]): Option[BreakingProperties] = {
-    val (material, tool) = brokeTool map { _.name match {
+    val (material, tool) = brokeTool map {
+      _.name match {
         case materialAndTool(_, "sword") => ("sword", "sword")
         case materialAndTool(material, tool) => (material, tool)
         case "shears" => ("shears", "shears")
         case _ => ("hand", "any")
       }
-    } getOrElse ("hand", "any")
+    } getOrElse("hand", "any")
 
     if (block.tool.isDefined && block.tool.get == tool) {
       if (block.breaking.contains(material)) Some(block.breaking(material)) else None
@@ -101,14 +106,74 @@ class DiggingManager(dropManager: ActorRef) extends Actor
     case Drop(_, _, namespace, _) => namespace -> 1
   } map { case (namespace, quantity) => Items.getItemByNamespace(namespace).id -> quantity } toMap
 
+
+  private def slideFluid(position: Position, tag: CompoundTag): Unit = {
+    context.system.scheduler.scheduleOnce(250 millis) {
+      Future.sequence(for (Position(rx, ry, rz) <- RelativeFluidNears) yield {
+        val pos = Position(position.x + rx, position.y + ry, position.z + rz)
+        (world ? RequestBlockState(pos)).mapTo[CompoundTag] map { _tag => TagWithPosition(_tag, pos)}
+      }) onComplete {
+        case Success(bottom :: top :: north :: south :: west :: east :: Nil) =>
+          var newTag: Option[CompoundTag] = None
+
+          if (top.tag.isFluid) {
+            newTag = Some(top.tag.withFluidLevel(_ => MaxLevel))
+          } else {
+            val nearFluids = List(north, south, west, east).filter { _.tag.isFluid }
+            if (nearFluids.nonEmpty) {
+              val higherFluid = nearFluids maxBy { _.tag.fluidLevel }
+              if (higherFluid.tag.fluidLevel > (if (tag.isFluid) tag.fluidLevel else MinLevel) + 1) {
+                newTag = Some(higherFluid.tag.withFluidLevel(_ - 1))
+              }
+            }
+          }
+
+          if (newTag.isDefined && newTag.get != tag) {
+            world ! ChangeBlockState(position, newTag.get)
+            world ! SendToAll(BlockChange(position, Blocks.stateIdFromCompoundTag(newTag.get)))
+
+            for (elem <- List(bottom, north, south, west, east) if elem.tag.isFluid || elem.tag == AirTag) {
+              slideFluid(elem.position, elem.tag)
+            }
+          }
+        case Failure(ex) => log.error(ex, "Failed to retrieve block states in slideFluids")
+      }
+    }
+  }
+
 }
 
 object DiggingManager {
 
+  private val RelativeFluidNears = List(Position(0, -1, 0), Position(0, 1, 0), Position(0, 0, -1), Position(0, 0, 1),
+    Position(-1, 0, 0), Position(1, 0, 0))
+  private val FluidsList = List("minecraft:water", "minecraft:lava")
+  private val AirTag = Blocks.defaultCompoundTagFromName("air").get
+  private val MaxLevel = 8
+  private val MinLevel = 0
+
   private case class BreakingBlock(entityId: EntityId, blockStateId: BlockStateId, block: Block,
                                    breakingProperties: Option[BreakingProperties])
 
+  private case class TagWithPosition(tag: CompoundTag, position: Position)
+
+  private implicit class FluidCompoundTag(compoundTag: CompoundTag) {
+    def isFluid: Boolean = compoundTag != null && FluidsList.contains(compoundTag.getString("Name"))
+    def fluidLevel: Int = {
+      val level = compoundTag.getCompoundTag("Properties").getString("level").toInt
+      MaxLevel - level
+    }
+    def withFluidLevel(f: Int => Int): CompoundTag = {
+      val clone = compoundTag.clone()
+      val level = f(fluidLevel)
+      clone.getCompoundTag("Properties").getStringTag("level")
+        .setValue((MaxLevel - level).toString)
+      clone
+    }
+  }
+
   def props(dropManager: ActorRef): Props = Props(new DiggingManager(dropManager))
+
   def name: String = "DiggingManager"
 
 }

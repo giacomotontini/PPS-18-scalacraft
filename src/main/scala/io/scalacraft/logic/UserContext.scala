@@ -45,15 +45,21 @@ class UserContext(connectionManager: ConnectionManager, serverConfiguration: Ser
   }
 
   private def statusBehaviour: Receive = {
-    case Request() => (world ? RequestOnlinePlayers).mapTo[Int] pipeTo self
-    case onlinePlayers: Int =>
-      log.debug("Request received. Sending server configuration..")
-      writePacket(Response(serverConfiguration.loadConfiguration(onlinePlayers)))
-      context.become(handlePacketFor {
-        case Ping(payload) =>
-          writePacket(Pong(payload))
-          log.debug("Ping received. Sending pong and closing connection..")
-      })
+    case Request() =>
+      world ? RequestOnlinePlayers map (_.asInstanceOf[Int]) onComplete {
+        case Success(number) =>
+          writePacket(Response(serverConfiguration.loadConfiguration(number)))
+          log.debug("Request received. Sending server configuration..")
+          if (context != null) { // workaround
+            context.become(handlePacketFor {
+              case Ping(payload) =>
+                writePacket(Pong(payload))
+                log.debug("Ping received. Sending pong and closing connection..")
+            })
+          }
+        case Failure(ex) => log.error(ex, "Can't retrieve the number of online players")
+      }
+
   }
 
   private def loginBehaviour: Receive = {

@@ -74,9 +74,9 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
         }
       }
 
-    case request @ BreakBlockAtPosition(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
-
+    case request @ ChangeBlockState(Position(x, _, z), _) => regions(x >> 9, z >> 9) forward request
     case request @ RequestBlockState(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
+    case request @ FindFirstSolidBlockPositionUnder(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
 
     case PlayerPlaceBlockWithItemId(playerId, PlayerBlockPlacement(Position(x, y, z), face, _, _, _, _), itemId) =>
       val blockState = Blocks.defaultCompoundTagFromName(Items.getStorableItemById(itemId).name)
@@ -90,11 +90,9 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
           case Face.East => Position(x + 1, y, z)
         }
 
-        regions(x >> 9, z >> 9) forward ChangeBlock(position, tag)
+        self forward ChangeBlockState(position, tag)
         self ! SendToAllExclude(playerId, BlockChange(position, Blocks.stateIdFromCompoundTag(tag)))
       }
-
-    case request @ FindFirstSolidBlockPositionUnder(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
 
     /* ----------------------------------------------- Time ----------------------------------------------- */
 
