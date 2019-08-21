@@ -24,7 +24,7 @@ trait CraftingInventoryActor extends InventoryActor {
 
   override def clickWindow(click: ClickWindow, slot: Int, actionNumber: Int, clickedItem: Slot): Unit = {
     handleAction(click.actionPerformed(), slot, clickedItem, slot == craftingOutputSlot)
-    playerActorRef ! ForwardToClient(ConfirmTransaction(id, actionNumber, accepted = true))
+    player ! ForwardToClient(ConfirmTransaction(id, actionNumber, accepted = true))
     scanCraftingArea()
     updateClientInventory()
   }

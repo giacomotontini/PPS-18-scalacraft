@@ -10,7 +10,7 @@ import net.querz.nbt.CompoundTag
 
 trait InventoryActor extends Actor with ActorLogging with DefaultTimeout with ImplicitContext with ClickWindowActionManager {
   protected val inventory: Inventory
-  protected val playerActorRef: ActorRef
+  protected val player: ActorRef
   protected val id: Int
 
   def defaultBehaviour: Receive = {
@@ -30,7 +30,7 @@ trait InventoryActor extends Actor with ActorLogging with DefaultTimeout with Im
 
   protected def clickWindow(click: ClickWindow, slot: Int, actionNumber: Int, clickedItem: Slot): Unit = {
     handleAction(click.actionPerformed(), slot, clickedItem)
-    playerActorRef ! ForwardToClient(ConfirmTransaction(inventory.id, actionNumber, accepted = true))
+    player ! ForwardToClient(ConfirmTransaction(inventory.id, actionNumber, accepted = true))
     updateClientInventory()
   }
 
@@ -54,6 +54,6 @@ trait InventoryActor extends Actor with ActorLogging with DefaultTimeout with Im
         SetSlot(id, slot, slotData)
       case (None, slot) =>
         SetSlot(id, slot, None)
-    } foreach (playerActorRef ! ForwardToClient(_))
+    } foreach (player ! ForwardToClient(_))
   }
 }

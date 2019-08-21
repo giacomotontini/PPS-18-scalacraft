@@ -5,7 +5,7 @@ import io.scalacraft.logic.messages.Message.{PopulatePlayerInventory, RetrieveHe
 import io.scalacraft.logic.traits.CraftingInventoryActor
 import io.scalacraft.packets.serverbound.PlayPackets.HeldItemChange
 
-class PlayerInventoryActor(val playerActorRef: ActorRef) extends CraftingInventoryActor {
+class PlayerInventoryActor(val player: ActorRef) extends CraftingInventoryActor {
   protected val inventory = PlayerInventory()
   protected val craftingOutputSlot: Int = PlayerInventory.CraftingOutputSlot
   protected val id: Int = PlayerInventory.Id

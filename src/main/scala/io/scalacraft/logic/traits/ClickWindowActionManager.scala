@@ -1,6 +1,8 @@
 package io.scalacraft.logic.traits
 
-import io.scalacraft.logic.{InventoryWithCrafting, Inventory, InventoryItem}
+import akka.actor.{Actor, ActorRef}
+import io.scalacraft.logic.messages.Message.InventoryDropItems
+import io.scalacraft.logic.{Inventory, InventoryItem, InventoryWithCrafting}
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction.{LeftMouseClick, LeftMouseDrag, RightMouseClick, RightMouseDrag}
@@ -9,6 +11,9 @@ import org.slf4j.{Logger, LoggerFactory}
 
 trait ClickWindowActionManager {
 
+  protected val player: ActorRef
+  private def OutSlot: Int = -999
+  private def DummySlot: Int = -1
   private def log: Logger = LoggerFactory.getLogger(getClass)
 
   protected val inventory: Inventory
@@ -39,14 +44,16 @@ trait ClickWindowActionManager {
     Some(slotItems)
   }
 
-  private def releaseNewItems(slot: Int, holdingItems: SlotData, oneByOne: Boolean = false): Slot = {
+  private def releaseHoldItems(quantity: Int, holdingItems: SlotData) : Slot = (holdingItems.itemCount - 1) match {
+      case left if left > 0 => Some(SlotData(holdingItems.itemId, left, new CompoundTag()))
+      case _ => None
+  }
+
+  private def releaseHoldItemsOnSlot(slot: Int, holdingItems: SlotData, oneByOne: Boolean = false): Slot = {
     if (oneByOne) {
       log.debug("Release new items one by one.")
       inventory.addItem(slot, InventoryItem(holdingItems.itemId, 1))
-      (holdingItems.itemCount - 1) match {
-        case left if left > 0 => Some(SlotData(holdingItems.itemId, left, new CompoundTag()))
-        case _ => None
-      }
+      releaseHoldItems(1, holdingItems)
     } else {
       log.debug("Release new items.")
       inventory.addItem(slot, InventoryItem(holdingItems.itemId, holdingItems.itemCount))
@@ -62,10 +69,12 @@ trait ClickWindowActionManager {
   }
 
   def handleAction(action: ClickWindowAction, slot: Int, slotItems: Slot, craftingSlot: Boolean = false): Unit = {
-
     def _handleAction(): Unit = {
       action match {
-        case LeftMouseClick(_) | LeftMouseDrag(true, false) =>
+        case LeftMouseClick(_) if slot == OutSlot && holdItems.isDefined =>
+          player ! InventoryDropItems(holdItems.get.itemId, holdItems.get.itemCount)
+          holdItems = None
+        case LeftMouseClick(false) | LeftMouseDrag(true, false) if slot != DummySlot=>
           slotItems match {
             case Some(slotItems) =>
               holdItems match {
@@ -77,23 +86,25 @@ trait ClickWindowActionManager {
                   holdItems = holdNewItems(slot, slotItems)
               }
             case None if holdItems.isDefined =>
-              holdItems = releaseNewItems(slot, holdItems.get)
+              holdItems = releaseHoldItemsOnSlot(slot, holdItems.get)
             case None =>
           }
-
-        case RightMouseClick(_) | RightMouseDrag(true, false) =>
+        case RightMouseClick(_) if slot == OutSlot && holdItems.isDefined =>
+          player ! InventoryDropItems(holdItems.get.itemId, 1)
+          holdItems = releaseHoldItems(1, holdItems.get)
+        case RightMouseClick(false) | RightMouseDrag(true, false) if slot != DummySlot =>
           slotItems match {
             case Some(slotItems) =>
               holdItems match {
                 case Some(holdItems) if holdItems.itemId == slotItems.itemId =>
-                  this.holdItems = releaseNewItems(slot, holdItems, oneByOne = true)
+                  this.holdItems = releaseHoldItemsOnSlot(slot, holdItems, oneByOne = true)
                 case Some(holdItems) =>
                   this.holdItems = swapHoldItems(slot, holdItems, slotItems)
                 case None =>
                   holdItems = splitSlotItems(slot, slotItems)
               }
             case None if holdItems.isDefined =>
-              holdItems = releaseNewItems(slot, holdItems.get, oneByOne = true)
+              holdItems = releaseHoldItemsOnSlot(slot, holdItems.get, oneByOne = true)
             case None => //ignored
           }
         case _ => //ignored
@@ -117,6 +128,7 @@ trait ClickWindowActionManager {
         case _ => //ignored
       }
     }
+
 
     if (craftingSlot) {
       _handleActionOnCraftingSlot()

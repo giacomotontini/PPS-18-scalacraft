@@ -132,7 +132,6 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       this.yaw = yaw
       this.pitch = pitch
       this.onGround = onGround
-
     case packet: sb.HeldItemChange => activeInventories(PlayerInventory.Id)  forward packet
 
     case playerDigging: sb.PlayerDigging =>
@@ -159,16 +158,20 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
         }
       case _ => userContext forward packet
     }
-    case msg: ClickWindow if activeInventories.contains(msg.windowId) =>
-      activeInventories(msg.windowId) forward(msg)
-    case msg: CloseWindow if activeInventories.contains(msg.windowId) =>
-      activeInventories(msg.windowId) forward(msg)
-
+    case packet: ClickWindow if activeInventories.contains(packet.windowId) =>
+      activeInventories(packet.windowId) forward(packet)
+    case packet: CloseWindow if activeInventories.contains(packet.windowId) =>
+      activeInventories(packet.windowId) forward(packet)
+    case InventoryDropItems(itemId, quantity) =>
+      val x = -math.sin(math.toRadians(yaw))
+      val z =  math.cos(math.toRadians(yaw))
+      val result = (value:Double) => (-4 * math.pow(value, 4) + 5 * math.pow(value, 2)) * 3 * value
+      val itemDropPosition = Position(posX + result(x).toInt, posY, posZ + result(z).toInt)
+      world ! DropItems(itemId, quantity,itemDropPosition , playerEntityId, Position(posX, posY, posZ))
     case sb.EntityAction(_, _, _) => // TODO: handle this
     case RemovePlayer =>
       world ! LeavingGame(playerEntityId)
       reset()
-
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
 
   }

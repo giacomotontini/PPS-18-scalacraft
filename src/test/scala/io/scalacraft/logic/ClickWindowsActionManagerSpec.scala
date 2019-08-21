@@ -1,5 +1,6 @@
 package io.scalacraft.logic
 
+import akka.actor.{ActorRef, Props}
 import io.scalacraft.packets.DataTypes.SlotData
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
 import net.querz.nbt.CompoundTag
@@ -10,6 +11,7 @@ class ClickWindowsActionManagerSpec extends FlatSpec with Matchers with BeforeAn
 
   case class DummyClickWindowsActionManager() extends ClickWindowActionManager {
     override val inventory: Inventory = new PlayerInventory
+    override protected val player: ActorRef = null
   }
 
   var actionManager: DummyClickWindowsActionManager = _
