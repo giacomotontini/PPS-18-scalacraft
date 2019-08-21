@@ -49,7 +49,7 @@ class ChickenActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean,
       sendAnOptionAskResponseIfIsMyChunk[DestroyEntities](chunkX, chunkZ, sender, destroyEntityPacket)
   }
 
-  override def receive: Receive = baseBehaviour orElse (aiBehaviour)
+  override def receive: Receive = baseBehaviour orElse aiBehaviour
 }
 
 object ChickenActor extends FarmAnimal {

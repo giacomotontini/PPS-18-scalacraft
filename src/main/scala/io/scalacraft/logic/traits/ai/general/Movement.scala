@@ -15,27 +15,13 @@ import scala.util.{Failure, Success}
 
 trait Movement {
   this: CreatureParameters with Actor with Timers with ImplicitContext with DefaultTimeout =>
-  private val SquareExponent = 2
-  private val HalfCircumferenceMap = 128
-  private val CircumferenceMap = 256
+  import Movement._
   val MovementTickPeriod: FiniteDuration = 10 seconds
   val AiTimerKey = "AiMovement"
 
   protected case object MoveEntity
 
   case class Move(deltaX: Int, deltaY: Int, deltaZ: Int, newPosition: Position)
-
-  def computeAndUpdateYawAndPitch(deltaX: Int, deltaY: Int, deltaZ: Int): (Angle, Angle) = {
-    val radius = Math.sqrt(Math.pow(deltaX, SquareExponent) +
-      Math.pow(deltaY, SquareExponent) +
-      Math.pow(deltaZ, SquareExponent))
-    val newYaw = -Math.atan2(deltaX, deltaZ) / Math.PI * HalfCircumferenceMap match {
-      case temporaryYaw if temporaryYaw < 0 => CircumferenceMap + temporaryYaw
-      case temporaryYaw => temporaryYaw
-    }
-    val newPitch = -Math.asin(deltaY / radius) / Math.PI * HalfCircumferenceMap
-    (Angle(newYaw.toInt), Angle(newPitch.toInt))
-  }
 
   def computeMoves(posX: Int, posY: Int, posZ: Int, oldPosX: Int, oldPosZ: Int, movesNumber: Int): Future[List[Move]] = {
 
@@ -96,9 +82,25 @@ trait Movement {
         posX = newPosition.x
         posY = newPosition.y
         posZ = newPosition.z
-        world ! EntityHeadLook(entityId, Angle(0))
         timers.startPeriodicTimer(AiTimerKey, MoveEntity, MovementTickPeriod)
       case Failure(_) => //do nothing
     }
+  }
+}
+
+object Movement {
+  private val SquareExponent = 2
+  private val HalfCircumferenceMap = 128
+  private val CircumferenceMap = 256
+  def computeAndUpdateYawAndPitch(deltaX: Int, deltaY: Int, deltaZ: Int): (Angle, Angle) = {
+    val radius = Math.sqrt(Math.pow(deltaX, SquareExponent) +
+      Math.pow(deltaY, SquareExponent) +
+      Math.pow(deltaZ, SquareExponent))
+    val newYaw = -Math.atan2(deltaX, deltaZ) / Math.PI * HalfCircumferenceMap match {
+      case temporaryYaw if temporaryYaw < 0 => CircumferenceMap + temporaryYaw
+      case temporaryYaw => temporaryYaw
+    }
+    val newPitch = -Math.asin(deltaY / radius) / Math.PI * HalfCircumferenceMap
+    (Angle(newYaw.toInt), Angle(newPitch.toInt))
   }
 }
