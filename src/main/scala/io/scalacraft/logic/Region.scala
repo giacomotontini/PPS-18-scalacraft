@@ -1,7 +1,7 @@
 package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, Props}
-import io.scalacraft.loaders.{Blocks, Chunks, Items}
+import io.scalacraft.loaders.{Blocks, Chunks}
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.DataTypes.Position

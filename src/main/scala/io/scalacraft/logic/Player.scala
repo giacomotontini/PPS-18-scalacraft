@@ -2,15 +2,18 @@ package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
 import akka.pattern._
-import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldItemId, UseHeldItem}
+import io.scalacraft.loaders.Blocks
+import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
+import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.logic.messages.Message._
-import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
+import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.{ItemId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
+import net.querz.nbt.CompoundTag
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -23,14 +26,13 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   import Player._
 
   private val world = context.parent
-  private val inventory = context.actorOf(PlayerInventoryActor.props(self))
   private var userContext: ActorRef = _
 
   private var playerEntityId = 0
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = 1018
-  private var posY: Int = 65
-  private var posZ: Int = 1066
+  private var posX: Int = -10
+  private var posY: Int = 70
+  private var posZ: Int = 20
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   private var digging: Option[PlayerDiggingStatus] = None
@@ -44,8 +46,10 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   private var lastKeepAliveId: Long = _
 
   private var loadedChunks: Set[(Int, Int)] = Set()
+  private var activeInventories: Map[Int, ActorRef] = Map(PlayerInventory.Id -> context.actorOf(PlayerInventoryActor.props(self)))
 
   private val randomGenerator = Random
+  private var lastWindowId = 1
 
   override def receive: Receive = preStartBehaviour
 
@@ -132,49 +136,58 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       this.yaw = yaw
       this.pitch = pitch
       this.onGround = onGround
-
-    case packet: sb.HeldItemChange => inventory forward packet
+    case packet: sb.HeldItemChange => activeInventories(PlayerInventory.Id)  forward packet
 
     case playerDigging: sb.PlayerDigging =>
-      (inventory ? RetrieveHeldItemId).mapTo[Option[ItemId]] onComplete {
+      (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[ItemId]] onComplete {
         case Success(heldItemId) =>
           world ! PlayerDiggingHoldingItem(playerEntityId, Position(posX, posY, posZ), playerDigging, heldItemId)
-        case Failure(ex) => log.error(ex, "Failed to retrieve held item.")
+        case Failure(exception) => log.error(exception, "Failed to retrieve held item.")
       }
-
     case packet: sb.PlayerBlockPlacement =>
-      (inventory ? UseHeldItem).mapTo[Option[ItemId]] onComplete {
+      ( activeInventories(PlayerInventory.Id)  ? UseHeldItem).mapTo[Option[ItemId]] onComplete {
         case Success(Some(itemId)) => world ! PlayerPlaceBlockWithItemId(playerEntityId, packet, itemId)
-        case Success(None) => // held air
+        case Success(None) =>
+          (world ? RequestBlockState(packet.position)).mapTo[CompoundTag] onComplete {
+            case Success(blockStateCompound) =>
+              val block = Blocks.blockFromCompoundTag(blockStateCompound)
+              handleInteractionOn(block)
+            case Failure(exception) => log.error(exception, "Failed to retrieve block's state on interaction")
+          }
         case Failure(ex) => log.error(ex, "Failed to retrieve placed block type.")
       }
-
     case sb.Animation(Hand.MainHand) =>
       world ! SendToAllExclude(playerEntityId, cb.Animation(playerEntityId, AnimationType.SwingMainArm))
     case sb.Animation(Hand.OffHand) =>
       world ! SendToAllExclude(playerEntityId, cb.Animation(playerEntityId, AnimationType.SwingOffHand))
-
-    case sb.ChatMessage(message) => handleDebugCommand(message)
-
     case ForwardToClient(packet) => packet match {
       case CollectItemWithType(collectItem, itemId) =>
         userContext forward collectItem
         if (collectItem.collectorEntityId == playerEntityId) {
-          inventory ! AddItem(InventoryItem(itemId, collectItem.pickUpItemCount))
+          activeInventories(PlayerInventory.Id) ! AddItem(InventoryItem(itemId, collectItem.pickUpItemCount))
         }
       case _ => userContext forward packet
     }
-
-    case packet: sb.ClickWindow if packet.windowId == PlayerInventory.Id => inventory forward packet
-
+    case packet: ClickWindow if activeInventories.contains(packet.windowId) =>
+      activeInventories(packet.windowId) forward(packet)
+    case packet: CloseWindow if activeInventories.contains(packet.windowId) =>
+      activeInventories(packet.windowId) forward(packet)
+    case InventoryDropItems(itemId, quantity) =>
+      val x = -math.sin(math.toRadians(yaw)) * 3
+      val z =  math.cos(math.toRadians(yaw)) * 3
+      val itemDropPosition = Position(posX + x.toInt, posY, posZ + z.toInt)
+      world ! DropItems(itemId, quantity,itemDropPosition , playerEntityId, Position(posX, posY, posZ))
     case sb.EntityAction(_, _, _) => // TODO: handle this
-
     case RemovePlayer =>
       world ! LeavingGame(playerEntityId)
       reset()
-
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
 
+  }
+
+  def handleInteractionOn(block: Blocks.Block): Unit = block.name match {
+    case "crafting_table" => lastWindowId = openCraftingTableWindow()
+    case _ => //not implemented
   }
 
   private def playerPositionAndLookFlags(xRelative: Boolean, yRelative: Boolean, zRelative: Boolean, Y_ROT: Boolean,
@@ -187,6 +200,19 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     if (X_ROT) flags = (flags | 0x10).toByte
 
     flags
+  }
+
+  private def openCraftingTableWindow(): Int = {
+    val windowId = lastWindowId + 1
+    val playerInventoryActorRef = activeInventories(PlayerInventory.Id)
+    activeInventories +=  (windowId -> context.actorOf(CraftingTableActor.props(windowId, self, playerInventoryActorRef)))
+    (activeInventories(PlayerInventory.Id) ? RetrieveInventoryItems).map(_.asInstanceOf[List[Option[InventoryItem]]]) onComplete {
+      case Success(inventory) =>
+        activeInventories(windowId) ! PopulatePlayerInventory(inventory)
+      case _ => log.warning("Failed to retrieve inventory items.")
+    }
+    userContext ! OpenWindows(windowId, CraftingTable("{\"translate\":\"block.minecraft.crafting_table.name\"}", 0))
+    windowId
   }
 
   private def reset(): Unit = {

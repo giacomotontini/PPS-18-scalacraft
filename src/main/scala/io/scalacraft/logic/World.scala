@@ -118,6 +118,8 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
 
     /* ----------------------------------------------- Drop manager ----------------------------------------------- */
 
+    case itemDropped: DropItems => dropManager ! itemDropped
+
     case blockBroken: BlockBrokenAtPosition => dropManager ! blockBroken
 
     case message: PlayerMoved => dropManager forward message
