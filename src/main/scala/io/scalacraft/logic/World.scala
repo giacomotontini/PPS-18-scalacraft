@@ -129,7 +129,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
 
     /* ----------------------------------------------- Default ----------------------------------------------- */
 
-    case requestMobs: RequestMobsInChunk =>
+    case requestMobs: SpawnCreaturesInChunk =>
       creatureSpawner forward requestMobs
     case requestSpawnPoints @ RequestSpawnPoints(chunkX, chunkZ) => regions(MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ)) forward requestSpawnPoints
     case unloadedChunk: PlayerUnloadedChunk =>
@@ -140,7 +140,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
       players.foreach(player => player._2._2 forward entityLookAndRelativeMove)
     case entityVelocity: EntityVelocity =>
       players.foreach(player => player._2._2 forward entityVelocity)
-    case requestNearbyPoints @ RequestNearbyPoints(posX,_, posZ, _,_) => regions(MCAUtil.blockToRegion(posX), MCAUtil.blockToRegion(posZ)) forward requestNearbyPoints
+    case requestNearbyPoints @ RequestNearbyPoints(posX,_, posZ, _, _) => regions(MCAUtil.blockToRegion(posX), MCAUtil.blockToRegion(posZ)) forward requestNearbyPoints
     case entityLook: EntityLook =>
       players.foreach(player => player._2._2 forward entityLook)
     case entityHeadLook: EntityHeadLook =>

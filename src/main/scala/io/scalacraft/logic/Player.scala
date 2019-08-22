@@ -28,9 +28,9 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
 
   private var playerEntityId = 0
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = 1018
-  private var posY: Int = 65
-  private var posZ: Int = 1066
+  private var posX: Int = 583
+  private var posY: Int = 80
+  private var posZ: Int = -361
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   private var digging: Option[PlayerDiggingStatus] = None
@@ -225,20 +225,14 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     }
     def loadMobs(toUnload: Set[(Int, Int)], toLoad: Set[(Int, Int)]): Future[Unit] = {
       val unloadFuture = Future.sequence(toUnload map { case (x, z) =>
-        world.ask(PlayerUnloadedChunk(x, z))(timeout) map {
-          case destroyCreatures: List[DestroyEntities] =>
-            destroyCreatures.foreach(destroyCreaure => userContext ! destroyCreaure)
-          case _ => //do nothing
-        }
+        world.ask(PlayerUnloadedChunk(x, z))(timeout).mapTo[List[DestroyEntities]] map (destroyCreatures =>
+          destroyCreatures.foreach(destroyCreaure => userContext ! destroyCreaure))
       }) map (_ => Unit)
       val loadFuture = Future.sequence(toLoad map { case (x, z) =>
-        world.ask(RequestMobsInChunk(x, z))(timeout) map {
-          case spawnMobs: List[SpawnMob] =>
-            spawnMobs.foreach(spawnMob => userContext ! spawnMob)
-          case _ => //do nothing
-        }
+        world.ask(SpawnCreaturesInChunk(x, z))(timeout).mapTo[List[SpawnMob]] map (spawnMobs =>
+          spawnMobs.foreach(spawnMob => userContext ! spawnMob))
       }) map (_ => Unit)
-      loadFuture.zipWith(unloadFuture)((_,_) => Future.unit)
+      loadFuture.zip(unloadFuture).flatMap(_ => Future.unit)
     }
 
     if (lastPosition == null || needLoadingChunks) {
@@ -253,7 +247,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
 
       val loadChunksFuture = loadChunks(toUnload, toLoad)
       val loadMobFuture = loadMobs(toUnload, toLoad)
-      loadChunksFuture.zipWith(loadMobFuture)((_,_) => Future.unit)
+      loadChunksFuture.zip(loadMobFuture).flatMap(_ => Future.unit)
     } else Future.unit
   }
 

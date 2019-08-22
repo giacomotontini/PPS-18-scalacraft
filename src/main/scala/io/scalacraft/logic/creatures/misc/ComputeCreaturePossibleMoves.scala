@@ -1,4 +1,4 @@
-package io.scalacraft.logic
+package io.scalacraft.logic.creatures.misc
 
 import java.io.FileInputStream
 
@@ -49,7 +49,7 @@ private[this] object ScalaToProlog {
 
 class ComputeCreatureMoves(toAssert: Seq[String]) {
   import ScalaToProlog._
-  val FileName = "src/main/resources/computeMoves.pl"
+  val FileName = "src/main/prolog/computeMoves.pl"
   private val engine = mkPrologEngine(new Theory(new FileInputStream(FileName)))
   assertions(toAssert)
   def assertions(assertions: Seq[String]): Unit = {

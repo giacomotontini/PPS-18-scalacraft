@@ -63,15 +63,12 @@ object Message {
   case class SendToAll(obj: Any) extends Message
   case class ForwardToClient(obj: Any) extends Message
 
-  case class RequestMobsInChunk(chunkX: Int, chunkZ: Int) extends Message
-
+  /* --------------------------------------------- Creatures Spawn/Despawn --------------------------------------------- */
+  case class SpawnCreaturesInChunk(chunkX: Int, chunkZ: Int) extends Message
   case class PlayerUnloadedChunk(chunkX: Int, chunkZ: Int) extends Message
-
-  case class GetCreatureInChunk(chunkX: Int, chunkZ: Int) extends Message
-
+  case class RequestCreatureInChunk(chunkX: Int, chunkZ: Int) extends Message
   case class DespawnCreature(chunkX: Int, chunkZ: Int) extends Message
   case class RequestSpawnPoints(chunkX: Int,chunkZ: Int) extends Message
-
   object SkyUpdateState extends Enumeration {
     type SkyUpdateState = Value
     val Sunrise, Noon, Sunset, MidNight = Value
@@ -86,7 +83,8 @@ object Message {
     }
   }
   case class SkyStateUpdate(state: SkyUpdateState) extends Message
+  /* --------------------------------------------- Creatures AI --------------------------------------------- */
   case class RequestNearbyPoints(x:Int, y:Int, z:Int, oldX:Int, oldZ:Int) extends Message
-  case class Height(x:Int, y:Int, z:Int) extends Message
+  //case class Height(x:Int, y:Int, z:Int) extends Message
 
 }

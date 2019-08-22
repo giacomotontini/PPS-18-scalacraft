@@ -3,12 +3,12 @@ package io.scalacraft.logic
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
+import io.scalacraft.logic.creatures.misc.CreatureInstances
 import io.scalacraft.logic.messages.Message
 import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.creatures.FarmAnimal
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.misc.CreatureInstances
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
 
@@ -59,14 +59,14 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
   }
 
   override def receive: Receive = {
-    case RequestMobsInChunk(chunkX, chunkZ) =>
+    case SpawnCreaturesInChunk(chunkX, chunkZ) =>
       val senderRef = sender
       val (updatedMap, _) = updateChunkIndicators(chunkMapToUpdate = numberOfPlayersInChunk,
         chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
       numberOfPlayersInChunk = updatedMap
       if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ)) {
-        val spawnedMobFuture = context.parent.ask(RequestSpawnPoints(chunkX, chunkZ))(timeout).andThen {
-          case Success(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]]) =>
+        val spawnedMobFuture = context.parent.ask(RequestSpawnPoints(chunkX, chunkZ))(timeout).mapTo[Map[Int, Set[(Position, Boolean)]]].andThen {
+          case Success(biomeToSpawnPosition) =>
             var spawnablePosition = biomeToSpawnPosition
             CreatureInstances.creatureInstances.foreach {
               case farmAnimal: FarmAnimal if isDay =>
@@ -76,13 +76,13 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
                   case (props: Props, name: String) => context.actorOf(props, name)
                 }
             }
-            askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
+            askSomethingToCreatures[SpawnMob](RequestCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
             chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)
         }
         spawnedMobFuturePerChunk ++= Map((chunkX, chunkZ) -> spawnedMobFuture)
       } else {
         spawnedMobFuturePerChunk((chunkX, chunkZ)).onComplete {
-          case Success(_) => askSomethingToCreatures[SpawnMob](GetCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
+          case Success(_) => askSomethingToCreatures[SpawnMob](RequestCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
           case _ => //do nothing
         }
       }

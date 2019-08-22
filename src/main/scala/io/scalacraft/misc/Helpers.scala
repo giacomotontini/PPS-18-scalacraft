@@ -2,10 +2,8 @@ package io.scalacraft.misc
 
 import java.io.{InputStream, OutputStream}
 
-import io.scalacraft.packets.DataTypes.VarInt
-import net.querz.nbt.{CompoundTag, ListTag, StringTag, Tag}
 import io.scalacraft.packets.DataTypes.{Angle, VarInt}
-import net.querz.nbt.{ListTag, Tag}
+import net.querz.nbt.{CompoundTag, ListTag, StringTag, Tag}
 
 import scala.collection.JavaConverters._
 import scala.util.Random
@@ -60,7 +58,7 @@ private[scalacraft] object Helpers {
     override def hasNext: Boolean = true
 
     override def next: Int = {
-      seed = (seed * 1103515245 + 12345) & Int.MaxValue;
+      seed = (seed * 1103515245 + 12345) & Int.MaxValue
       seed
     }
   }

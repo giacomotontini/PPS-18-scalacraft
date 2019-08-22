@@ -2,6 +2,7 @@ package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, Props}
 import io.scalacraft.loaders.{Blocks, Chunks}
+import io.scalacraft.logic.creatures.misc.ComputeCreatureMoves
 import io.scalacraft.logic.messages.Message.{RequestChunkData, RequestNearbyPoints, RequestSpawnPoints, _}
 import io.scalacraft.misc.Helpers
 import io.scalacraft.misc.Helpers._

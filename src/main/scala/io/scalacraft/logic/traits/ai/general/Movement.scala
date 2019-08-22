@@ -4,7 +4,7 @@ import akka.actor.{Actor, Timers}
 import io.scalacraft.logic.messages.Message.RequestNearbyPoints
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.packets.DataTypes.{Angle, Position}
-import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLockAndRelativeMove, EntityVelocity}
+import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLockAndRelativeMove, EntityLook, EntityVelocity}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -58,13 +58,12 @@ trait Movement {
         val velocityZ = speed * newPosition.z / MovementFluidityFactor
         (velocityX, velocityY, velocityZ)
       }
-
       for (scheduleFactor <- 1 to MovementFluidityFactor) {
         val schedulePeriod = (millisPerChunkOfBlock * scheduleFactor + millisPerBlock * moveIndex).toLong
         context.system.scheduler.scheduleOnce(FiniteDuration(schedulePeriod, "millisecond")) {
           val (deltaXChunk, deltaYChunk, deltaZChunk) =
             (move.deltaX / MovementFluidityFactor, move.deltaY / MovementFluidityFactor, move.deltaZ / MovementFluidityFactor)
-          val (yaw, pitch) = computeAndUpdateYawAndPitch(deltaXChunk, deltaYChunk, deltaZChunk)
+          val (yaw, pitch) = computeYawAndPitch(deltaXChunk, deltaYChunk, deltaZChunk)
           val (velocityX, velocityY, velocityZ) = obtainFluidVelocity(move.newPosition)
           world ! EntityVelocity(entityId, velocityX, velocityY, velocityZ)
           world ! EntityHeadLook(entityId, yaw)
@@ -92,7 +91,7 @@ object Movement {
   private val SquareExponent = 2
   private val HalfCircumferenceMap = 128
   private val CircumferenceMap = 256
-  def computeAndUpdateYawAndPitch(deltaX: Int, deltaY: Int, deltaZ: Int): (Angle, Angle) = {
+  def computeYawAndPitch(deltaX: Int, deltaY: Int, deltaZ: Int): (Angle, Angle) = {
     val radius = Math.sqrt(Math.pow(deltaX, SquareExponent) +
       Math.pow(deltaY, SquareExponent) +
       Math.pow(deltaZ, SquareExponent))

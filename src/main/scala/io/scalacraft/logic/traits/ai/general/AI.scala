@@ -1,11 +1,10 @@
-package io.scalacraft.logic.traits.ai
+package io.scalacraft.logic.traits.ai.general
 
 import akka.actor.{Actor, Timers}
-import io.scalacraft.logic.traits.ai.general.Movement
 import io.scalacraft.logic.traits.creatures.CreatureParameters
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 
-trait ChickenAI extends Movement {
+trait AI extends Movement {
   this: CreatureParameters with Actor with Timers with ImplicitContext with DefaultTimeout =>
 
   override def preStart(): Unit = {

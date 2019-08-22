@@ -2,8 +2,8 @@ package io.scalacraft.logic.traits.creatures
 
 import java.util.UUID
 
-import io.scalacraft.core.marshalling.MobsAndObjectsTypeMapping
-import io.scalacraft.packets.Entities.Chicken
+import io.scalacraft.core.marshalling.{EntityMetadata, MobsAndObjectsTypeMapping}
+import io.scalacraft.packets.Entities.MobEntity
 
 import scala.util.Random
 
@@ -11,8 +11,8 @@ trait CreatureParameters extends CommonParameters {
   protected val MovementFluidityFactor = 4
   protected def entityId: Int
   protected def uuid: UUID
-  protected val metaData = new Chicken()
-  protected val tpe: Int = MobsAndObjectsTypeMapping.fromMobEntityClassToType(metaData.getClass)
+  protected def metaData: MobEntity
+  protected lazy val tpe: Int = MobsAndObjectsTypeMapping.fromMobEntityClassToType(metaData.getClass)
   protected var posX = 0
   protected var posY = 0
   protected var posZ = 0
