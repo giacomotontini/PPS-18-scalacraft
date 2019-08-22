@@ -3,6 +3,8 @@ package io.scalacraft.logic
 import io.scalacraft.loaders.Recipes
 import io.scalacraft.loaders.Recipes.{ShapeRecipe, ShapelessRecipe}
 import org.scalatest.{FlatSpec, Matchers}
+import io.scalacraft.logic.inventories.InventoryItem
+import io.scalacraft.logic.inventories.CraftingTableInventory
 
 import scala.reflect._
 import scala.util.Random

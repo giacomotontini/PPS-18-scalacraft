@@ -2,6 +2,9 @@ package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
 import akka.pattern._
+import io.scalacraft.loaders.Blocks
+import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
+import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
@@ -10,6 +13,7 @@ import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
 import io.scalacraft.packets.serverbound.{PlayPackets => sb}
+import net.querz.nbt.CompoundTag
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -138,12 +142,18 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[ItemId]] onComplete {
         case Success(heldItemId) =>
           world ! PlayerDiggingHoldingItem(playerEntityId, Position(posX, posY, posZ), playerDigging, heldItemId)
-        case Failure(ex) => log.error(ex, "Failed to retrieve held item.")
+        case Failure(exception) => log.error(exception, "Failed to retrieve held item.")
       }
     case packet: sb.PlayerBlockPlacement =>
       ( activeInventories(PlayerInventory.Id)  ? UseHeldItem).mapTo[Option[ItemId]] onComplete {
         case Success(Some(itemId)) => world ! PlayerPlaceBlockWithItemId(playerEntityId, packet, itemId)
-        case Success(None) => lastWindowId = openCraftingTableWindow() // TODO: do only if is a crafting table
+        case Success(None) =>
+          (world ? RequestBlockState(packet.position)).mapTo[CompoundTag] onComplete {
+            case Success(blockStateCompound) =>
+              val block = Blocks.blockFromCompoundTag(blockStateCompound)
+              handleInteractionOn(block)
+            case Failure(exception) => log.error(exception, "Failed to retrieve block's state on interaction")
+          }
         case Failure(ex) => log.error(ex, "Failed to retrieve placed block type.")
       }
     case sb.Animation(Hand.MainHand) =>
@@ -163,10 +173,9 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     case packet: CloseWindow if activeInventories.contains(packet.windowId) =>
       activeInventories(packet.windowId) forward(packet)
     case InventoryDropItems(itemId, quantity) =>
-      val x = -math.sin(math.toRadians(yaw))
-      val z =  math.cos(math.toRadians(yaw))
-      val result = (value:Double) => (-4 * math.pow(value, 4) + 5 * math.pow(value, 2)) * 3 * value
-      val itemDropPosition = Position(posX + result(x).toInt, posY, posZ + result(z).toInt)
+      val x = -math.sin(math.toRadians(yaw)) * 3
+      val z =  math.cos(math.toRadians(yaw)) * 3
+      val itemDropPosition = Position(posX + x.toInt, posY, posZ + z.toInt)
       world ! DropItems(itemId, quantity,itemDropPosition , playerEntityId, Position(posX, posY, posZ))
     case sb.EntityAction(_, _, _) => // TODO: handle this
     case RemovePlayer =>
@@ -174,6 +183,11 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       reset()
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
 
+  }
+
+  def handleInteractionOn(block: Blocks.Block): Unit = block.name match {
+    case "crafting_table" => lastWindowId = openCraftingTableWindow()
+    case _ => //not implemented
   }
 
   private def playerPositionAndLookFlags(xRelative: Boolean, yRelative: Boolean, zRelative: Boolean, Y_ROT: Boolean,

@@ -3,7 +3,7 @@ package io.scalacraft.logic.messages
 import java.util.UUID
 
 import akka.actor.ActorRef
-import io.scalacraft.logic.InventoryItem
+import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.packets.DataTypes.{EntityId, ItemId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.CollectItem
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging}

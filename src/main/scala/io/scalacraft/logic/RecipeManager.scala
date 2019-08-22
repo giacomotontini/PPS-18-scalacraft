@@ -2,6 +2,7 @@ package io.scalacraft.logic
 
 import io.scalacraft.loaders.Recipes
 import io.scalacraft.loaders.Recipes.{RecipeResult, ShapeRecipe, ShapelessRecipe}
+import io.scalacraft.logic.inventories.InventoryItem
 
 object RecipeManager {
 

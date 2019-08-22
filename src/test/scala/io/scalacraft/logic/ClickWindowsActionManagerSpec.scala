@@ -1,6 +1,8 @@
 package io.scalacraft.logic
 
 import akka.actor.{ActorRef, Props}
+import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
+import io.scalacraft.logic.traits.inventories.Inventory
 import io.scalacraft.packets.DataTypes.SlotData
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
 import net.querz.nbt.CompoundTag

@@ -1,5 +1,6 @@
 package io.scalacraft.logic
 
+import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import org.scalatest.{FlatSpec, Matchers}
 
 class InventorySpec extends FlatSpec with Matchers {

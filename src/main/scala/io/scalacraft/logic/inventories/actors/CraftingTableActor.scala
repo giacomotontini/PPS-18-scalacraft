@@ -1,8 +1,9 @@
-package io.scalacraft.logic
+package io.scalacraft.logic.inventories.actors
 
 import akka.actor.{ActorRef, Props}
+import io.scalacraft.logic.inventories.CraftingTableInventory
 import io.scalacraft.logic.messages.Message._
-import io.scalacraft.logic.traits.CraftingInventoryActor
+import io.scalacraft.logic.traits.inventories.actors.CraftingInventoryActor
 
 class CraftingTableActor(val id: Int, val player: ActorRef, val playerInventory: ActorRef) extends CraftingInventoryActor {
   protected val inventory = CraftingTableInventory(id)
