@@ -1,4 +1,4 @@
-package io.scalacraft.logic.traits.inventories
+package io.scalacraft.logic.inventories.traits
 
 import io.scalacraft.logic.inventories.InventoryItem
 

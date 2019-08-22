@@ -2,13 +2,13 @@ package io.scalacraft.logic
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
+import io.scalacraft.logic.inventories.traits.Inventory
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
-import io.scalacraft.logic.traits.inventories.Inventory
 import io.scalacraft.packets.DataTypes.SlotData
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
 import net.querz.nbt.CompoundTag
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-import traits.ClickWindowActionManager
+import io.scalacraft.logic.inventories.traits.ClickWindowActionManager
 
 class ClickWindowsActionManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 

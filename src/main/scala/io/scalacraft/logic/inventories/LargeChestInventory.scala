@@ -1,7 +1,7 @@
 package io.scalacraft.logic.inventories
 
-import io.scalacraft.logic.traits.inventories.InventoryWithPlayerInventory
-import io.scalacraft.logic.traits.inventories.range.MainHotRange
+import io.scalacraft.logic.inventories.traits.InventoryWithPlayerInventory
+import io.scalacraft.logic.inventories.traits.range.MainHotRange
 
 object LargeChestInventory extends MainHotRange {
   private[logic] def ChestSlotRange = Range(0, 53).inclusive
@@ -13,7 +13,7 @@ case class LargeChestInventory(id: Int) extends InventoryWithPlayerInventory {
   import LargeChestInventory._
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None: Option[InventoryItem])
-  override protected val mainHotInventoryRange: MainHotRange = LargeChestInventory
+  override protected[inventories] val mainHotInventoryRange: MainHotRange = LargeChestInventory
   override def inventoryClosed(): Any = {}
 
 }

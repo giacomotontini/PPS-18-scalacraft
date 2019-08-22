@@ -6,7 +6,7 @@ import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.logic.messages.Message._
-import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
+import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.{ItemId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets._

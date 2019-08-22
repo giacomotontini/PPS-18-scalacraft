@@ -3,7 +3,7 @@ package io.scalacraft.logic.inventories.actors
 import akka.actor.{ActorRef, Props}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.logic.messages.Message.{PopulatePlayerInventory, RetrieveHeldItemId, UseHeldItem}
-import io.scalacraft.logic.traits.inventories.actors.CraftingInventoryActor
+import io.scalacraft.logic.inventories.traits.actors.CraftingInventoryActor
 import io.scalacraft.packets.serverbound.PlayPackets.HeldItemChange
 
 class PlayerInventoryActor(val player: ActorRef) extends CraftingInventoryActor {

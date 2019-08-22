@@ -1,4 +1,4 @@
-package io.scalacraft.logic.traits.inventories.range
+package io.scalacraft.logic.inventories.traits.range
 
 trait CraftingRange {
   private[logic] def CraftingInputSlotRange: Range

@@ -1,4 +1,4 @@
-package io.scalacraft.logic.traits
+package io.scalacraft.logic.inventories.traits
 
 import akka.actor.Actor
 

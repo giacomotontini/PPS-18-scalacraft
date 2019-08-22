@@ -1,9 +1,8 @@
-package io.scalacraft.logic.traits
+package io.scalacraft.logic.inventories.traits
 
 import akka.actor.ActorRef
 import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.logic.messages.Message.InventoryDropItems
-import io.scalacraft.logic.traits.inventories.{Inventory, InventoryWithCrafting}
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction.{LeftMouseClick, LeftMouseDrag, RightMouseClick, RightMouseDrag}

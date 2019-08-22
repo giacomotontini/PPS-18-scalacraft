@@ -1,14 +1,14 @@
 package io.scalacraft.logic.inventories
 
-import io.scalacraft.logic.traits.inventories._
-import io.scalacraft.logic.traits.inventories.range.{CraftingRange, MainHotRange}
+import io.scalacraft.logic.inventories.traits.{InventoryWithCrafting, InventoryWithPlayerInventory}
+import io.scalacraft.logic.inventories.traits.range.{CraftingRange, MainHotRange}
 
 case class PlayerInventory() extends InventoryWithPlayerInventory with InventoryWithCrafting {
   import PlayerInventory._
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(OffhandSlot + 1)(None: Option[InventoryItem])
-  override protected val mainHotInventoryRange: MainHotRange = PlayerInventory
-  override protected val craftingRange: CraftingRange = PlayerInventory
+  override protected[inventories] val mainHotInventoryRange: MainHotRange = PlayerInventory
+  override protected[inventories] val craftingRange: CraftingRange = PlayerInventory
   override def id: Int = PlayerInventory.Id
 
   def findHeldItemId(hotSlot: Int): Option[Int] = {

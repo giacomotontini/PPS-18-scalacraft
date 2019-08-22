@@ -1,4 +1,4 @@
-package io.scalacraft.logic.traits.inventories.range
+package io.scalacraft.logic.inventories.traits.range
 
 trait MainHotRange {
   private[logic] def MainInventorySlotRange: Range

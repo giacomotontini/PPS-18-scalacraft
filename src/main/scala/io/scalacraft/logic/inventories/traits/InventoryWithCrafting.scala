@@ -1,7 +1,7 @@
-package io.scalacraft.logic.traits.inventories
+package io.scalacraft.logic.inventories.traits
 
 import io.scalacraft.logic.inventories.InventoryItem
-import io.scalacraft.logic.traits.inventories.range.CraftingRange
+import io.scalacraft.logic.inventories.traits.range.CraftingRange
 
 trait InventoryWithCrafting extends Inventory {
  protected[inventories] val craftingRange: CraftingRange

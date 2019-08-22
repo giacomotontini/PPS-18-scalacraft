@@ -1,6 +1,7 @@
 package io.scalacraft.logic.inventories
 
-import io.scalacraft.logic.traits.inventories.{InventoryWithCraftingSpec, InventoryWithPlayerInventorySpec}
+import io.scalacraft.logic.inventories.traits.{InventoryWithCraftingSpec, InventoryWithPlayerInventorySpec}
+import io.scalacraft.logic.inventories.traits.InventoryWithCraftingSpec
 
 class PlayerInventorySpec extends InventoryWithPlayerInventorySpec[PlayerInventory]
   with InventoryWithCraftingSpec[PlayerInventory] {

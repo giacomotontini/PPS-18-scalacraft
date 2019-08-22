@@ -1,8 +1,8 @@
-package io.scalacraft.logic.traits.inventories
+package io.scalacraft.logic.inventories.traits
 
 import io.scalacraft.loaders.Items
 import io.scalacraft.logic.inventories.InventoryItem
-import io.scalacraft.logic.traits.inventories.range.MainHotRange
+import io.scalacraft.logic.inventories.traits.range.MainHotRange
 
 trait Inventory {
   protected val inventory: Array[Option[InventoryItem]]
@@ -107,23 +107,3 @@ trait Inventory {
 
   def inventoryClosed(): Any
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
