@@ -6,7 +6,7 @@ import io.scalacraft.logic.traits.inventories.range.MainHotRange
 
 trait Inventory {
   protected val inventory: Array[Option[InventoryItem]]
-  protected val mainHotInventoryRange: MainHotRange
+  protected[inventories] val mainHotInventoryRange: MainHotRange
   def id: Int
 
   private def fillSlot(slot: Int, quantity: Int, slotCapacity: Int, itemId: Int): Int = {

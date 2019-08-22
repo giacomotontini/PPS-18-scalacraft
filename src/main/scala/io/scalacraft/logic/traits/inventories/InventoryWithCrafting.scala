@@ -4,7 +4,7 @@ import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.logic.traits.inventories.range.CraftingRange
 
 trait InventoryWithCrafting extends Inventory {
- protected val craftingRange: CraftingRange
+ protected[inventories] val craftingRange: CraftingRange
 
   def retrieveCraftingItems(): List[Option[InventoryItem]] = {
     inventory.slice(craftingRange.CraftingInputSlotRange.start, craftingRange.CraftingInputSlotRange.end + 1).toList
