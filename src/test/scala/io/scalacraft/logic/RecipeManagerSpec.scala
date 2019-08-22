@@ -1,15 +1,17 @@
 package io.scalacraft.logic
 
 import io.scalacraft.loaders.Recipes
-import io.scalacraft.loaders.Recipes.{ShapeRecipe, ShapelessRecipe}
-import org.scalatest.{FlatSpec, Matchers}
+import io.scalacraft.loaders.Recipes.{ShapeRecipe, ShapelessRecipe, RecipeResult}
+import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
 import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.logic.inventories.CraftingTableInventory
 
+
+import scala.reflect.runtime.universe
 import scala.reflect._
 import scala.util.Random
 
-case class RecipeManagerSpec() extends FlatSpec with Matchers {
+case class RecipeManagerSpec() extends FlatSpec with Matchers with PrivateMethodTester {
 
   "A RecipeManager when an inventory has the necessary ingredients for recipe" should "give the correct recipe" in {
     Recipes.recipes.foreach(recipe => {
@@ -44,5 +46,18 @@ case class RecipeManagerSpec() extends FlatSpec with Matchers {
         RecipeManager.checkForRecipes(myInventory.toList) shouldBe Some(alternative.result)
       })
     })
+  }
+
+
+  "A RecipeManager when an inventory has smaller size than a recipe" should "not check it" in {
+    val axisDim = CraftingTableInventory.CraftingInputSlotRange.length / 2
+    val myInventory = List.fill(axisDim, axisDim)(-1)
+    //dummy recipe is a 3*3 of item with itemId = 1 and give as result 2 items of type 2
+    val shapeIngredients = List.fill(axisDim + 1, axisDim + 1)(1)
+    val dummyRecipe = ShapeRecipe(shapeIngredients, RecipeResult(2,2))
+
+    val checkForShapeMatch = PrivateMethod[Boolean]('checkForShapeMatch)
+    val result = (RecipeManager invokePrivate checkForShapeMatch(myInventory, dummyRecipe))
+    result shouldBe false
   }
 }

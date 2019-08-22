@@ -23,10 +23,6 @@ case class PlayerInventory() extends InventoryWithPlayerInventory with Inventory
       case None => None
     }
   }
-
-  override def retrieveInventoryItems(): List[Option[InventoryItem]] = {
-    inventory.dropRight(1).takeRight(HotBarSlotRange.length + MainInventorySlotRange.length).toList
-  }
 }
 
 object PlayerInventory extends MainHotRange with CraftingRange {

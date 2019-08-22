@@ -1,9 +1,9 @@
 package io.scalacraft.logic.traits.inventories.actors
 
-import io.scalacraft.logic.messages.Message.ForwardToClient
-import io.scalacraft.logic.traits.inventories.InventoryWithCrafting
 import io.scalacraft.logic.RecipeManager
 import io.scalacraft.logic.inventories.InventoryItem
+import io.scalacraft.logic.messages.Message.ForwardToClient
+import io.scalacraft.logic.traits.inventories.InventoryWithCrafting
 import io.scalacraft.packets.DataTypes.Slot
 import io.scalacraft.packets.clientbound.PlayPackets.ConfirmTransaction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindow

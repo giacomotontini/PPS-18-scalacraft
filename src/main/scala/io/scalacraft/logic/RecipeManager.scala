@@ -4,6 +4,7 @@ import io.scalacraft.loaders.Recipes
 import io.scalacraft.loaders.Recipes.{RecipeResult, ShapeRecipe, ShapelessRecipe}
 import io.scalacraft.logic.inventories.InventoryItem
 
+
 object RecipeManager {
 
   private def checkForShapelessMatch(craftingItemSorted: List[Int], recipe: ShapelessRecipe): Boolean = {
@@ -32,7 +33,7 @@ object RecipeManager {
     }
 
     val neededItems = shaped.inShapeSorted
-    if(craftingItems.size < neededItems.size || craftingItems.head.size < neededItems.map(_.size).max) { //check if crafting grid is smaller than necessary (i.e.playerInventory)
+    if(craftingItems.size < neededItems.size || craftingItems.size < neededItems.map(_.size).max) { //check if crafting grid is smaller than necessary (i.e.playerInventory)
       false
     } else {
       (for {y <- craftingItems.indices

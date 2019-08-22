@@ -98,12 +98,12 @@ trait Inventory {
   def retrieveAllItems(): List[Option[InventoryItem]] = inventory.map(identity).toList
 
   def retrieveInventoryItems(): List[Option[InventoryItem]] = {
-    inventory.takeRight(mainHotInventoryRange.HotBarSlotRange.length + mainHotInventoryRange.MainInventorySlotRange.length).map(identity).toList
+    inventory.slice(mainHotInventoryRange.MainInventorySlotRange.start, mainHotInventoryRange.HotBarSlotRange.end + 1).map(identity).toList
   }
 
-  def findAvailableIndex(): List[Int] = List()
+  def findAvailableIndex(): List[Int]
 
-  def findItemsIndex(itemId: Int): List[Int] = List()
+  def findItemsIndex(itemId: Int): List[Int]
 
   def inventoryClosed(): Any
 }

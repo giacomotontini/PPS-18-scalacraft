@@ -1,7 +1,7 @@
 package io.scalacraft.loaders
 
-import io.circe.{Decoder, parser}
 import io.circe.generic.auto._
+import io.circe.{Decoder, parser}
 
 import scala.io.Source
 

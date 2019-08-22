@@ -1,6 +1,7 @@
 package io.scalacraft.logic
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.testkit.TestProbe
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.logic.traits.inventories.Inventory
 import io.scalacraft.packets.DataTypes.SlotData
@@ -11,17 +12,23 @@ import traits.ClickWindowActionManager
 
 class ClickWindowsActionManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
+  implicit private val actorSystem = ActorSystem("test")
+
   case class DummyClickWindowsActionManager() extends ClickWindowActionManager {
     override val inventory: Inventory = new PlayerInventory
-    override protected val player: ActorRef = null
+    override protected val player: ActorRef = TestProbe().testActor
   }
 
   var actionManager: DummyClickWindowsActionManager = _
   val dirt = InventoryItem(10, 31)
   val sand = InventoryItem(26, 32)
-  val hotSlot = PlayerInventory.HotBarSlotRange.start
+  val stick = InventoryItem(497, 4)
+  val hotSlot: Int = PlayerInventory.HotBarSlotRange.start
+  val outSlot: Int = -999
+  val craftingSlot: Int = PlayerInventory.CraftingOutputSlot
 
-  override def beforeEach() = {
+  //All the following tests has dirt item loaded on hotBar's hotSlot
+  override def beforeEach(): Unit = {
     actionManager = DummyClickWindowsActionManager()
     actionManager.inventory.addItem(hotSlot, dirt)
   }
@@ -172,6 +179,57 @@ class ClickWindowsActionManagerSpec extends FlatSpec with Matchers with BeforeAn
     actionManager.inventory.retrieveAllItems()(hotSlot) shouldBe Some(InventoryItem(dirt.itemId, dirt.quantity / 2))
     actionManager.inventory.retrieveAllItems()(hotSlot + 1) shouldBe Some(InventoryItem(dirt.itemId, (dirt.quantity + 1) / 2))
     actionManager.inventory.retrieveAllItems()(hotSlot + 2) shouldBe Some(sand)
+  }
+
+  /***** Slot -999 tests *****/
+
+  "A left click outside inventory with hold items" should " drop all the items" in {
+
+    actionManager.handleAction(ClickWindowAction.RightMouseClick(), hotSlot, Some(SlotData(dirt.itemId, dirt.quantity, new CompoundTag())))
+    actionManager.inventory.retrieveAllItems()(hotSlot) shouldBe Some(InventoryItem(dirt.itemId, dirt.quantity / 2))
+
+    actionManager.handleAction(ClickWindowAction.LeftMouseClick(), outSlot, None)
+    actionManager.handleAction(ClickWindowAction.LeftMouseClick(), hotSlot + 1, None)
+    actionManager.inventory.retrieveAllItems()(hotSlot) shouldBe Some(InventoryItem(dirt.itemId, dirt.quantity / 2))
+    actionManager.inventory.retrieveAllItems()(hotSlot + 1) shouldBe None
+  }
+
+  "A right click outside inventory with hold items" should " drop one items, and hold all the other" in {
+    actionManager.inventory.addItem(hotSlot, dirt)
+
+    actionManager.handleAction(ClickWindowAction.RightMouseClick(), hotSlot, Some(SlotData(dirt.itemId, dirt.quantity * 2, new CompoundTag())))
+    actionManager.inventory.retrieveAllItems()(hotSlot) shouldBe Some(InventoryItem(dirt.itemId, dirt.quantity))
+
+    actionManager.handleAction(ClickWindowAction.RightMouseClick(), outSlot, None)
+    actionManager.handleAction(ClickWindowAction.LeftMouseClick(), hotSlot + 1, None)
+    actionManager.inventory.retrieveAllItems()(hotSlot) shouldBe Some(InventoryItem(dirt.itemId, dirt.quantity))
+    actionManager.inventory.retrieveAllItems()(hotSlot + 1) shouldBe Some(InventoryItem(dirt.itemId, dirt.quantity - 1))
+  }
+
+  /***** Crafting slot test *****/
+  "A click on crafting slot with nothing in hand" should "grab the crafted item" in {
+    actionManager.inventory.addItem(craftingSlot, stick)
+
+    actionManager.handleAction(ClickWindowAction.LeftMouseClick(), craftingSlot, Some(SlotData(stick.itemId, stick.quantity, new CompoundTag())), true)
+    actionManager.inventory.retrieveAllItems()(craftingSlot) shouldBe None
+
+    actionManager.handleAction(ClickWindowAction.LeftMouseClick(), hotSlot + 1, None)
+    actionManager.inventory.retrieveAllItems()(hotSlot + 1) shouldBe Some(InventoryItem(stick.itemId, stick.quantity))
+  }
+
+
+  "A click on crafting slot with same items on hand" should "grab the crafted item and group them" in {
+    actionManager.inventory.addItem(craftingSlot, stick)
+    actionManager.inventory.addItem(hotSlot + 1, stick)
+
+    actionManager.handleAction(ClickWindowAction.LeftMouseClick(), hotSlot + 1, Some(SlotData(stick.itemId, stick.quantity, new CompoundTag())))
+    actionManager.inventory.retrieveAllItems()(hotSlot + 1) shouldBe None
+
+    actionManager.handleAction(ClickWindowAction.LeftMouseClick(), craftingSlot, Some(SlotData(stick.itemId, stick.quantity, new CompoundTag())), true)
+    actionManager.inventory.retrieveAllItems()(craftingSlot) shouldBe None
+
+    actionManager.handleAction(ClickWindowAction.LeftMouseClick(), hotSlot + 1, None)
+    actionManager.inventory.retrieveAllItems()(hotSlot + 1) shouldBe Some(InventoryItem(stick.itemId, stick.quantity * 2))
   }
 
 

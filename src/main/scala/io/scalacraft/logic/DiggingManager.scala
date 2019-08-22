@@ -1,6 +1,6 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks.{Block, BreakingProperties, Drop}
 import io.scalacraft.loaders.Items.StorableItem

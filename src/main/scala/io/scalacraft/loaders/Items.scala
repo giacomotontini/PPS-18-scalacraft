@@ -1,7 +1,7 @@
 package io.scalacraft.loaders
 
-import io.circe.parser
 import io.circe.generic.auto._
+import io.circe.parser
 
 import scala.io.Source
 import scala.language.postfixOps

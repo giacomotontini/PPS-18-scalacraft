@@ -1,10 +1,5 @@
 package io.scalacraft
 
-import scala.io.Source
-import io.circe.parser._
-import io.circe.generic.auto._
-import io.circe.parser
-
 
 case object Test extends App {
 
