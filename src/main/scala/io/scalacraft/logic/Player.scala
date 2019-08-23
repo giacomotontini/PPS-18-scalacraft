@@ -71,7 +71,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
       viewDistance = if (clientSettings.viewDistance > ServerConfiguration.MaxViewDistance)
         ServerConfiguration.MaxViewDistance else clientSettings.viewDistance
 
-      loadChunks() onComplete {
+      loadChunksAndMobs() onComplete {
         case Success(_) =>
           val teleportId = randomGenerator.nextInt
           val flags = playerPositionAndLookFlags(xRelative = false, yRelative = false, zRelative = false, Y_ROT = false,
@@ -169,8 +169,19 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case RemovePlayer =>
       world ! PlayerLeavingGame(playerEntityId, username)
       reset()
-    case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
 
+    case entityRelativeMove: EntityRelativeMove => userContext ! entityRelativeMove
+    case entityLookAndRelativeMove: EntityLockAndRelativeMove => userContext ! entityLookAndRelativeMove
+    case entityVelocity: EntityVelocity => userContext ! entityVelocity
+    case entityLook: EntityLook => userContext ! entityLook
+    case entityHeadLook: EntityHeadLook =>
+     userContext ! entityHeadLook
+    /*case spawnMobs: List[SpawnMob] => spawnMobs.foreach(spawnMob => userContext ! spawnMob)
+    case destroyCreautures: List[DestroyEntities] => destroyCreautures.foreach(destroyCreaure => userContext ! destroyCreaure)
+    case _: sb.Animation=>
+      world ! Height(posX, posY,posZ)
+    case pos: List[Some[Position]] => println(pos)*/
+    case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
   }
 
   def handleInteractionOn(block: Blocks.Block): Unit = block.name match {
@@ -261,6 +272,28 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
         math.abs(posZ - lastPosition._2) > ServerConfiguration.LoadingChunksBlocksThreshold
     }
 
+    def loadChunks(toUnload: Set[(Int, Int)], toLoad: Set[(Int, Int)]): Future[Unit] = {
+      toUnload foreach { case (x, z) => userContext ! UnloadChunk(x, z) }
+      Future.sequence(toLoad map { case (x, z) =>
+        world.ask(RequestChunkData(x, z))(timeout) map {
+          case chunkData: ChunkData =>
+            userContext ! chunkData
+          case _ => // do nothing
+        }
+      }) map (_ => Unit)
+    }
+    def loadMobs(toUnload: Set[(Int, Int)], toLoad: Set[(Int, Int)]): Future[Unit] = {
+      val unloadFuture = Future.sequence(toUnload map { case (x, z) =>
+        world.ask(PlayerUnloadedChunk(x, z))(timeout).mapTo[List[DestroyEntities]] map (destroyCreatures =>
+          destroyCreatures.foreach(destroyCreaure => userContext ! destroyCreaure))
+      }) map (_ => Unit)
+      val loadFuture = Future.sequence(toLoad map { case (x, z) =>
+        world.ask(SpawnCreaturesInChunk(x, z))(timeout).mapTo[List[SpawnMob]] map (spawnMobs =>
+          spawnMobs.foreach(spawnMob => userContext ! spawnMob))
+      }) map (_ => Unit)
+      loadFuture.zip(unloadFuture).flatMap(_ => Future.unit)
+    }
+
     if (lastPosition == null || needLoadingChunks) {
       val chunkX = posX.toInt >> 4
       val chunkZ = posZ.toInt >> 4
@@ -271,12 +304,9 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
       val toLoad = newChunks diff loadedChunks
       loadedChunks = newChunks
 
-      toUnload foreach { case (x, z) => userContext ! UnloadChunk(x, z) }
-      Future.sequence(toLoad map { case (x, z) =>
-        world.ask(RequestChunkData(x, z))(timeout).mapTo[ChunkData] map { chunkData =>
-          userContext ! chunkData
-        }
-      }) flatMap (_ => Future.unit)
+      val loadChunksFuture = loadChunks(toUnload, toLoad)
+      val loadMobFuture = loadMobs(toUnload, toLoad)
+      loadChunksFuture.zip(loadMobFuture).flatMap(_ => Future.unit)
     } else Future.unit
   }
 

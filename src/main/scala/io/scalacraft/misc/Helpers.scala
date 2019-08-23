@@ -3,7 +3,7 @@ package io.scalacraft.misc
 import java.io.{InputStream, OutputStream}
 
 import io.scalacraft.packets.DataTypes.{Angle, VarInt}
-import net.querz.nbt.{ListTag, Tag}
+import net.querz.nbt.{CompoundTag, ListTag, StringTag, Tag}
 
 import scala.collection.JavaConverters._
 import scala.util.Random
@@ -58,7 +58,7 @@ private[scalacraft] object Helpers {
     override def hasNext: Boolean = true
 
     override def next: Int = {
-      seed = (seed * 1103515245 + 12345) & Int.MaxValue;
+      seed = (seed * 1103515245 + 12345) & Int.MaxValue
       seed
     }
   }
@@ -68,5 +68,56 @@ private[scalacraft] object Helpers {
   def randomAngle: Angle = Angle(random.nextInt() % 256)
 
   def randomVelocity: Int = random.nextInt(4096) - 2048
+
+  implicit class RichNbtCompoundTag(nbtTag: CompoundTag) {
+    val treeTypes = List("birch","oak","spruce")
+    private[this] def checkIfIsASpecificTypeOfBlock(tagValue: String):Boolean = {
+      if(nbtTag != null) {
+        val waterStringTag = new StringTag()
+        waterStringTag.setValue(tagValue)
+        nbtTag.entrySet().stream().anyMatch(elem => elem.getValue.equals(waterStringTag))
+      }
+      else false
+    }
+    def isWater: Boolean = {
+     checkIfIsASpecificTypeOfBlock("minecraft:water")
+    }
+    def isAir: Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:air") ||
+        checkIfIsASpecificTypeOfBlock("minecraft:cave_air")
+    }
+    def isGrass: Boolean = {
+        checkIfIsASpecificTypeOfBlock("minecraft:grass") ||
+          checkIfIsASpecificTypeOfBlock("minecraft:tall_grass")
+    }
+    def isLeaves: Boolean = {
+      treeTypes.exists(treeType => checkIfIsASpecificTypeOfBlock("minecraft:" + treeType + "_leaves"))
+    }
+    def isWoodOfTree: Boolean = {
+      treeTypes.exists(treeType => checkIfIsASpecificTypeOfBlock("minecraft:" + treeType + "_log"))
+    }
+    def isLava: Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:lava") ||
+        checkIfIsASpecificTypeOfBlock("minecraft:flowing_lava")
+    }
+    def isPoppy: Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:poppy")
+    }
+    def isDandelion: Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:dandelion")
+    }
+    def isOxyeDaisy: Boolean = {
+      checkIfIsASpecificTypeOfBlock("minecraft:oxeye_daisy")
+    }
+    def isSpawnableSurface: Boolean = {
+      !isAir && !isWoodOfTree && !isLeaves && !isGrass && !isLava && !isPoppy && !isDandelion && !isWater && !isOxyeDaisy
+    }
+    def areFlowers: Boolean = {
+      isDandelion || isGrass || isOxyeDaisy || isPoppy
+    }
+    def emptyCube: Boolean = {
+      areFlowers || isAir || isGrass
+    }
+  }
 
 }

@@ -257,7 +257,7 @@ object Entities {
   }
 
   class Ocelot extends TameableAnimal with MobEntity {
-    @indexType(index = 1) @boxed var tpe: Int = 0;
+    @indexType(index = 1) @boxed var tpe: Int = 0
   }
 
   class Wolf extends TameableAnimal with MobEntity {
@@ -309,7 +309,7 @@ object Entities {
 
   class Guardian extends Monster with MobEntity {
     @indexType(index = 7) var isRetractingSpikes: Boolean = false
-    @indexType(index = 1) @boxed var targetEID: Int = 0;
+    @indexType(index = 1) @boxed var targetEID: Int = 0
   }
 
   class ElderGuardian extends Guardian with MobEntity

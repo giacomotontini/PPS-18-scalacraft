@@ -8,11 +8,14 @@ import io.scalacraft.packets.DataTypes.{EntityId, ItemId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SpawnPlayer}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging}
 import net.querz.nbt.CompoundTag
+import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
 
 sealed trait Message
 
 object Message {
 
+  case class AskResponse(sender: ActorRef, responseObject: Any) extends Message
+  case class AskRequest(sender: ActorRef, requestObject: Any) extends Message
   /* --------------------------------------------- Region and chunks --------------------------------------------- */
   sealed trait RegionMessage extends Message
 
@@ -99,5 +102,29 @@ object Message {
   case class SendToAll(obj: Any) extends Message
 
   case class ForwardToClient(obj: Any) extends Message
+
+  /* --------------------------------------------- Creatures Spawn/Despawn --------------------------------------------- */
+  case class SpawnCreaturesInChunk(chunkX: Int, chunkZ: Int) extends Message
+  case class PlayerUnloadedChunk(chunkX: Int, chunkZ: Int) extends Message
+  case class RequestCreatureInChunk(chunkX: Int, chunkZ: Int) extends Message
+  case class DespawnCreature(chunkX: Int, chunkZ: Int) extends Message
+  case class RequestSpawnPoints(chunkX: Int,chunkZ: Int) extends Message
+  object SkyUpdateState extends Enumeration {
+    type SkyUpdateState = Value
+    val Sunrise, Noon, Sunset, MidNight = Value
+
+    def timeUpdateStateFromTime(timeOfDay: Long): SkyUpdateState = {
+      timeOfDay match {
+        case _: Long if timeOfDay>=0 && timeOfDay < 6000  => Sunrise
+        case _: Long if timeOfDay>=6000 && timeOfDay < 12000  => Noon
+        case _: Long if timeOfDay>=12000 && timeOfDay < 18000  => Sunset
+        case _: Long if timeOfDay>=18000 && timeOfDay < 24000  => MidNight
+      }
+    }
+  }
+  case class SkyStateUpdate(state: SkyUpdateState) extends Message
+  /* --------------------------------------------- Creatures AI --------------------------------------------- */
+  case class RequestNearbyPoints(x:Int, y:Int, z:Int, oldX:Int, oldZ:Int) extends Message
+  //case class Height(x:Int, y:Int, z:Int) extends Message
 
 }

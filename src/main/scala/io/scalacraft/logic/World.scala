@@ -33,12 +33,15 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
   private var onlinePlayers: Map[EntityId, (String, ActorRef)] = Map()
   private val dropManager: ActorRef = context.actorOf(DropManager.props, DropManager.name)
   private val diggingManager: ActorRef = context.actorOf(DiggingManager.props(dropManager), DiggingManager.name)
+  private var creatureSpawner: ActorRef = _
 
   private var worldAge: Long = 0
 
   private val entityIdGenerator: Iterator[EntityId] = Helpers.linearCongruentialGenerator(System.nanoTime().toInt)
 
   override def preStart(): Unit = {
+    import World._
+    creatureSpawner = context.actorOf(CreatureSpawner.props, CreatureSpawner.name)
     timers.startPeriodicTimer(new Object(), TimeTick, 1 second)
   }
 
@@ -131,10 +134,8 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
       if (worldAge % TimeUpdateInterval == 0) {
         self ! SendToAll(TimeUpdate(worldAge, timeOfDay))
       }
+      creatureSpawner ! SkyStateUpdate(SkyUpdateState.timeUpdateStateFromTime(timeOfDay))
       worldAge += ServerConfiguration.TicksInSecond
-
-    /* ----------------------------------------------- Misc ----------------------------------------------- */
-
     case RequestEntityId => sender ! entityIdGenerator.next()
 
     case SendToPlayer(playerId, obj) => onlinePlayers(playerId)._2 ! ForwardToClient(obj)
@@ -158,8 +159,24 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
 
     /* ----------------------------------------------- Default ----------------------------------------------- */
 
+    case requestMobs: SpawnCreaturesInChunk =>
+      creatureSpawner forward requestMobs
+    case requestSpawnPoints @ RequestSpawnPoints(chunkX, chunkZ) => regions(MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ)) forward requestSpawnPoints
+    case unloadedChunk: PlayerUnloadedChunk =>
+      creatureSpawner forward unloadedChunk
+    case entityRelativeMove: EntityRelativeMove =>
+      players.foreach(player => player._2._2 forward entityRelativeMove)
+    case entityLookAndRelativeMove: EntityLockAndRelativeMove =>
+      players.foreach(player => player._2._2 forward entityLookAndRelativeMove)
+    case entityVelocity: EntityVelocity =>
+      players.foreach(player => player._2._2 forward entityVelocity)
+    case requestNearbyPoints @ RequestNearbyPoints(posX,_, posZ, _, _) => regions(MCAUtil.blockToRegion(posX), MCAUtil.blockToRegion(posZ)) forward requestNearbyPoints
+    case entityLook: EntityLook =>
+      players.foreach(player => player._2._2 forward entityLook)
+    case entityHeadLook: EntityHeadLook =>
+      players.foreach(player => player._2._2 forward entityHeadLook)
+    //case height @ Height(x,_,z) => regions(MCAUtil.blockToRegion(x), MCAUtil.blockToRegion(z)) forward height
     case unhandled => log.warning(s"Unhandled message in World: $unhandled")
-
   }
 
   private def playerUUID(username: String): UUID =

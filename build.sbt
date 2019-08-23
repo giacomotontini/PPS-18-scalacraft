@@ -11,6 +11,7 @@ val nettyVersion        = "4.1.38.Final"
 val logbackVersion      = "1.2.3"
 val nbtVersion          = "4.1.2"
 val scoptVersion        = "4.0.0-RC2"
+val tuPrologVersion     = "3.3.0"
 
 lazy val root = Project(
   id = projectName,
@@ -43,5 +44,6 @@ lazy val dependencies = Seq(
   "io.circe"                   %% "circe-core"      % circeVersion,
   "io.circe"                   %% "circe-generic"   % circeVersion,
   "io.circe"                   %% "circe-parser"    % circeVersion,
-  "com.github.scopt"           %% "scopt"           % scoptVersion
+  "com.github.scopt"           %% "scopt"           % scoptVersion,
+  "it.unibo.alice.tuprolog"    %  "tuprolog"        % tuPrologVersion
 )
