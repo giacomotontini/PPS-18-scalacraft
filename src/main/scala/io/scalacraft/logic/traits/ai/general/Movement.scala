@@ -1,16 +1,16 @@
 package io.scalacraft.logic.traits.ai.general
 
 import akka.actor.{Actor, Timers}
-import io.scalacraft.logic.messages.Message.RequestNearbyPoints
-import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
+import akka.pattern._
+import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
+import io.scalacraft.logic.messages.Message.{RequestNearbyPoints, SendToAll}
+import io.scalacraft.logic.traits.creatures.CreatureParameters
 import io.scalacraft.packets.DataTypes.{Angle, Position}
-import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLockAndRelativeMove, EntityLook, EntityVelocity}
+import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLookAndRelativeMove, EntityVelocity}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.pattern._
-import io.scalacraft.logic.traits.creatures.CreatureParameters
-
+import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 trait Movement {
@@ -65,9 +65,9 @@ trait Movement {
             (move.deltaX / MovementFluidityFactor, move.deltaY / MovementFluidityFactor, move.deltaZ / MovementFluidityFactor)
           val (yaw, pitch) = computeYawAndPitch(deltaXChunk, deltaYChunk, deltaZChunk)
           val (velocityX, velocityY, velocityZ) = obtainFluidVelocity(move.newPosition)
-          world ! EntityVelocity(entityId, velocityX, velocityY, velocityZ)
-          world ! EntityHeadLook(entityId, yaw)
-          world ! EntityLockAndRelativeMove(entityId, deltaXChunk, deltaYChunk, deltaZChunk, yaw, pitch, deltaYChunk == 0)
+          world ! SendToAll(EntityVelocity(entityId, velocityX, velocityY, velocityZ))
+          world ! SendToAll(EntityHeadLook(entityId, yaw))
+          world ! SendToAll(EntityLookAndRelativeMove(entityId, deltaXChunk, deltaYChunk, deltaZChunk, yaw, pitch, deltaYChunk == 0))
         }
       }
     }

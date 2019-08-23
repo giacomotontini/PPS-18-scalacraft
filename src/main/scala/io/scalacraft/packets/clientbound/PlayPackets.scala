@@ -5,7 +5,6 @@ import java.util.UUID
 import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations.{short, _}
 import io.scalacraft.packets.DataTypes._
-import io.scalacraft.packets.Entities
 import io.scalacraft.packets.Entities.{MobEntity, ObjectEntity, Player}
 
 object PlayPackets {

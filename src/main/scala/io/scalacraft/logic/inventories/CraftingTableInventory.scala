@@ -1,7 +1,7 @@
 package io.scalacraft.logic.inventories
 
-import io.scalacraft.logic.inventories.traits.{InventoryWithCrafting, InventoryWithPlayerInventory}
 import io.scalacraft.logic.inventories.traits.range.{CraftingRange, MainHotRange}
+import io.scalacraft.logic.inventories.traits.{InventoryWithCrafting, InventoryWithPlayerInventory}
 
 case class CraftingTableInventory(id: Int) extends InventoryWithPlayerInventory with InventoryWithCrafting {
   import CraftingTableInventory._

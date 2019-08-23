@@ -6,9 +6,9 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
+import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.logic.messages.Message._
-import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.{Angle, ItemId, Position}
 import io.scalacraft.packets.Entities
@@ -34,9 +34,9 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
 
   private var playerEntityId = 0
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = -10
-  private var posY: Int = 70
-  private var posZ: Int = 20
+  private var posX: Double = -10
+  private var posY: Double = 70
+  private var posZ: Double = 20
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   private var onGround = true
@@ -171,16 +171,11 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
       reset()
 
     case entityRelativeMove: EntityRelativeMove => userContext ! entityRelativeMove
-    case entityLookAndRelativeMove: EntityLockAndRelativeMove => userContext ! entityLookAndRelativeMove
+    case entityLookAndRelativeMove: EntityLookAndRelativeMove => userContext ! entityLookAndRelativeMove
     case entityVelocity: EntityVelocity => userContext ! entityVelocity
     case entityLook: EntityLook => userContext ! entityLook
     case entityHeadLook: EntityHeadLook =>
      userContext ! entityHeadLook
-    /*case spawnMobs: List[SpawnMob] => spawnMobs.foreach(spawnMob => userContext ! spawnMob)
-    case destroyCreautures: List[DestroyEntities] => destroyCreautures.foreach(destroyCreaure => userContext ! destroyCreaure)
-    case _: sb.Animation=>
-      world ! Height(posX, posY,posZ)
-    case pos: List[Some[Position]] => println(pos)*/
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
   }
 
@@ -227,7 +222,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
       this.posY = y
       this.posZ = z
       world ! PlayerMoved(playerEntityId, Position(x, y, z))
-      loadChunks()
+      loadChunksAndMobs()
     }
 
     direction foreach { case (yaw, pitch) =>
@@ -264,7 +259,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
 
   private var lastPosition: (Double, Double) = _
 
-  private def loadChunks(): Future[Unit] = {
+  private def loadChunksAndMobs(): Future[Unit] = {
     val timeout = 16 seconds
 
     def needLoadingChunks: Boolean = {

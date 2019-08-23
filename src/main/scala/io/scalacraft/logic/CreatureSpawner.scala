@@ -1,23 +1,24 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorRef, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import io.scalacraft.logic.creatures.misc.CreatureInstances
+import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.messages.Message
 import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.creatures.FarmAnimal
-import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
 
 import scala.concurrent.Future
 import scala.concurrent.Future._
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout with LazyLogging {
+class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout with ActorLogging {
   //Mantains the number of player in a chunk, this is identified by his x, z coordinates
   var numberOfPlayersInChunk: Map[(Int, Int), Int] = Map()
   //Mantains the habitation times of every habitated chunk
@@ -54,7 +55,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
             }
             response.asInstanceOf[Some[T]].get
         })
-      case Failure(ex) => println("Request failed " + ex.getMessage)
+      case Failure(ex) => log.error(ex, "Request failed at askSomethingToCreatures")
     }
   }
 

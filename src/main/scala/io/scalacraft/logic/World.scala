@@ -6,9 +6,8 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.{Blocks, Items}
-import io.scalacraft.logic.World.TimeTick
+import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.messages.Message._
-import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import io.scalacraft.packets.DataTypes.{EntityId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets._
@@ -47,7 +46,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
 
   override def receive: Receive = {
 
-    /* ----------------------------------------------- Users ----------------------------------------------- */
+    /* ----------------------------------------------- Players ----------------------------------------------- */
 
     case RegisterUser(username) =>
       if (!players.contains(username)) {
@@ -91,25 +90,11 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
 
     /* ----------------------------------------------- Regions ----------------------------------------------- */
 
-    case request@RequestChunkData(chunkX, chunkZ, _) =>
-      val (relativeX, relativeZ) = (MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ))
-      if (regions.contains((relativeX, relativeZ))) {
-        regions((relativeX, relativeZ)) forward request
-      } else {
-        Try(MCAUtil.readMCAFile(s"world/regions/r.$relativeX.$relativeZ.mca")) match {
-          case Success(regionFile) =>
-            val region = context.actorOf(Region.props(regionFile), Region.name(relativeX, relativeZ))
-            regions += (relativeX, relativeZ) -> region
-            region forward request
-          case Failure(_) =>
-            log.warning(s"Region ($relativeX,$relativeZ) not loaded")
-            sender ! ChunkNotPresent
-        }
-      }
-
-    case request@ChangeBlockState(Position(x, _, z), _) => regions(x >> 9, z >> 9) forward request
-    case request@RequestBlockState(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
-    case request@FindFirstSolidBlockPositionUnder(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
+    case request@RequestChunkData(chunkX, chunkZ, _) => forwardToRegionWithChunk(chunkX, chunkZ)(request)
+    case action@ChangeBlockState(Position(blockX, _, blockZ), _) => forwardToRegionWithBlock(blockX, blockZ)(action)
+    case request@RequestBlockState(Position(blockX, _, blockZ)) => forwardToRegionWithBlock(blockX, blockZ)(request)
+    case request@FindFirstSolidBlockPositionUnder(Position(blockX, _, blockZ)) =>
+      forwardToRegionWithBlock(blockX, blockZ)(request)
 
     case PlayerPlaceBlockWithItemId(playerId, PlayerBlockPlacement(Position(x, y, z), face, _, _, _, _), itemId) =>
       val blockState = Blocks.defaultCompoundTagFromName(Items.getStorableItemById(itemId).name)
@@ -136,6 +121,9 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
       }
       creatureSpawner ! SkyStateUpdate(SkyUpdateState.timeUpdateStateFromTime(timeOfDay))
       worldAge += ServerConfiguration.TicksInSecond
+
+    /* ----------------------------------------------- General ----------------------------------------------- */
+
     case RequestEntityId => sender ! entityIdGenerator.next()
 
     case SendToPlayer(playerId, obj) => onlinePlayers(playerId)._2 ! ForwardToClient(obj)
@@ -153,30 +141,41 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
 
     case message: PlayerMoved => dropManager forward message
 
-    /* ----------------------------------------------- Digging manager ----------------------------------------------- */
+    /* --------------------------------------------- Digging manager --------------------------------------------- */
 
     case msg: PlayerDiggingHoldingItem => diggingManager forward msg
 
+    /* ----------------------------------------------- Mobs ----------------------------------------------- */
+
+    case request: SpawnCreaturesInChunk => creatureSpawner forward request
+    case request @ RequestSpawnPoints(chunkX, chunkZ) => forwardToRegionWithChunk(chunkX, chunkZ)(request)
+    case action: PlayerUnloadedChunk => creatureSpawner forward action
+    case request @ RequestNearbyPoints(blockX,_, blockZ, _, _) => forwardToRegionWithBlock(blockX, blockZ)(request)
+
     /* ----------------------------------------------- Default ----------------------------------------------- */
 
-    case requestMobs: SpawnCreaturesInChunk =>
-      creatureSpawner forward requestMobs
-    case requestSpawnPoints @ RequestSpawnPoints(chunkX, chunkZ) => regions(MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ)) forward requestSpawnPoints
-    case unloadedChunk: PlayerUnloadedChunk =>
-      creatureSpawner forward unloadedChunk
-    case entityRelativeMove: EntityRelativeMove =>
-      players.foreach(player => player._2._2 forward entityRelativeMove)
-    case entityLookAndRelativeMove: EntityLockAndRelativeMove =>
-      players.foreach(player => player._2._2 forward entityLookAndRelativeMove)
-    case entityVelocity: EntityVelocity =>
-      players.foreach(player => player._2._2 forward entityVelocity)
-    case requestNearbyPoints @ RequestNearbyPoints(posX,_, posZ, _, _) => regions(MCAUtil.blockToRegion(posX), MCAUtil.blockToRegion(posZ)) forward requestNearbyPoints
-    case entityLook: EntityLook =>
-      players.foreach(player => player._2._2 forward entityLook)
-    case entityHeadLook: EntityHeadLook =>
-      players.foreach(player => player._2._2 forward entityHeadLook)
-    //case height @ Height(x,_,z) => regions(MCAUtil.blockToRegion(x), MCAUtil.blockToRegion(z)) forward height
     case unhandled => log.warning(s"Unhandled message in World: $unhandled")
+
+  }
+
+  private def forwardToRegionWithBlock(blockX: Int, blockZ: Int)(message: Any): Unit =
+    forwardToRegionWithChunk(blockX >> 4, blockZ >> 4)(message)
+
+  private def forwardToRegionWithChunk(chunkX: Int, chunkZ: Int)(message: Any): Unit = {
+    val (x, z) = (chunkX >> 5, chunkZ >> 5)
+    if (regions.contains((x, z))) {
+      regions((x, z)) forward message
+    } else {
+      Try(MCAUtil.readMCAFile(s"world/regions/r.$x.$z.mca")) match {
+        case Success(regionFile) =>
+          val region = context.actorOf(Region.props(regionFile), Region.name(x, z))
+          regions += (x, z) -> region
+          region forward message
+        case Failure(_) =>
+          log.warning(s"Region ($x,$z) not present")
+          sender ! ChunkNotPresent
+      }
+    }
   }
 
   private def playerUUID(username: String): UUID =

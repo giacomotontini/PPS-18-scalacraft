@@ -4,11 +4,11 @@ import java.util.UUID
 
 import akka.actor.ActorRef
 import io.scalacraft.logic.inventories.InventoryItem
+import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.packets.DataTypes.{EntityId, ItemId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SpawnPlayer}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging}
 import net.querz.nbt.CompoundTag
-import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
 
 sealed trait Message
 
@@ -25,12 +25,6 @@ object Message {
   case class  RequestBlockState(position: Position) extends Message
   case class  FindFirstSolidBlockPositionUnder(position: Position) extends RegionMessage
   case class  ChangeBlockState(position: Position, tag: CompoundTag)
-
-  case class RequestBlockState(position: Position) extends Message
-
-  case class FindFirstSolidBlockPositionUnder(position: Position) extends RegionMessage
-
-  case class ChangeBlock(position: Position, tag: CompoundTag)
 
   /* --------------------------------------------- Player  --------------------------------------------- */
 
@@ -125,6 +119,5 @@ object Message {
   case class SkyStateUpdate(state: SkyUpdateState) extends Message
   /* --------------------------------------------- Creatures AI --------------------------------------------- */
   case class RequestNearbyPoints(x:Int, y:Int, z:Int, oldX:Int, oldZ:Int) extends Message
-  //case class Height(x:Int, y:Int, z:Int) extends Message
 
 }

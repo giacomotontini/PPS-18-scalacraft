@@ -3,16 +3,16 @@ package io.scalacraft.logic.traits.creatures
 import java.util.UUID
 
 import akka.actor.{ActorRef, Props}
+import akka.pattern._
+import io.scalacraft.logic.inventories.traits.DefaultTimeout
+import io.scalacraft.logic.messages.Message.RequestEntityId
 import io.scalacraft.packets.DataTypes
 import io.scalacraft.packets.DataTypes.Position
 
 import scala.concurrent.Await
-import scala.util.Random
-import akka.pattern._
-import io.scalacraft.logic.messages.Message.RequestEntityId
-import io.scalacraft.logic.traits.DefaultTimeout
-
 import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.util.Random
 
 case class SpawnCreatureParameters(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]],
                                    spawnPolicy: Position => Set[(Props, String)],

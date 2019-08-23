@@ -77,7 +77,7 @@ object Entrypoint extends App with LazyLogging {
   private def startServer(config: ServerConfiguration): Unit = {
     logger.debug("Starting main ActorSystem..")
     val system = ActorSystem("scalacraft")
-    val world = system.actorOf(World.props(config), World.name)
+    system.actorOf(World.props(config), World.name)
 
     val server = Server(config.port, () => new ServerHandler(system, config))
     server.run()

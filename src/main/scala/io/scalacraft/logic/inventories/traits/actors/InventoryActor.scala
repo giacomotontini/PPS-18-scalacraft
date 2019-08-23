@@ -2,9 +2,8 @@ package io.scalacraft.logic.inventories.traits.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import io.scalacraft.logic.inventories.InventoryItem
-import io.scalacraft.logic.inventories.traits.Inventory
+import io.scalacraft.logic.inventories.traits.{ClickWindowActionManager, DefaultTimeout, ImplicitContext, Inventory}
 import io.scalacraft.logic.messages.Message._
-import io.scalacraft.logic.inventories.traits.{ClickWindowActionManager, DefaultTimeout, ImplicitContext}
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}
 import io.scalacraft.packets.clientbound.PlayPackets.{ConfirmTransaction, SetSlot}
 import io.scalacraft.packets.serverbound.PlayPackets.{ClickWindow, CloseWindow}

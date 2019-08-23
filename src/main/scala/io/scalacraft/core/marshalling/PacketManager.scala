@@ -7,7 +7,7 @@ import io.scalacraft.core.marshalling.Marshallers._
 import io.scalacraft.core.marshalling.MobsAndObjectsTypeMapping._
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations._
 import io.scalacraft.packets.DataTypes.{Position => _, _}
-import io.scalacraft.packets.Entities.{Entity, MobEntity, ObjectEntity, Player}
+import io.scalacraft.packets.Entities.{Entity, MobEntity, Player}
 import io.scalacraft.packets.{DataTypes, Entities}
 
 import scala.language.postfixOps

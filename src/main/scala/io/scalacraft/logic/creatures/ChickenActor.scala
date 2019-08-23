@@ -3,10 +3,9 @@ package io.scalacraft.logic.creatures
 import java.util.UUID
 
 import akka.actor.{Actor, ActorRef, Props, Timers}
-import io.scalacraft.core.marshalling.MobsAndObjectsTypeMapping
+import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.traits.ai.general.AI
 import io.scalacraft.logic.traits.creatures.{BaseBehaviour, CreatureParameters, FarmAnimal}
-import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.packets.Entities.Chicken
 
 class ChickenActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)

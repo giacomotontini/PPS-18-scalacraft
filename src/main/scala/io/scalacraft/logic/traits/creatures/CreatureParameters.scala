@@ -2,7 +2,7 @@ package io.scalacraft.logic.traits.creatures
 
 import java.util.UUID
 
-import io.scalacraft.core.marshalling.{EntityMetadata, MobsAndObjectsTypeMapping}
+import io.scalacraft.core.marshalling.MobsAndObjectsTypeMapping
 import io.scalacraft.packets.Entities.MobEntity
 
 import scala.util.Random

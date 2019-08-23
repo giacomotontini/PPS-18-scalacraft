@@ -8,8 +8,8 @@ import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.network.{ConnectionManager, RawPacket}
 import io.scalacraft.loaders.Packets
 import io.scalacraft.loaders.Packets.ConnectionState
-import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
+import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.clientbound.LoginPackets.LoginSuccess
 import io.scalacraft.packets.clientbound.StatusPacket.{Pong, Response}
