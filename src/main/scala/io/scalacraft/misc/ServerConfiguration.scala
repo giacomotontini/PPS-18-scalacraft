@@ -12,7 +12,7 @@ case class ServerConfiguration(debug: Boolean = false,
                                serverDescription: String = "Scalacraft Server",
                                gameMode: GameModeValue = GameModeValue.Survival,
                                serverDifficulty: ServerDifficulties = ServerDifficulties.Easy,
-                               maxPlayers: Int = 100,
+                               maxPlayers: Int = 20,
                                levelTypeBiome: LevelType = LevelType.Default,
                                reducedDebugInfo: Boolean = false) {
 

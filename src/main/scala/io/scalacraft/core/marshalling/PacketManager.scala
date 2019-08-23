@@ -28,8 +28,8 @@ class PacketManager[T: TypeTag] {
 
   private val classConstructors: Map[Type, MethodMirror] = classTypes map { sym =>
     val cm = mirror.reflectClass(sym)
-    val ctor = sym.toType.decl(termNames.CONSTRUCTOR).asMethod
-    sym.toType -> cm.reflectConstructor(ctor)
+    val actor = sym.toType.decl(termNames.CONSTRUCTOR).asMethod
+    sym.toType -> cm.reflectConstructor(actor)
   } toMap
 
   private val packetTypes: Map[Int, Type] = classTypes collect {
