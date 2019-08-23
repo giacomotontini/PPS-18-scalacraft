@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.scalacraft.logic.UserContext
-import io.scalacraft.logic.messages.Message.UserDisconnected
+import io.scalacraft.logic.commons.Message.UserDisconnected
 import io.scalacraft.misc.ServerConfiguration
 
 class ServerHandler(actorSystem: ActorSystem, serverConfiguration: ServerConfiguration)

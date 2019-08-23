@@ -2,8 +2,8 @@ package io.scalacraft.logic.traits.ai.general
 
 import akka.actor.{Actor, Timers}
 import akka.pattern._
-import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.logic.messages.Message.{RequestNearbyPoints, SendToAll}
+import io.scalacraft.logic.commons.Message.{RequestNearbyPoints, SendToAll}
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.traits.creatures.CreatureParameters
 import io.scalacraft.packets.DataTypes.{Angle, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLookAndRelativeMove, EntityVelocity}

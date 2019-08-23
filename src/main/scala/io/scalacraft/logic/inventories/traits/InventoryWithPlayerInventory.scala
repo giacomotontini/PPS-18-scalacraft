@@ -10,14 +10,14 @@ trait InventoryWithPlayerInventory extends Inventory {
 
   override def findAvailableIndex(): List[Int] = {
     (for {
-      i <- (mainHotInventoryRange.HotBarSlotRange ++ mainHotInventoryRange.MainInventorySlotRange)
+      i <- mainHotInventoryRange.HotBarSlotRange ++ mainHotInventoryRange.MainInventorySlotRange
       if inventory(i).isEmpty
     } yield i).toList
   }
 
   override def findItemsIndex(itemId: Int): List[Int] = {
     (for {
-      i <- (mainHotInventoryRange.HotBarSlotRange ++ mainHotInventoryRange.MainInventorySlotRange)
+      i <- mainHotInventoryRange.HotBarSlotRange ++ mainHotInventoryRange.MainInventorySlotRange
       if inventory(i).isDefined && inventory(i).get.itemId == itemId
     } yield i).toList
   }

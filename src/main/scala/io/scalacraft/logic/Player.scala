@@ -5,10 +5,10 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks
+import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
-import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
-import io.scalacraft.logic.messages.Message._
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.DataTypes.{Angle, ItemId, Position}
 import io.scalacraft.packets.Entities
@@ -40,8 +40,8 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
   private var onGround = true
-  private var health = 20
-  private var foodHealth = 20
+  private val health = 20
+  // private var foodHealth = 20
   private var mainHand: MainHand = _
   private var locale: String = _
   private var viewDistance: Int = _ //render distance in chunks
@@ -53,6 +53,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
   private var activeInventories: Map[Int, ActorRef] = Map(PlayerInventory.Id -> context.actorOf(PlayerInventoryActor.props(self)))
 
   private var lastWindowId = 1
+
   override def receive: Receive = preStartBehaviour
 
   private def preStartBehaviour: Receive = {
@@ -123,8 +124,8 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case sb.PlayerLook(yaw, pitch, _onGround) =>
       updatePositionAndLook(direction = Some(yaw, pitch), onGround = _onGround)
 
-    case packet: sb.HeldItemChange => activeInventories(PlayerInventory.Id)  forward packet
-    
+    case packet: sb.HeldItemChange => activeInventories(PlayerInventory.Id) forward packet
+
     case playerDigging: sb.PlayerDigging =>
       (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[ItemId]] onComplete {
         case Success(heldItemId) =>
@@ -132,7 +133,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
         case Failure(exception) => log.error(exception, "Failed to retrieve held item.")
       }
     case packet: sb.PlayerBlockPlacement =>
-      ( activeInventories(PlayerInventory.Id)  ? UseHeldItem).mapTo[Option[ItemId]] onComplete {
+      (activeInventories(PlayerInventory.Id) ? UseHeldItem).mapTo[Option[ItemId]] onComplete {
         case Success(Some(itemId)) => world ! PlayerPlaceBlockWithItemId(playerEntityId, packet, itemId)
         case Success(None) =>
           (world ? RequestBlockState(packet.position)).mapTo[CompoundTag] onComplete {
@@ -156,15 +157,16 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
         }
       case _ => userContext forward packet
     }
+
     case packet: ClickWindow if activeInventories.contains(packet.windowId) =>
-      activeInventories(packet.windowId) forward(packet)
+      activeInventories(packet.windowId) forward (packet)
     case packet: CloseWindow if activeInventories.contains(packet.windowId) =>
-      activeInventories(packet.windowId) forward(packet)
+      activeInventories(packet.windowId) forward (packet)
     case InventoryDropItems(itemId, quantity) =>
       val x = -math.sin(math.toRadians(yaw)) * 3
-      val z =  math.cos(math.toRadians(yaw)) * 3
+      val z = math.cos(math.toRadians(yaw)) * 3
       val itemDropPosition = Position(posX + x.toInt, posY, posZ + z.toInt)
-      world ! DropItems(itemId, quantity,itemDropPosition , playerEntityId, Position(posX, posY, posZ))
+      world ! DropItems(itemId, quantity, itemDropPosition, playerEntityId, Position(posX, posY, posZ))
     case sb.EntityAction(_, _, _) => // TODO: handle this
     case RemovePlayer =>
       world ! PlayerLeavingGame(playerEntityId, username)
@@ -175,7 +177,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case entityVelocity: EntityVelocity => userContext ! entityVelocity
     case entityLook: EntityLook => userContext ! entityLook
     case entityHeadLook: EntityHeadLook =>
-     userContext ! entityHeadLook
+      userContext ! entityHeadLook
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
   }
 
@@ -240,8 +242,8 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
   private def openCraftingTableWindow(): Int = {
     val windowId = lastWindowId + 1
     val playerInventoryActorRef = activeInventories(PlayerInventory.Id)
-    activeInventories +=  (windowId -> context.actorOf(CraftingTableActor.props(windowId, self, playerInventoryActorRef)))
-    (activeInventories(PlayerInventory.Id) ? RetrieveInventoryItems).map(_.asInstanceOf[List[Option[InventoryItem]]]) onComplete {
+    activeInventories += (windowId -> context.actorOf(CraftingTableActor.props(windowId, self, playerInventoryActorRef)))
+    (activeInventories(PlayerInventory.Id) ? RetrieveInventoryItems).mapTo[List[Option[InventoryItem]]] onComplete {
       case Success(inventory) =>
         activeInventories(windowId) ! PopulatePlayerInventory(inventory)
       case _ => log.warning("Failed to retrieve inventory items.")
@@ -277,6 +279,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
         }
       }) map (_ => Unit)
     }
+
     def loadMobs(toUnload: Set[(Int, Int)], toLoad: Set[(Int, Int)]): Future[Unit] = {
       val unloadFuture = Future.sequence(toUnload map { case (x, z) =>
         world.ask(PlayerUnloadedChunk(x, z))(timeout).mapTo[List[DestroyEntities]] map (destroyCreatures =>
@@ -321,6 +324,7 @@ object Player {
   private case object KeepAliveTimeoutKey
 
   import AttributeModifier._
+
   private val PlayerEntityProperties = List(
     Property(GenericMaxHealth, 20f, List()),
     Property(MovementSpeed, 0.1f, List()),

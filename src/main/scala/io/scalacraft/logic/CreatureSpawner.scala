@@ -2,12 +2,10 @@ package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import akka.pattern._
-import com.typesafe.scalalogging.LazyLogging
+import io.scalacraft.logic.commons.Message.SkyUpdateState.SkyUpdateState
+import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext, Message}
 import io.scalacraft.logic.creatures.misc.CreatureInstances
-import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.logic.messages.Message
-import io.scalacraft.logic.messages.Message.SkyUpdateState.SkyUpdateState
-import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.creatures.FarmAnimal
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob

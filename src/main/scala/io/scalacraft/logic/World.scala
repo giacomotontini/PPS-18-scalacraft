@@ -6,8 +6,8 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.{Blocks, Items}
-import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.logic.messages.Message._
+import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import io.scalacraft.packets.DataTypes.{EntityId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets._

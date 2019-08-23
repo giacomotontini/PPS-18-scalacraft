@@ -3,7 +3,7 @@ package io.scalacraft.logic.creatures
 import java.util.UUID
 
 import akka.actor.{Actor, ActorRef, Props, Timers}
-import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.traits.ai.general.AI
 import io.scalacraft.logic.traits.creatures.{BaseBehaviour, CreatureParameters, FarmAnimal}
 import io.scalacraft.packets.Entities.Pig

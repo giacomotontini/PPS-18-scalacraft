@@ -1,7 +1,7 @@
 package io.scalacraft.logic.traits.ai.general
 
 import akka.actor.{Actor, Timers}
-import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.traits.creatures.CreatureParameters
 
 trait AI extends Movement {

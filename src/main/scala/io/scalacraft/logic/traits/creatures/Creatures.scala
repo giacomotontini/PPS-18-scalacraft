@@ -4,8 +4,8 @@ import java.util.UUID
 
 import akka.actor.{ActorRef, Props}
 import akka.pattern._
-import io.scalacraft.logic.inventories.traits.DefaultTimeout
-import io.scalacraft.logic.messages.Message.RequestEntityId
+import io.scalacraft.logic.commons.DefaultTimeout
+import io.scalacraft.logic.commons.Message.RequestEntityId
 import io.scalacraft.packets.DataTypes
 import io.scalacraft.packets.DataTypes.Position
 

@@ -1,8 +1,8 @@
 package io.scalacraft.logic.inventories.traits
 
 import akka.actor.ActorRef
+import io.scalacraft.logic.commons.Message.InventoryDropItems
 import io.scalacraft.logic.inventories.InventoryItem
-import io.scalacraft.logic.messages.Message.InventoryDropItems
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction.{LeftMouseClick, LeftMouseDrag, RightMouseClick, RightMouseDrag}
@@ -44,7 +44,7 @@ trait ClickWindowActionManager {
     Some(slotItems)
   }
 
-  private def releaseHoldItems(quantity: Int, holdingItems: SlotData) : Slot = (holdingItems.itemCount - 1) match {
+  private def releaseHoldItems(quantity: Int, holdingItems: SlotData) : Slot = holdingItems.itemCount - 1 match {
       case left if left > 0 => Some(SlotData(holdingItems.itemId, left, new CompoundTag()))
       case _ => None
   }

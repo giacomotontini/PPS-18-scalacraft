@@ -5,8 +5,8 @@ import akka.pattern._
 import io.scalacraft.loaders.Blocks.{Block, BreakingProperties, Drop}
 import io.scalacraft.loaders.Items.StorableItem
 import io.scalacraft.loaders.{Blocks, Items}
-import io.scalacraft.logic.inventories.traits.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.logic.messages.Message._
+import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, ItemId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, Effect, EffectId}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggingStatus}

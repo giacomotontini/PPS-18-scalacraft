@@ -1,4 +1,4 @@
-package io.scalacraft.logic.inventories.traits
+package io.scalacraft.logic.commons
 
 import akka.util.Timeout
 

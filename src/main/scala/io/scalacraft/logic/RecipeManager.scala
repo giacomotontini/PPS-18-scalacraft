@@ -4,6 +4,8 @@ import io.scalacraft.loaders.Recipes
 import io.scalacraft.loaders.Recipes.{RecipeResult, ShapeRecipe, ShapelessRecipe}
 import io.scalacraft.logic.inventories.InventoryItem
 
+import scala.language.implicitConversions
+
 
 object RecipeManager {
 
