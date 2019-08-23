@@ -1,14 +1,17 @@
 package io.scalacraft.logic
 
+import java.nio.charset.Charset
 import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import akka.pattern._
 import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.World.TimeTick
 import io.scalacraft.logic.messages.Message._
+import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import io.scalacraft.packets.DataTypes.{EntityId, Position}
-import io.scalacraft.packets.clientbound.PlayPackets.{BlockChange, TimeUpdate}
+import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.serverbound.PlayPackets.{Face, PlayerBlockPlacement}
 import net.querz.nbt.mca.MCAUtil
 
@@ -16,14 +19,18 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLogging with Timers {
+
+class World(serverConfiguration: ServerConfiguration) extends Actor
+  with ActorLogging with Timers with ImplicitContext with DefaultTimeout {
+
+  import World._
 
   private val TimeUpdateInterval: Int = ServerConfiguration.TicksInSecond * 20
   private val TicksInDay: Int = 24000
 
   private var regions: Map[(Int, Int), ActorRef] = Map()
-  private var players: Map[String, (UUID, ActorRef)] = Map()
-  private var onlinePlayers: Map[EntityId, ActorRef] = Map()
+  private var players: Map[String, ActorRef] = Map()
+  private var onlinePlayers: Map[EntityId, (String, ActorRef)] = Map()
   private val dropManager: ActorRef = context.actorOf(DropManager.props, DropManager.name)
   private val diggingManager: ActorRef = context.actorOf(DiggingManager.props(dropManager), DiggingManager.name)
 
@@ -40,25 +47,48 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
     /* ----------------------------------------------- Users ----------------------------------------------- */
 
     case RegisterUser(username) =>
-      val (uuid, player) = if (players.contains(username)) players(username)
-      else {
-        val newUUID = UUID.randomUUID()
-        val actorRef = context.actorOf(Player.props(username, serverConfiguration), Player.name(username))
-        players += username -> (newUUID, actorRef)
-        (newUUID, actorRef)
+      if (!players.contains(username)) {
+        players += username ->
+          context.actorOf(Player.props(username, playerUUID(username), serverConfiguration), Player.name(username))
       }
 
-      sender ! UserRegistered(entityIdGenerator.next(), uuid, player)
+      sender ! UserRegistered(entityIdGenerator.next(), playerUUID(username), players(username))
 
-    case JoiningGame(playerId) => onlinePlayers += playerId -> sender
+    case PlayerJoiningGame(playerId, username) =>
+      val addPlayer = PlayerInfoAddPlayer(playerUUID(username), username, List.empty,
+        serverConfiguration.gameMode.value, ping = 0, displayName = None)
+      onlinePlayers += playerId -> (username, sender)
+      self ! SendToAllExclude(playerId, PlayerInfo(List(addPlayer)))
+      self ! SendToAll(ChatMessage(chatMessageJson(username, playerUUID(username)), ChatPosition.SystemMessage))
 
-    case LeavingGame(playerId) => onlinePlayers -= playerId
+    case PlayerLeavingGame(playerId, username) =>
+      onlinePlayers -= playerId
+      self ! SendToAll(PlayerInfo(List(PlayerInfoRemovePlayer(playerUUID(username)))))
+      self ! SendToAll(DestroyEntities(List(playerId)))
+
+    case PlayerSpawning(playerId, spawnPacket, entityProperties) =>
+      self ! SendToAllExclude(playerId, spawnPacket)
+      self ! SendToAllExclude(playerId, entityProperties)
+
+      val addPlayers = onlinePlayers map {
+        case (_, (username, _)) => PlayerInfoAddPlayer(playerUUID(username), username, List.empty,
+          serverConfiguration.gameMode.value, ping = 0, displayName = None)
+      }
+      self ! SendToPlayer(playerId, PlayerInfo(addPlayers.toList))
+
+      onlinePlayers foreach {
+        case (id, (_, ref)) if id != playerId => (ref ? RequestSpawnPacket) onComplete {
+          case Success(packet) => self ! SendToPlayer(playerId, packet)
+          case Failure(ex) => log.error(ex, "Unable to perform RequestSpawnPacket in PlayerSpawning")
+        }
+        case _ =>
+      }
 
     case RequestOnlinePlayers => sender ! onlinePlayers.size
 
     /* ----------------------------------------------- Regions ----------------------------------------------- */
 
-    case request @ RequestChunkData(chunkX, chunkZ, _) =>
+    case request@RequestChunkData(chunkX, chunkZ, _) =>
       val (relativeX, relativeZ) = (MCAUtil.chunkToRegion(chunkX), MCAUtil.chunkToRegion(chunkZ))
       if (regions.contains((relativeX, relativeZ))) {
         regions((relativeX, relativeZ)) forward request
@@ -74,9 +104,9 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
         }
       }
 
-    case request @ ChangeBlockState(Position(x, _, z), _) => regions(x >> 9, z >> 9) forward request
-    case request @ RequestBlockState(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
-    case request @ FindFirstSolidBlockPositionUnder(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
+    case request@ChangeBlockState(Position(x, _, z), _) => regions(x >> 9, z >> 9) forward request
+    case request@RequestBlockState(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
+    case request@FindFirstSolidBlockPositionUnder(Position(x, _, z)) => regions(x >> 9, z >> 9) forward request
 
     case PlayerPlaceBlockWithItemId(playerId, PlayerBlockPlacement(Position(x, y, z), face, _, _, _, _), itemId) =>
       val blockState = Blocks.defaultCompoundTagFromName(Items.getStorableItemById(itemId).name)
@@ -107,10 +137,10 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
 
     case RequestEntityId => sender ! entityIdGenerator.next()
 
-    case SendToPlayer(playerId, obj) => onlinePlayers(playerId) ! ForwardToClient(obj)
-    case SendToAll(obj) => onlinePlayers.values foreach (_ ! ForwardToClient(obj))
+    case SendToPlayer(playerId, obj) => onlinePlayers(playerId)._2 ! ForwardToClient(obj)
+    case SendToAll(obj) => onlinePlayers.values foreach { case (_, ref) => ref ! ForwardToClient(obj) }
     case SendToAllExclude(excludeId, obj) => onlinePlayers foreach {
-      case (playerId, ref) if playerId != excludeId => ref ! ForwardToClient(obj)
+      case (playerId, (_, ref)) if playerId != excludeId => ref ! ForwardToClient(obj)
       case _ =>
     }
 
@@ -130,11 +160,16 @@ class World(serverConfiguration: ServerConfiguration) extends Actor with ActorLo
 
   }
 
+  private def playerUUID(username: String): UUID =
+    UUID.nameUUIDFromBytes(s"OfflinePlayer:$username".getBytes(Charset.forName("UTF-8")))
+
 }
 
 object World {
 
   private case object TimeTick
+
+  private def chatMessageJson(username: String, uuid: UUID) = s"""{"color":"yellow","translate":"multiplayer.player.joined","with":[{"insertion":"$username","clickEvent":{"action":"suggest_command","value":"/tell $username "},"text":"$username"}]}"""
 
   def props(serverConfiguration: ServerConfiguration): Props = Props(new World(serverConfiguration))
 

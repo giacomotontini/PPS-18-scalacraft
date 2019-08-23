@@ -1,12 +1,15 @@
 package io.scalacraft.logic
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
 import akka.pattern._
 import io.scalacraft.logic.PlayerInventoryActor.Message.{AddItem, RetrieveHeldItemId, UseHeldItem}
 import io.scalacraft.logic.messages.Message._
 import io.scalacraft.logic.traits.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
-import io.scalacraft.packets.DataTypes.{ItemId, Position}
+import io.scalacraft.packets.DataTypes.{Angle, ItemId, Position}
+import io.scalacraft.packets.Entities
 import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.packets.serverbound.PlayPackets._
@@ -17,7 +20,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class Player(username: String, serverConfiguration: ServerConfiguration) extends Actor
+class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConfiguration) extends Actor
   with Timers with ActorLogging with DefaultTimeout with ImplicitContext with Stash {
 
   import Player._
@@ -25,27 +28,26 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
   private val world = context.parent
   private val inventory = context.actorOf(PlayerInventoryActor.props(self))
   private var userContext: ActorRef = _
+  private val randomGenerator = Random
 
   private var playerEntityId = 0
   private val worldDimension = WorldDimension.Overworld
-  private var posX: Int = 1018
-  private var posY: Int = 65
-  private var posZ: Int = 1066
+  private var posX: Double = 548
+  private var posY: Double = 69
+  private var posZ: Double = -408
   private var yaw: Float = 0.0f
   private var pitch: Float = 0.0f
-  private var digging: Option[PlayerDiggingStatus] = None
   private var onGround = true
   private var health = 20
   private var foodHealth = 20
   private var mainHand: MainHand = _
   private var locale: String = _
   private var viewDistance: Int = _ //render distance in chunks
+  private val entityMetadata: Entities.Player = new Entities.Player
 
   private var lastKeepAliveId: Long = _
 
   private var loadedChunks: Set[(Int, Int)] = Set()
-
-  private val randomGenerator = Random
 
   override def receive: Receive = preStartBehaviour
 
@@ -57,9 +59,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
       userContext ! JoinGame(playerEntityId, serverConfiguration.gameMode, worldDimension,
         serverConfiguration.serverDifficulty, serverConfiguration.maxPlayers, serverConfiguration.levelTypeBiome,
         serverConfiguration.reducedDebugInfo)
-      world ! JoiningGame(playerEntityId)
-      // userContext ! cb.PluginMessage("minecraft:brand", Array(7, 118, 97, 110, 105, 108, 108, 97))
-      // userContext ! cb.PlayerAbilities(0)
+      world ! PlayerJoiningGame(playerEntityId, username)
 
     case clientSettings: sb.ClientSettings =>
       locale = clientSettings.locale
@@ -69,11 +69,12 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
 
       loadChunks() onComplete {
         case Success(_) =>
-          userContext ! SpawnPosition(Position(posX, posY, posZ))
-
-          val teleportId = randomGenerator.nextInt()
-          val flags = playerPositionAndLookFlags(xRelative = false, yRelative = false, zRelative = false, Y_ROT = false, X_ROT = false)
+          val teleportId = randomGenerator.nextInt
+          val flags = playerPositionAndLookFlags(xRelative = false, yRelative = false, zRelative = false, Y_ROT = false,
+            X_ROT = false)
           val positionAndLook = cb.PlayerPositionAndLook(posX, posY, posZ, yaw, pitch, flags, teleportId)
+          entityMetadata.health = health
+          userContext ! cb.SpawnPosition(Position(posX, posY, posZ))
           userContext ! positionAndLook
 
           context.become(confirmTeleport(positionAndLook))
@@ -82,18 +83,19 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
 
     case ClientStatus(ClientStatusAction.PerformRespawn) => log.warning("Respawn not to be handled on login.")
     case ClientStatus(ClientStatusAction.RequestStats) => log.warning("User request statistics, not handled.")
+    case sb.PluginMessage(brand, data) => userContext ! cb.PluginMessage(brand, data)
+    case _ => stash()
   }
 
   private def confirmTeleport(positionAndLook: cb.PlayerPositionAndLook): Receive = {
-    case teleportConfirm: sb.TeleportConfirm =>
-      if (teleportConfirm.teleportId == positionAndLook.teleportId) {
-        userContext ! positionAndLook
+    case sb.TeleportConfirm(teleportId) if positionAndLook.teleportId == teleportId =>
+      val entityProperties = EntityProperties(playerEntityId, PlayerEntityProperties)
+      world ! PlayerSpawning(playerEntityId, spawnPlayerPacket, entityProperties)
 
-        timers.startPeriodicTimer(KeepAliveTickKey, KeepAliveTick, 5 seconds)
-        context.become(playingBehaviour)
-      } else {
-        log.warning("Client not confirm teleport.")
-      }
+      timers.startPeriodicTimer(KeepAliveTickKey, KeepAliveTick, 5 seconds)
+      context.become(playingBehaviour)
+      unstashAll()
+    case _ => stash()
   }
 
   private def playingBehaviour: Receive = {
@@ -108,30 +110,14 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     case sb.KeepAlive(keepAliveId) if keepAliveId == lastKeepAliveId => timers.cancel(KeepAliveTimeoutKey)
     case sb.KeepAlive(keepAliveId) if keepAliveId != lastKeepAliveId => log.warning("Client keep alive id invalid.")
 
-    case sb.Player(onGround) => this.onGround = onGround
+    case RequestSpawnPacket => sender ! spawnPlayerPacket
 
-    case sb.PlayerPosition(x, feetY, z, onGround) =>
-      posX = x.toInt
-      posY = feetY.toInt
-      posZ = z.toInt
-      this.onGround = onGround
-      world ! PlayerMoved(playerEntityId, Position(posX, posY, posZ))
-      loadChunks()
-
+    case sb.Player(_onGround) => updatePositionAndLook(onGround = _onGround)
+    case sb.PlayerPosition(x, feetY, z, _onGround) => updatePositionAndLook(Some(x, feetY, z), onGround = _onGround)
     case sb.PlayerPositionAndLook(x, feetY, z, yaw, pitch, onGround) =>
-      posX = x.toInt
-      posY = feetY.toInt
-      posZ = z.toInt
-      this.yaw = yaw
-      this.pitch = pitch
-      this.onGround = onGround
-      world ! PlayerMoved(playerEntityId, Position(posX, posY, posZ))
-      loadChunks()
-
-    case sb.PlayerLook(yaw, pitch, onGround) =>
-      this.yaw = yaw
-      this.pitch = pitch
-      this.onGround = onGround
+      updatePositionAndLook(Some(x, feetY, z), Some(yaw, pitch), onGround)
+    case sb.PlayerLook(yaw, pitch, _onGround) =>
+      updatePositionAndLook(direction = Some(yaw, pitch), onGround = _onGround)
 
     case packet: sb.HeldItemChange => inventory forward packet
 
@@ -154,8 +140,6 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     case sb.Animation(Hand.OffHand) =>
       world ! SendToAllExclude(playerEntityId, cb.Animation(playerEntityId, AnimationType.SwingOffHand))
 
-    case sb.ChatMessage(message) => handleDebugCommand(message)
-
     case ForwardToClient(packet) => packet match {
       case CollectItemWithType(collectItem, itemId) =>
         userContext forward collectItem
@@ -170,7 +154,7 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     case sb.EntityAction(_, _, _) => // TODO: handle this
 
     case RemovePlayer =>
-      world ! LeavingGame(playerEntityId)
+      world ! PlayerLeavingGame(playerEntityId, username)
       reset()
 
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
@@ -189,48 +173,85 @@ class Player(username: String, serverConfiguration: ServerConfiguration) extends
     flags
   }
 
+  private def updatePositionAndLook(coordinates: Option[(Double, Double, Double)] = None,
+                                    direction: Option[(Float, Float)] = None, onGround: Boolean = true): Unit = {
+
+    def relative(current: Double, previous: Double): Int = ((current * 32 - previous * 32) * 128).toInt
+
+    val relatives = coordinates map { case (x, y, z) => (relative(x, posX), relative(y, posY), relative(z, posZ)) }
+    val packets = (relatives, direction) match {
+      case (Some((x, y, z)), None) => List(cb.EntityRelativeMove(playerEntityId, x, y, z, onGround))
+      case (None, Some((yaw, pitch))) => List(
+        cb.EntityLook(playerEntityId, Angle.fromFloatYaw(yaw), Angle.fromFloatPitch(pitch), onGround),
+        cb.EntityHeadLook(playerEntityId, Angle.fromFloatYaw(yaw))
+      )
+      case (Some((x, y, z)), Some((yaw, pitch))) => List(
+        cb.EntityLookAndRelativeMove(playerEntityId, x, y, z, Angle.fromFloatYaw(yaw), Angle.fromFloatPitch(pitch), onGround),
+        cb.EntityHeadLook(playerEntityId, Angle.fromFloatYaw(yaw))
+      )
+      case (None, None) => List(
+        cb.EntityLook(playerEntityId, Angle.fromFloatYaw(yaw), Angle.fromFloatPitch(pitch), onGround)
+      )
+    }
+
+    coordinates foreach { case (x, y, z) =>
+      this.posX = x
+      this.posY = y
+      this.posZ = z
+      world ! PlayerMoved(playerEntityId, Position(x, y, z))
+      loadChunks()
+    }
+
+    direction foreach { case (yaw, pitch) =>
+      this.yaw = yaw
+      this.pitch = pitch
+    }
+
+    this.onGround = onGround
+
+    packets foreach { packet =>
+      world ! SendToAllExclude(playerEntityId, packet)
+    }
+  }
+
   private def reset(): Unit = {
     loadedChunks = Set()
     lastPosition = null
+    timers.cancel(KeepAliveTickKey)
     context.become(preStartBehaviour)
   }
 
-  private var lastPosition: (Int, Int) = _
+  private var lastPosition: (Double, Double) = _
+
   private def loadChunks(): Future[Unit] = {
     val timeout = 16 seconds
+
     def needLoadingChunks: Boolean = {
       math.abs(posX - lastPosition._1) > ServerConfiguration.LoadingChunksBlocksThreshold ||
         math.abs(posZ - lastPosition._2) > ServerConfiguration.LoadingChunksBlocksThreshold
     }
 
     if (lastPosition == null || needLoadingChunks) {
-      val chunkX = posX >> 4
-      val chunkZ = posZ >> 4
+      val chunkX = posX.toInt >> 4
+      val chunkZ = posZ.toInt >> 4
       lastPosition = (posX, posZ)
-      val newChunks = (for (x <- chunkX - viewDistance until chunkX + viewDistance;
-           z <- chunkZ - viewDistance until chunkZ + viewDistance) yield (x, z)).toSet
+      val newChunks = (for (x <- chunkX - viewDistance to chunkX + viewDistance;
+                            z <- chunkZ - viewDistance to chunkZ + viewDistance) yield (x, z)).toSet
       val toUnload = loadedChunks diff newChunks
       val toLoad = newChunks diff loadedChunks
       loadedChunks = newChunks
 
       toUnload foreach { case (x, z) => userContext ! UnloadChunk(x, z) }
       Future.sequence(toLoad map { case (x, z) =>
-        world.ask(RequestChunkData(x, z))(timeout) map {
-          case chunkData: ChunkData => userContext ! chunkData
-          case _ => // do nothing
+        world.ask(RequestChunkData(x, z))(timeout).mapTo[ChunkData] map { chunkData =>
+          userContext ! chunkData
         }
-      }) map (_ => Unit)
+      }) flatMap (_ => Future.unit)
     } else Future.unit
   }
 
-  implicit class Regex(sc: StringContext) {
-    def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
-  }
-
-  private def handleDebugCommand(message: String): Unit = message match {
-    case r"/sb (-?\d+)$x (-?\d+)$y (-?\d+)$z" => println(x, y, z)
-    case _ => println("nope")
-  }
+  private def spawnPlayerPacket = cb.SpawnPlayer(playerEntityId, playerUUID, posX, posY, posZ,
+    Angle.fromFloatYaw(yaw), Angle.fromFloatPitch(pitch), entityMetadata)
 
 }
 
@@ -244,8 +265,18 @@ object Player {
 
   private case object KeepAliveTimeoutKey
 
-  def props(username: String, serverConfiguration: ServerConfiguration): Props =
-    Props(new Player(username, serverConfiguration))
+  import AttributeModifier._
+  private val PlayerEntityProperties = List(
+    Property(GenericMaxHealth, 20f, List()),
+    Property(MovementSpeed, 0.1f, List()),
+    Property(AttackSpeed, 4.0f, List()),
+    Property(Armor, 0.0f, List()),
+    Property(ArmorToughness, 0.0f, List()),
+    Property(GenericLuck, 0.0f, List())
+  )
+
+  def props(username: String, playerUUID: UUID, serverConfiguration: ServerConfiguration): Props =
+    Props(new Player(username, playerUUID: UUID, serverConfiguration))
 
   def name(username: String): String = s"Player-$username"
 

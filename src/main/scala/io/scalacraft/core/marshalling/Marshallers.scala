@@ -450,7 +450,9 @@ object Marshallers {
     }
   }
 
-  class EntityMarshaller(constructorMirrors: Map[Int, MethodMirror], typeMarshaller: Marshaller, typesMarshallers: Seq[Marshaller], val contextFieldIndex: Option[Int] = None) extends Marshaller {
+  class EntityMarshaller(constructorMirrors: Map[Int, MethodMirror], typeMarshaller: Marshaller,
+                         typesMarshallers: Seq[Marshaller], customType: Option[Int] = None,
+                         val contextFieldIndex: Option[Int] = None) extends Marshaller {
     val byteMarshaller = new ByteMarshaller(true)
     val varIntMarshaller = new VarIntMarshaller()
 
@@ -480,8 +482,10 @@ object Marshallers {
         }
         indexToBeReaded += 1
       }
-      val obj = constructorMirrors(typeMarshaller.unmarshal().asInstanceOf[Int])().asInstanceOf[EntityMetadata]
+      val typeIndex = customType.getOrElse(typeMarshaller.unmarshal().asInstanceOf[Int])
+      val obj = constructorMirrors(typeIndex)().asInstanceOf[EntityMetadata]
       obj.setValues(fieldSeq)
+
       context.addField(obj)
       obj
     }

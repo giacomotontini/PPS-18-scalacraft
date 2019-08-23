@@ -7,7 +7,7 @@ import io.scalacraft.core.marshalling.Marshallers._
 import io.scalacraft.core.marshalling.MobsAndObjectsTypeMapping._
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations._
 import io.scalacraft.packets.DataTypes.{Position => _, _}
-import io.scalacraft.packets.Entities.{Entity, MobEntity, ObjectEntity}
+import io.scalacraft.packets.Entities.{Entity, MobEntity, ObjectEntity, Player}
 import io.scalacraft.packets.{DataTypes, Entities}
 
 import scala.language.postfixOps
@@ -169,19 +169,24 @@ class PacketManager[T: TypeTag] {
         new ListMarshaller(paramMarshaller, precededByMarshaller, contextFieldIndex)
       case sym if isSymType[Entity](sym) =>
         def getTypeToEntityConstructorMap(typeToEntityClass: Map[Int, Class[_]]): Map[Int, MethodMirror] = {
-          typeToEntityClass map{
+          typeToEntityClass map {
             case (index, clazz) => index -> classConstructors(mirror.classSymbol(clazz).toType)
           }
         }
+        val playerTypeIndex = 92
         var typeToEntityClassConstructor: Map[Int, MethodMirror] = Map()
         val typesMarshaller = getParamMarshallers(typeOf[entityMetadataTypes])
         val typeMarshaller = new VarIntMarshaller(contextFieldIndex)
-        if (isSymType[MobEntity](sym)){
+        var customType: Option[Int] = None
+        if (isSymType[Player](sym)) {
+          typeToEntityClassConstructor = getTypeToEntityConstructorMap(Map(playerTypeIndex -> classOf[Player]))
+          customType = Some(playerTypeIndex)
+        } else if (isSymType[MobEntity](sym)) {
           typeToEntityClassConstructor = getTypeToEntityConstructorMap(typeToMobEntityClass)
-        } else if(isSymType[ObjectEntity](sym)){
+        } else /* if(isSymType[ObjectEntity](sym)) */ {
           typeToEntityClassConstructor = getTypeToEntityConstructorMap(typeToObjectEntityClass)
         }
-        new EntityMarshaller(typeToEntityClassConstructor, typeMarshaller, typesMarshaller)
+        new EntityMarshaller(typeToEntityClassConstructor, typeMarshaller, typesMarshaller, customType)
       case sym if checkAnnotations && hasAnnotation[enumType[_]](symAnnotations.get) =>
         val valueType = annotationTypeArg(annotation[enumType[_]](symAnnotations.get), 0)
         val valueMarshaller = subTypesMarshaller(checkAnnotations = false, contextAnnotation=Some(sym))(valueType)

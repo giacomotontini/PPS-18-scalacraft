@@ -34,9 +34,23 @@ object DataTypes {
 
   }
 
+  object Position {
+
+    def apply(x: Double, y: Double, z: Double): Position = Position(x.toInt, y.toInt, z.toInt)
+
+  }
+
   case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt)
   case class Rotation(x: Float, y: Float, z: Float)
   case class Angle(value: Int) extends AnyVal
+
+  object Angle {
+
+    def fromFloatYaw(yaw: Float): Angle = Angle(((yaw % 360) * 32 / 45).toByte)
+
+    def fromFloatPitch(pitch: Float): Angle = Angle((pitch * 32 / 45).toByte)
+
+  }
 
   sealed trait Direction
   object Direction {

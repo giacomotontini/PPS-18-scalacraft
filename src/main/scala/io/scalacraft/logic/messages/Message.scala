@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.ActorRef
 import io.scalacraft.packets.DataTypes.{EntityId, ItemId, Position}
-import io.scalacraft.packets.clientbound.PlayPackets.CollectItem
+import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SpawnPlayer}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging}
 import net.querz.nbt.CompoundTag
 
@@ -25,10 +25,11 @@ object Message {
   case class  RequestJoinGame(entityId: EntityId, userContext: ActorRef) extends Message
 
   // Sent by Player to inform world that player started playing
-  case class JoiningGame(playerId: EntityId) extends Message
+  case class PlayerJoiningGame(playerId: EntityId, username: String) extends Message
 
   // Sent by Player to inform world that player stopped playing
-  case class LeavingGame(playerId: EntityId) extends Message
+  case class  PlayerLeavingGame(playerId: EntityId, username: String) extends Message
+  case class  PlayerSpawning(playerId: EntityId, spawnPacket: SpawnPlayer, properties: EntityProperties) extends Message
   case object UserDisconnected extends Message
   case object RemovePlayer extends Message
 
@@ -55,6 +56,7 @@ object Message {
 
   /* --------------------------------------------- World --------------------------------------------- */
   case class PlayerPlaceBlockWithItemId(playerId: EntityId, packet: PlayerBlockPlacement, itemId: Int) extends Message
+  case object RequestSpawnPacket extends Message
   case class SendToAllExclude(playerId: EntityId, obj: Any) extends Message
   case class SendToPlayer(playerId: EntityId, obj: Any) extends Message
   case class SendToAll(obj: Any) extends Message

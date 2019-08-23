@@ -5,6 +5,7 @@ import java.util.UUID
 import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations.{short, _}
 import io.scalacraft.packets.DataTypes._
+import io.scalacraft.packets.Entities
 import io.scalacraft.packets.Entities.{MobEntity, ObjectEntity, Player}
 
 object PlayPackets {
@@ -41,7 +42,7 @@ object PlayPackets {
 
   @packet(id = 0x02)
   case class SpawnGlobalEntity(@boxed entityId: Int,
-                               @enumType[Byte] tpe: Int,
+                               @enumType[Byte] tpe: GlobalEntityType,
                                x: Double,
                                y: Double,
                                z: Double) extends Structure
@@ -76,7 +77,7 @@ object PlayPackets {
                          z: Double,
                          yaw: Angle,
                          pitch: Angle,
-                         metadata: Player) extends Structure 
+                         metadata: Player) extends Structure
 
   sealed trait AnimationType
 
@@ -408,15 +409,15 @@ object PlayPackets {
   case class UnloadChunk(chunkX: Int, chunkY: Int) extends Structure // Block coordinate divided by 16, rounded down
 
 
-  sealed trait GameModeValue
+  sealed trait GameModeValue { def value: Int }
   object GameModeValue {
 
-    @enumValue(0) case object Survival extends GameModeValue
+    @enumValue(0) case object Survival extends GameModeValue { override val value: Int = 0 }
 
-    @enumValue(1) case object Creative extends GameModeValue
+    @enumValue(1) case object Creative extends GameModeValue { override val value: Int = 1 }
 
-    @enumValue(2) case object Adventure extends GameModeValue
-    @enumValue(3) case object Spectator extends GameModeValue
+    @enumValue(2) case object Adventure extends GameModeValue { override val value: Int = 2 }
+    @enumValue(3) case object Spectator extends GameModeValue { override val value: Int = 3 }
   }
 
   sealed trait ExitModeValue
@@ -443,26 +444,15 @@ object PlayPackets {
 
   }
 
-  sealed trait FadeValue
-
-  object FadeValue {
-
-    @enumValue(0.0f) case object Dark extends FadeValue
-
-    @enumValue(1.0f) case object Bright extends FadeValue
-
-  }
-
-
   sealed trait Reason
-  @switchKey(0) case class InvalidBed(value: Int) extends Reason
-  @switchKey(1) case class EndRaining(value: Int) extends Reason
-  @switchKey(2) case class BeginRaining(value: Int) extends Reason
+  @switchKey(0) case class InvalidBed(value: Float) extends Reason
+  @switchKey(1) case class EndRaining(value: Float) extends Reason
+  @switchKey(2) case class BeginRaining(value: Float) extends Reason
   @switchKey(3) case class ChangeGameMode(@enumType[Int] value: GameModeValue) extends Reason
   @switchKey(4) case class ExitEnd(@enumType[Int] value: ExitModeValue) extends Reason
   @switchKey(5) case class DemoMessage(@enumType[Int] value: DemoMessage) extends Reason
   @switchKey(6) case class ArrowHittingPlayer(value: Int) extends Reason
-  @switchKey(7) case class FadeValues(@enumType[Int] value: FadeValue) extends Reason
+  @switchKey(7) case class FadeValue(value: Float) extends Reason
   @switchKey(8) case class FadeTime(value: Float) extends Reason
   @switchKey(9) case class PlayPufferFishStingSound(value: Int) extends Reason
   @switchKey(value = 10) case class PlayElderGuardianMob(value: Int) extends Reason
@@ -786,7 +776,7 @@ object PlayPackets {
                                 onGround: Boolean) extends Structure
 
   @packet(id = 0x29)
-  case class EntityLockAndRelativeMove(@boxed entityId: Int,
+  case class EntityLookAndRelativeMove(@boxed entityId: Int,
                                        @short deltaX: Int,
                                        @short deltaY: Int,
                                        @short deltaZ: Int,
@@ -836,12 +826,11 @@ object PlayPackets {
 
   case class PlayerInfoProperty(name: String,
                       value: String,
-                      signature: Option[Boolean]) extends Structure
+                      signature: Option[String]) extends Structure
 
   sealed trait PlayerInfoAction
   @switchKey(0) case class PlayerInfoAddPlayer(uuid: UUID,
                                  @maxLength(16) name: String,
-                                 @boxed numberOfProperties: Int,
                                  @precededBy[VarInt] properties: List[PlayerInfoProperty],
                                  @boxed gameMode: Int,
                                  @boxed ping: Int,
@@ -1295,6 +1284,12 @@ object PlayPackets {
       override val max: Double = 1024.0
     }
 
+    @enumValue("generic.luck") case object GenericLuck extends AttributeModifier {
+      override val default: Double = 0.0
+      override val min: Double = -1024.0
+      override val max: Double = 1024.0
+    }
+
     @enumValue("generic.flyingSpeed") case object FlyingSpeed extends AttributeModifier {
       override val default: Double = 0.4000000059604645
       override val min: Double = 0.0
@@ -1425,15 +1420,11 @@ object PlayPackets {
   case class DeclareRecipes(@precededBy[VarInt] recipes: List[Recipe]) extends Structure
 
   case class Tag(tagName: Identifier,
-                 @precededBy[VarInt] entries: List[VarInt]) extends Structure
+                 @precededBy[VarInt] @boxed entries: List[Int]) extends Structure
 
   @packet(0x55)
   case class Tags(@precededBy[VarInt] blockTags: List[Tag],
                   @precededBy[VarInt] itemsTags: List[Tag],
                   @precededBy[VarInt] fluidTags: List[Tag]) extends Structure
-
-
-  @packet(0x100)
-  case class Testt(@precededBy[VarInt] list: List[Nbt]) extends Structure
 
 }

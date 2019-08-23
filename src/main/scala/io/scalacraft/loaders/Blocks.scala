@@ -2,7 +2,7 @@ package io.scalacraft.loaders
 
 import io.circe.generic.auto._
 import io.circe.parser
-import io.scalacraft.packets.DataTypes.BlockStateId
+import io.scalacraft.packets.DataTypes.{BlockStateId, Identifier}
 import net.querz.nbt.CompoundTag
 
 import scala.io.Source
@@ -33,6 +33,7 @@ object Blocks extends App {
                    transparent: Boolean,
                    `type`: Option[String])
 
+  private lazy val fluids = List("minecraft:lava", "minecraft:water")
 
   private lazy val blocks = {
     val content = Source.fromInputStream(getClass.getResourceAsStream("/data/blocks.json")).mkString
@@ -40,24 +41,26 @@ object Blocks extends App {
     blocks
   }
 
-  private lazy val compoundTagList = {
-    blocks.flatMap { block =>
-      block.states map { state =>
-        val compoundTag = new CompoundTag()
-        compoundTag.putString("Name", block.namespace)
+  private lazy val compoundTagList = blocks.flatMap { block =>
+    block.states map { state =>
+      val compoundTag = new CompoundTag()
+      compoundTag.putString("Name", block.namespace)
 
-        if (state.properties.nonEmpty) {
-          val innerTag = new CompoundTag
-          state.properties foreach {
-            case (name, value) => innerTag.putString(name, value)
-          }
-          compoundTag.put("Properties", innerTag)
+      if (state.properties.nonEmpty) {
+        val innerTag = new CompoundTag
+        state.properties foreach {
+          case (name, value) => innerTag.putString(name, value)
         }
-
-        state.id -> compoundTag
+        compoundTag.put("Properties", innerTag)
       }
-    } sortBy { case (id, _) => id } map { case (_, tag) => tag }
-  }
+
+      state.id -> compoundTag
+    }
+  } sortBy { case (id, _) => id } map { case (_, tag) => tag }
+
+  private lazy val blocksTags = blocks map { block =>
+    block.namespace -> block.states.map(_.id)
+  } toMap
 
   def defaultCompoundTagFromName(name: String): Option[CompoundTag] =
     blocks find { _.name == name } flatMap { _.states.find(_.default) } map { s => compoundTagFromBlockStateId(s.id) }
@@ -80,5 +83,13 @@ object Blocks extends App {
   def blockFromStateId(stateId: BlockStateId): Block = blocks find { _.states.exists(_.id == stateId) } get
 
   def blockFromBlockId(blockId: Int): Block = blocks(blockId)
+
+  def blocksMap: Map[Identifier, List[BlockStateId]] = blocksTags filter { case (id, _) =>
+    !fluids.contains(id)
+  }
+
+  def fluidsMap: Map[Identifier, List[BlockStateId]] = blocksTags filter { case (id, _) =>
+    fluids.contains(id)
+  }
 
 }
