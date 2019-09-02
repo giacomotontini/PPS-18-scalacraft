@@ -10,7 +10,7 @@ import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.misc.ServerConfiguration
-import io.scalacraft.packets.DataTypes.{Angle, ItemId, Position}
+import io.scalacraft.packets.DataTypes.{Angle, ItemId, Position, SlotData}
 import io.scalacraft.packets.Entities
 import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
@@ -30,7 +30,11 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
 
   private val world = context.parent
   private var userContext: ActorRef = _
+  private var activeInventories: Map[Int, ActorRef] = Map(PlayerInventory.Id -> context.actorOf(PlayerInventoryActor.props(self)))
   private val randomGenerator = Random
+  private var loadedChunks: Set[(Int, Int)] = Set()
+  private var lastKeepAliveId: Long = _
+  private var lastWindowId = 1
 
   private var playerEntityId = 0
   private val worldDimension = WorldDimension.Overworld
@@ -46,13 +50,6 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
   private var locale: String = _
   private var viewDistance: Int = _ //render distance in chunks
   private val entityMetadata: Entities.Player = new Entities.Player
-
-  private var lastKeepAliveId: Long = _
-
-  private var loadedChunks: Set[(Int, Int)] = Set()
-  private var activeInventories: Map[Int, ActorRef] = Map(PlayerInventory.Id -> context.actorOf(PlayerInventoryActor.props(self)))
-
-  private var lastWindowId = 1
 
   override def receive: Receive = preStartBehaviour
 
@@ -96,7 +93,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case sb.TeleportConfirm(teleportId) if positionAndLook.teleportId == teleportId =>
       val entityProperties = EntityProperties(playerEntityId, PlayerEntityProperties)
       world ! PlayerSpawning(playerEntityId, spawnPlayerPacket, entityProperties)
-
+      activeInventories(PlayerInventory.Id) ! LoadInventory
       timers.startPeriodicTimer(KeepAliveTickKey, KeepAliveTick, 5 seconds)
       context.become(playingBehaviour)
       unstashAll()
@@ -124,7 +121,14 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case sb.PlayerLook(yaw, pitch, _onGround) =>
       updatePositionAndLook(direction = Some(yaw, pitch), onGround = _onGround)
 
-    case packet: sb.HeldItemChange => activeInventories(PlayerInventory.Id) forward packet
+    case packet: sb.HeldItemChange =>
+      activeInventories(PlayerInventory.Id) forward packet
+      (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[Int]] onComplete {
+        case Success(Some(heldItemId)) =>
+          val entityEquipment = EntityEquipment(playerEntityId, EquipmentSlot.MainHand, Some(SlotData(heldItemId, 1, new CompoundTag())))
+          world ! SendToAllExclude(playerEntityId, entityEquipment)
+        case _ => log.error("Failed to retrieve held item.")
+      }
 
     case playerDigging: sb.PlayerDigging =>
       (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[ItemId]] onComplete {

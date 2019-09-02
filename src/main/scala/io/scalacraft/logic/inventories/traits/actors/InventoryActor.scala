@@ -16,6 +16,8 @@ trait InventoryActor extends Actor with ActorLogging with DefaultTimeout with Im
   protected val id: Int
 
   def defaultBehaviour: Receive = {
+    case LoadInventory =>
+      updateClientInventory()
     case AddItem(inventoryItem) =>
       addItem(inventoryItem)
     case RemoveItem(slotIndex, inventoryItem) =>

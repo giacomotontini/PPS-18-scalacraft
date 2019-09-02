@@ -60,18 +60,19 @@ object Message {
   case class PlayerMoved(playerId: EntityId, position: Position) extends Message
 
   /* --------------------------------------------- Inventories --------------------------------------------------- */
+  case object LoadInventory extends Message
 
   case class AddItem(inventoryItem: InventoryItem) extends Message
 
   case class RemoveItem(slotIndex: Int, inventoryItem: InventoryItem) extends Message
 
-  case class RetrieveAllItems() extends Message
+  case object RetrieveAllItems extends Message
 
-  case class RetrieveInventoryItems() extends Message
+  case object RetrieveInventoryItems extends Message
 
-  case class RetrieveHeldItemId() extends Message
+  case object RetrieveHeldItemId extends Message
 
-  case class UseHeldItem() extends Message
+  case object UseHeldItem extends Message
 
   case class PopulatePlayerInventory(inventory: List[Option[InventoryItem]])
 
