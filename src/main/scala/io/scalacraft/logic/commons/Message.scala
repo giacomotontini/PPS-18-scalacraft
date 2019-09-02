@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.ActorRef
 import io.scalacraft.logic.commons.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.inventories.InventoryItem
-import io.scalacraft.packets.DataTypes.{EntityId, ItemId, Position}
+import io.scalacraft.packets.DataTypes.{EntityId, ItemId, Position, Slot}
 import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SpawnPlayer}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging}
 import net.querz.nbt.CompoundTag
@@ -58,6 +58,11 @@ object Message {
   case object RequestEntityId extends Message
 
   case class PlayerMoved(playerId: EntityId, position: Position) extends Message
+
+  /**
+   * Sent by PlayerInventory to inform player that the held item is changed and must be propagated to other clients (via world
+   */
+  case class EquipmentChanged(equipment: Slot) extends Message
 
   /* --------------------------------------------- Inventories --------------------------------------------------- */
   case object LoadInventory extends Message

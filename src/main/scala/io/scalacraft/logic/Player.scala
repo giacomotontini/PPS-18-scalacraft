@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.commons.Message._
-import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext, Message}
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.misc.ServerConfiguration
@@ -123,13 +123,6 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
 
     case packet: sb.HeldItemChange =>
       activeInventories(PlayerInventory.Id) forward packet
-      (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[Int]] onComplete {
-        case Success(Some(heldItemId)) =>
-          val entityEquipment = EntityEquipment(playerEntityId, EquipmentSlot.MainHand, Some(SlotData(heldItemId, 1, new CompoundTag())))
-          world ! SendToAllExclude(playerEntityId, entityEquipment)
-        case _ => log.error("Failed to retrieve held item.")
-      }
-
     case playerDigging: sb.PlayerDigging =>
       (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[ItemId]] onComplete {
         case Success(heldItemId) =>
@@ -159,6 +152,8 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
         if (collectItem.collectorEntityId == playerEntityId) {
           activeInventories(PlayerInventory.Id) ! AddItem(InventoryItem(itemId, collectItem.pickUpItemCount))
         }
+      case EquipmentChanged(equipment) =>
+        world ! SendToAllExclude(playerEntityId, EntityEquipment(playerEntityId, EquipmentSlot.MainHand, equipment))
       case _ => userContext forward packet
     }
 

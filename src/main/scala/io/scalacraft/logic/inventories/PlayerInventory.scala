@@ -12,7 +12,11 @@ case class PlayerInventory() extends InventoryWithPlayerInventory with Inventory
   override def id: Int = PlayerInventory.Id
 
   def findHeldItemId(hotSlot: Int): Option[Int] = {
-    inventory(hotSlot + HotBarSlotRange.start).map(_.itemId)
+    findHeldItem(hotSlot).map(_.itemId)
+  }
+
+  def findHeldItem(hotSlot: Int): Option[InventoryItem] = {
+    inventory(hotSlot + HotBarSlotRange.start)
   }
 
   def useOneHeldItem(hotSlot: Int): Option[Int] = {
