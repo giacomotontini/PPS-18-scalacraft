@@ -3,6 +3,7 @@ package io.scalacraft.logic.commons
 import java.util.UUID
 
 import akka.actor.ActorRef
+import io.scalacraft.logic.Region.Light
 import io.scalacraft.logic.commons.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.packets.DataTypes.{EntityId, Position, Slot}
@@ -22,9 +23,13 @@ object Message {
 
   case class RequestBlockState(position: Position) extends Message
 
+  case class RequestLight(position: Position) extends Message
+
   case class FindFirstSolidBlockPositionUnder(position: Position) extends Message
 
   case class ChangeBlockState(position: Position, tag: CompoundTag)
+
+  case class ChangeLight(position: Position, light: Light)
 
   /* --------------------------------------------- Player  --------------------------------------------- */
 

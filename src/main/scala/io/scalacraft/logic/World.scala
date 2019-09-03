@@ -94,6 +94,8 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
     case request@RequestChunkData(chunkX, chunkZ, _) => forwardToRegionWithChunk(chunkX, chunkZ)(request)
     case action@ChangeBlockState(Position(blockX, _, blockZ), _) => forwardToRegionWithBlock(blockX, blockZ)(action)
     case request@RequestBlockState(Position(blockX, _, blockZ)) => forwardToRegionWithBlock(blockX, blockZ)(request)
+    case action@ChangeLight(Position(blockX, _, blockZ), _) => forwardToRegionWithBlock(blockX, blockZ)(action)
+    case request@RequestLight(Position(blockX, _, blockZ)) => forwardToRegionWithBlock(blockX, blockZ)(request)
     case request@FindFirstSolidBlockPositionUnder(Position(blockX, _, blockZ)) =>
       forwardToRegionWithBlock(blockX, blockZ)(request)
 
