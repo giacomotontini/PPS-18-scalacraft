@@ -75,7 +75,8 @@ class DiggingManager(dropManager: ActorRef) extends Actor
             dropManager ! DropItems(dropItemId, quantity, blockPosition, playerId, playerPosition)
         }
 
-        world ! SendToAll(Effect(EffectId.BlockBreakWithSound, blockPosition, blockStateId, disableRelativeVolume = false))
+        world ! SendToAllExclude(playerId,
+          Effect(EffectId.BlockBreakWithSound, blockPosition, blockStateId, disableRelativeVolume = false))
         world ! BlockBrokenAtPosition(blockPosition)
         world ! ChangeBlockState(blockPosition, AirTag)
         world ! SendToAll(BlockChange(blockPosition, Blocks.stateIdFromCompoundTag(AirTag)))
