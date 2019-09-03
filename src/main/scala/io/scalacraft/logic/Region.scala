@@ -1,8 +1,10 @@
 package io.scalacraft.logic
 
 import akka.actor.{Actor, ActorLogging, Props}
+import akka.pattern._
 import io.scalacraft.loaders.{Blocks, Chunks}
 import io.scalacraft.logic.commons.Message.{RequestChunkData, RequestNearbyPoints, RequestSpawnPoints, _}
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.creatures.misc.ComputeCreatureMoves
 import io.scalacraft.misc.Helpers
 import io.scalacraft.misc.Helpers._
@@ -11,9 +13,15 @@ import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
 import net.querz.nbt.CompoundTag
 import net.querz.nbt.mca.{Chunk, MCAFile, MCAUtil}
 
-class Region(mca: MCAFile) extends Actor with ActorLogging {
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
+
+class Region(mca: MCAFile) extends Actor with ActorLogging with ImplicitContext with DefaultTimeout {
+
+  import Region._
 
   private val airTag = Blocks.defaultCompoundTagFromName("air").get
+  private val world = context.parent
 
   private var cleanupNeeded: Boolean = false
 
@@ -48,9 +56,30 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
 
     case RequestBlockState(Position(x, y, z)) => sender ! mca.getChunk(x >> 4, z >> 4).getBlockStateAt(x, y, z)
 
+    case RequestLight(Position(x, y, z)) =>
+      val LightPosition(index, shifts) = lightIndex(x, y, z)
+      val section = mca.getChunk(x >> 4, z >> 4).getSection(y / 16)
+      sender ! Light((section.getBlockLight()(index) >> shifts & 0xF).toByte,
+        (section.getSkyLight()(index) >> shifts & 0xF).toByte)
+
     case ChangeBlockState(Position(x, y, z), tag) =>
       mca.getChunk(x >> 4, z >> 4).setBlockStateAt(x, y, z, tag, false)
+      // calculateLights(position, Light(-1, -1), tag)
       cleanupNeeded = true
+
+    case ChangeLight(Position(x, y, z), Light(blockLight, skyLight)) =>
+      val section = mca.getChunk(x >> 4, z >> 4).getSection(y / 16)
+      val LightPosition(index, shifts) = lightIndex(x, y, z)
+      val mask = 0xF0 >> shifts
+
+      var newBlockLight = section.getBlockLight()(index).toInt
+      newBlockLight &= mask
+      newBlockLight |= blockLight << shifts
+      section.getBlockLight()(index) = newBlockLight.toByte
+      var newSkyLight = section.getSkyLight()(index).toInt
+      newSkyLight &= mask
+      newSkyLight |= skyLight << shifts
+      section.getSkyLight()(index) = newSkyLight.toByte
 
     case FindFirstSolidBlockPositionUnder(Position(x, y, z)) =>
       val chunk = mca.getChunk(x >> 4, z >> 4)
@@ -73,6 +102,7 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
           biomeIndex -> values.map(_._2).toSet
       }
       sender ! biomeToSpawnPosition
+
     case RequestNearbyPoints(x:Int, y:Int, z:Int, oldX:Int, oldZ:Int) =>
       val chunk = mca.getChunk(MCAUtil.blockToChunk(x), MCAUtil.blockToChunk(z))
       val forbiddendXZPair = (oldX-x,oldZ-z)
@@ -88,6 +118,45 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
     case unhandled => log.warning(s"Unhandled message in Region: $unhandled")
   }
 
+  private def lightIndex(blockX: Int, blockY: Int, blockZ: Int): LightPosition =
+    LightPosition(((blockY & 0xF) * 256 + (blockZ & 0xF) * 16 + (blockX & 0xF)) / 2, (blockX & 0xF % 2) * 4)
+
+  /**
+   * Calculate the lights of blocks and sky from an initial position.
+   * WARNING: this method is broken because there are concurrent problems when asking other regions block lights.
+   */
+  private def calculateLights(position: Position, light: Light, tag: CompoundTag): Unit = {
+    val block = Blocks.blockFromCompoundTag(tag)
+
+    Future.sequence(for (Position(rx, ry, rz) <- RelativeNears) yield {
+      val pos = Position(position.x + rx, position.y + ry, position.z + rz)
+      (world ? RequestLight(pos)).zip(world ? RequestBlockState(pos)).mapTo[(Light, CompoundTag)] map {
+        case (light, _tag) => TagLightAndPosition(light, _tag, pos) }
+    }) onComplete {
+      case Success(bottom :: top :: north :: south :: west :: east :: Nil) =>
+        val all = List(bottom, top, north, south, west, east)
+        val newLight = Light(
+          (if (block.transparent) {
+            math.max(all.maxBy { _.light.blockLight }.light.blockLight - 1, block.light)
+          } else block.light).toByte,
+          (if (block.transparent) {
+            if (top.light.skyLight == MaxLight) MaxLight
+            else math.max(all.maxBy { _.light.skyLight }.light.skyLight - 1, MinLight)
+          } else MinLight).toByte
+        )
+
+        if (light != newLight) {
+          world ! ChangeLight(position,newLight)
+
+          for (direction <- all) {
+            calculateLights(direction.position, direction.light, direction.tag)
+          }
+        }
+      case Success(_) => // never happens
+      case Failure(ex) => log.error(ex, "Failed to retrieve lights")
+    }
+  }
+
   private def isSolidBlock(tag: CompoundTag): Boolean = tag match {
     case `airTag` => false
     case null => false
@@ -97,6 +166,14 @@ class Region(mca: MCAFile) extends Actor with ActorLogging {
 }
 
 object Region {
+
+  case class Light(blockLight: Byte, skyLight: Byte)
+
+  private case class LightPosition(index: Int, shifts: Int)
+  private case class TagLightAndPosition(light: Light, tag: CompoundTag, position: Position)
+
+  private val MaxLight: Byte = 15
+  private val MinLight: Byte = 0
 
   def props(mca: MCAFile): Props = Props(new Region(mca))
 

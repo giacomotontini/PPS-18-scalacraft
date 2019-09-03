@@ -2,7 +2,7 @@ package io.scalacraft.misc
 
 import java.io.{InputStream, OutputStream}
 
-import io.scalacraft.packets.DataTypes.{Angle, VarInt}
+import io.scalacraft.packets.DataTypes.{Angle, Position, VarInt}
 import net.querz.nbt.{CompoundTag, ListTag, StringTag, Tag}
 
 import scala.collection.JavaConverters._
@@ -119,5 +119,8 @@ private[scalacraft] object Helpers {
       areFlowers || isAir || isGrass
     }
   }
+
+  val RelativeNears = List(Position(0, -1, 0), Position(0, 1, 0), Position(0, 0, -1), Position(0, 0, 1),
+    Position(-1, 0, 0), Position(1, 0, 0))
 
 }

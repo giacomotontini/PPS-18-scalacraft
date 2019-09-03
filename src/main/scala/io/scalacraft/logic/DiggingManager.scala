@@ -7,7 +7,8 @@ import io.scalacraft.loaders.Items.StorableItem
 import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, Position}
+import io.scalacraft.misc.Helpers._
+import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, ItemId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, Effect, EffectId}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggingStatus}
 import net.querz.nbt.CompoundTag
@@ -109,7 +110,7 @@ class DiggingManager(dropManager: ActorRef) extends Actor
 
   private def slideFluid(position: Position, tag: CompoundTag): Unit = {
     context.system.scheduler.scheduleOnce(250 millis) {
-      Future.sequence(for (Position(rx, ry, rz) <- RelativeFluidNears) yield {
+      Future.sequence(for (Position(rx, ry, rz) <- RelativeNears) yield {
         val pos = Position(position.x + rx, position.y + ry, position.z + rz)
         (world ? RequestBlockState(pos)).mapTo[CompoundTag] map { _tag => TagWithPosition(_tag, pos)}
       }) onComplete {
@@ -146,8 +147,6 @@ class DiggingManager(dropManager: ActorRef) extends Actor
 
 object DiggingManager {
 
-  private val RelativeFluidNears = List(Position(0, -1, 0), Position(0, 1, 0), Position(0, 0, -1), Position(0, 0, 1),
-    Position(-1, 0, 0), Position(1, 0, 0))
   private val FluidsList = List("minecraft:water", "minecraft:lava")
   private val AirTag = Blocks.defaultCompoundTagFromName("air").get
   private val MaxLevel = 8

@@ -22,7 +22,7 @@ object Blocks extends App {
                    drops: List[Drop],
                    gravity: Boolean,
                    hardness: Option[Float],
-                   light: Int,
+                   light: Byte,
                    name: String,
                    namespace: String,
                    renewable: Boolean,
