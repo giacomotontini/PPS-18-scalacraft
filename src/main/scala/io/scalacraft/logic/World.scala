@@ -151,6 +151,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
     case request @ RequestSpawnPoints(chunkX, chunkZ) => forwardToRegionWithChunk(chunkX, chunkZ)(request)
     case action: PlayerUnloadedChunk => creatureSpawner forward action
     case request @ RequestNearbyPoints(blockX,_, blockZ, _, _) => forwardToRegionWithBlock(blockX, blockZ)(request)
+    case useEntityWithItem: UseEntityWithItem => creatureSpawner forward useEntityWithItem
 
     /* ----------------------------------------------- Default ----------------------------------------------- */
 

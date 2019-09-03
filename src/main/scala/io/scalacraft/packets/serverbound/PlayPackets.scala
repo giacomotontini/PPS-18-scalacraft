@@ -144,16 +144,16 @@ object PlayPackets {
   @packet(0x0C)
   case class QueryEntityNBT(@boxed transactionId: Int, @boxed entityId: Int) extends Structure
 
-  sealed trait Tpe
+  sealed trait UseType
 
-  @switchKey(0) case class Interact(@enumType[VarInt] hand: Hand) extends Tpe
+  @switchKey(0) case class Interact(@enumType[VarInt] hand: Hand) extends UseType
 
-  @switchKey(1) case class Attack() extends Tpe
+  @switchKey(1) case class Attack() extends UseType
 
-  @switchKey(2) case class InteractAt(targetX: Float, targetY: Float, targetZ: Float, @enumType[VarInt] hand: Hand) extends Tpe
+  @switchKey(2) case class InteractAt(targetX: Float, targetY: Float, targetZ: Float, @enumType[VarInt] hand: Hand) extends UseType
 
   @packet(0x0D)
-  case class UseEntity(@boxed target: Int, @switchType[VarInt] tpe: Tpe) extends Structure
+  case class UseEntity(@boxed target: Int, @switchType[VarInt] useType: UseType) extends Structure
 
   @packet(0x0E)
   case class KeepAlive(keepAliveId: Long) extends Structure

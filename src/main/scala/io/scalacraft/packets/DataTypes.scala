@@ -13,7 +13,6 @@ object DataTypes {
   type Nbt = Tag[_]
   type EntityId = Int
   type BlockStateId = Int
-  type ItemId = Int
 
   case class VarInt(value: Int, length: Int)
 

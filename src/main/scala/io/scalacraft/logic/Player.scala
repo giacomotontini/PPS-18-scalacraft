@@ -6,11 +6,11 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.commons.Message._
-import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext, Message}
+import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.misc.ServerConfiguration
-import io.scalacraft.packets.DataTypes.{Angle, ItemId, Position, SlotData}
+import io.scalacraft.packets.DataTypes.{Angle, Position}
 import io.scalacraft.packets.Entities
 import io.scalacraft.packets.clientbound.PlayPackets._
 import io.scalacraft.packets.clientbound.{PlayPackets => cb}
@@ -124,13 +124,13 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case packet: sb.HeldItemChange =>
       activeInventories(PlayerInventory.Id) forward packet
     case playerDigging: sb.PlayerDigging =>
-      (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[ItemId]] onComplete {
+      (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[Int]] onComplete {
         case Success(heldItemId) =>
           world ! PlayerDiggingHoldingItem(playerEntityId, Position(posX, posY, posZ), playerDigging, heldItemId)
         case Failure(exception) => log.error(exception, "Failed to retrieve held item.")
       }
     case packet: sb.PlayerBlockPlacement =>
-      (activeInventories(PlayerInventory.Id) ? UseHeldItem).mapTo[Option[ItemId]] onComplete {
+      (activeInventories(PlayerInventory.Id) ? UseHeldItem).mapTo[Option[Int]] onComplete {
         case Success(Some(itemId)) => world ! PlayerPlaceBlockWithItemId(playerEntityId, packet, itemId)
         case Success(None) =>
           (world ? RequestBlockState(packet.position)).mapTo[CompoundTag] onComplete {
@@ -145,6 +145,13 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
       world ! SendToAllExclude(playerEntityId, cb.Animation(playerEntityId, AnimationType.SwingMainArm))
     case sb.Animation(Hand.OffHand) =>
       world ! SendToAllExclude(playerEntityId, cb.Animation(playerEntityId, AnimationType.SwingOffHand))
+
+    case useEntity: UseEntity =>
+      (activeInventories(PlayerInventory.Id) ? RetrieveHeldItemId).mapTo[Option[Int]] onComplete {
+        case Success(heldItemId) =>
+          world ! UseEntityWithItem(useEntity, heldItemId.getOrElse(0))
+        case Failure(exception) => log.error(exception, "Failed to retrieve held item.")
+      }
 
     case ForwardToClient(packet) => packet match {
       case CollectItemWithType(collectItem, itemId) =>
@@ -177,6 +184,8 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case entityLook: EntityLook => userContext ! entityLook
     case entityHeadLook: EntityHeadLook =>
       userContext ! entityHeadLook
+    case sb.ChatMessage(message) =>
+      world ! SendToAll(NamedSoundEffect(message, SoundCategory.Master, posX.toInt, posY.toInt, posZ.toInt, 1, 0.5f))
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
   }
 

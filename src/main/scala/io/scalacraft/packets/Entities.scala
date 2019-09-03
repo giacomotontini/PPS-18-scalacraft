@@ -109,7 +109,7 @@ object Entities {
     @indexType(index = 6) var item: Slot = None
   }
 
-  class Living extends Entity {
+  class Living extends Entity with ObjectEntity with MobEntity {
     @indexType(index = 0) @byte var handStates: Int = 0
     @indexType(index = 2) var health: Float = 1.0f
     @indexType(index = 1) @boxed var potionEffectColor: Int = 0

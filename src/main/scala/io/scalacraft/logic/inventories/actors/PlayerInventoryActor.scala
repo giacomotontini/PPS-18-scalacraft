@@ -24,30 +24,30 @@ class PlayerInventoryActor(val player: ActorRef) extends CraftingInventoryActor 
       sender ! inventory.findHeldItemId(heldSlot)
     case UseHeldItem =>
       sender ! inventory.useOneHeldItem(heldSlot)
-      heldItemChangeHandler()
+      heldItemChangeHandler
     case PopulatePlayerInventory(inventoryItems: List[Option[InventoryItem]]) =>
       inventory.addPlayerInventory(inventoryItems)
-      updateClientInventory()
+      updateClientInventory
   }
 
   override def receive: Receive = playerInventoryReceive orElse defaultBehaviour
 
   override def addItem(inventoryItem: InventoryItem): Unit = {
     super.addItem(inventoryItem)
-    heldItemChangeHandler()
+    heldItemChangeHandler
   }
 
   override def removeItem(slotIndex: Int, inventoryItem: InventoryItem): Unit = {
     super.removeItem(slotIndex, inventoryItem)
     if(inventory.mainHotInventoryRange.HotBarSlotRange.contains(slotIndex)) {
-      heldItemChangeHandler()
+      heldItemChangeHandler
     }
   }
 
   override def clickWindow(click: PlayPackets.ClickWindow, slot: Int, actionNumber: Int, clickedItem: Slot): Unit = {
     super.clickWindow(click, slot, actionNumber, clickedItem)
     if(inventory.mainHotInventoryRange.HotBarSlotRange.contains(slot)) {
-      heldItemChangeHandler()
+      heldItemChangeHandler
     }
   }
 

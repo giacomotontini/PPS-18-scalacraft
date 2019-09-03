@@ -6,6 +6,7 @@ import io.scalacraft.logic.commons.Message.{RequestNearbyPoints, SendToAll}
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.traits.creatures.CreatureParameters
 import io.scalacraft.packets.DataTypes.{Angle, Position}
+import io.scalacraft.packets.Entities.MobEntity
 import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLookAndRelativeMove, EntityVelocity}
 
 import scala.concurrent.Future
@@ -14,7 +15,7 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 trait Movement {
-  this: CreatureParameters with Actor with Timers with ImplicitContext with DefaultTimeout =>
+  this: CreatureParameters[MobEntity] with Actor with Timers with ImplicitContext with DefaultTimeout =>
   import Movement._
   val MovementTickPeriod: FiniteDuration = 10 seconds
   val AiTimerKey = "AiMovement"

@@ -5,9 +5,9 @@ import java.util.UUID
 import akka.actor.ActorRef
 import io.scalacraft.logic.commons.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.inventories.InventoryItem
-import io.scalacraft.packets.DataTypes.{EntityId, ItemId, Position, Slot}
+import io.scalacraft.packets.DataTypes.{EntityId, Position, Slot}
 import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SpawnPlayer}
-import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging}
+import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging, UseEntity}
 import net.querz.nbt.CompoundTag
 
 sealed trait Message
@@ -81,12 +81,12 @@ object Message {
 
   case class PopulatePlayerInventory(inventory: List[Option[InventoryItem]])
 
-  case class InventoryDropItems(itemId: ItemId, quantity: Int) extends Message
+  case class InventoryDropItems(itemId: Int, quantity: Int) extends Message
 
   /* --------------------------------------------- Digging manager ----------------------------------------------- */
 
   case class PlayerDiggingHoldingItem(playerId: EntityId, playerPosition: Position, playerDiggingPacket: PlayerDigging,
-                                      holdingItemId: Option[ItemId]) extends Message
+                                      holdingItemId: Option[Int]) extends Message
 
   case class BreakBlockAtPosition(position: Position) extends Message
 
@@ -94,10 +94,10 @@ object Message {
 
   /* --------------------------------------------- Drop manager -------------------------------------------------- */
 
-  case class DropItems(itemId: ItemId, quantity: Int, blockPosition: Position, playerId: EntityId,
+  case class DropItems(itemId: Int, quantity: Int, blockPosition: Position, playerId: EntityId,
                        playerPosition: Position) extends Message
 
-  case class CollectItemWithType(collectItem: CollectItem, itemId: ItemId) extends Message
+  case class CollectItemWithType(collectItem: CollectItem, itemId: Int) extends Message
 
   /* --------------------------------------------- World --------------------------------------------------------- */
 
@@ -146,6 +146,8 @@ object Message {
   }
 
   case class SkyStateUpdate(state: SkyUpdateState) extends Message
+
+  case class UseEntityWithItem(useEntity: UseEntity, itemId: Int)
 
   /* --------------------------------------------- Creatures AI --------------------------------------------- */
 

@@ -7,11 +7,11 @@ import io.scalacraft.packets.Entities.MobEntity
 
 import scala.util.Random
 
-trait CreatureParameters extends CommonParameters {
+trait CreatureParameters[T <: MobEntity] extends CommonParameters {
   protected val MovementFluidityFactor = 4
   protected def entityId: Int
   protected def uuid: UUID
-  protected def metaData: MobEntity
+  protected def metaData: T
   protected lazy val tpe: Int = MobsAndObjectsTypeMapping.fromMobEntityClassToType(metaData.getClass)
   protected var posX = 0
   protected var posY = 0

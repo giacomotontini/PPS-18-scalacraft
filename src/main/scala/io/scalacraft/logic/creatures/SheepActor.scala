@@ -5,16 +5,19 @@ import java.util.UUID
 import akka.actor.{Actor, ActorRef, Props, Timers}
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.traits.ai.general.AI
-import io.scalacraft.logic.traits.creatures.{BaseBehaviour, CreatureParameters, FarmAnimal}
+import io.scalacraft.logic.traits.creatures.{BaseBehaviour, CreatureParameters, FarmAnimal, LivingBehaviour}
 import io.scalacraft.packets.Entities.Sheep
+import io.scalacraft.packets.clientbound.PlayPackets
+import io.scalacraft.packets.clientbound.PlayPackets.{SoundEffect, SoundCategory}
 
 class SheepActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
-  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters with BaseBehaviour with AI{
+  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Sheep] with LivingBehaviour[Sheep] with AI{
   val metaData = new Sheep()
   world = worldRef
   val entityId: Int = id
   val uuid: UUID = UUID
   metaData.isBaby = isBaby
+  metaData.health = 8
   posX = x
   posY = y
   posZ = z
@@ -24,7 +27,10 @@ class SheepActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, w
   val speed = 600 //speed u.d.m is 1/8000 block per 50ms: chicken's speed is 1.5 block/s
   val pathMovesNumber = 8
 
-  override def receive: Receive = baseBehaviour orElse aiBehaviour
+  override def receive: Receive = livingBehaviour orElse aiBehaviour
+
+  override lazy val deathSoundEffect: SoundEffect = SoundEffect(462, SoundCategory.Master, posX * 8, posY * 8, posZ * 8, 1, 0.5f)
+  override lazy val hurtSoundEffect: SoundEffect = SoundEffect(463, SoundCategory.Master, posX * 8, posY * 8, posZ * 8, 1, 0.5f)
 
 }
 object SheepActor extends FarmAnimal {

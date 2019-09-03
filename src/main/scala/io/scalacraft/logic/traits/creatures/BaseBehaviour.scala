@@ -3,11 +3,12 @@ package io.scalacraft.logic.traits.creatures
 import akka.actor.{Actor, ActorRef}
 import io.scalacraft.logic.commons.Message.{AskResponse, DespawnCreature, RequestCreatureInChunk}
 import io.scalacraft.packets.DataTypes.Angle
+import io.scalacraft.packets.Entities.MobEntity
 import io.scalacraft.packets.clientbound.PlayPackets.{DestroyEntities, SpawnMob}
 import net.querz.nbt.mca.MCAUtil
 
-trait BaseBehaviour {
-  this: CreatureParameters with Actor =>
+trait BaseBehaviour[T <: MobEntity] {
+  this: CreatureParameters[T] with Actor =>
 
   private[this] def sendAnOptionAskResponseIfIsMyChunk[T](chunkX: Int, chunkZ: Int, sender: ActorRef, response: T): Unit = {
     def isMyChunk(chunkX: Int, chunkZ: Int): Boolean = {
