@@ -14,8 +14,8 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
-trait Movement {
-  this: CreatureParameters[MobEntity] with Actor with Timers with ImplicitContext with DefaultTimeout =>
+trait Movement[T<:MobEntity] {
+  this: CreatureParameters[T] with Actor with Timers with ImplicitContext with DefaultTimeout =>
   import Movement._
   val MovementTickPeriod: FiniteDuration = 10 seconds
   val AiTimerKey = "AiMovement"

@@ -11,7 +11,7 @@ import io.scalacraft.packets.clientbound.PlayPackets
 import io.scalacraft.packets.clientbound.PlayPackets.{SoundCategory, SoundEffect}
 
 class ChickenActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
-  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Chicken] with LivingBehaviour[Chicken] with AI {
+  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Chicken] with LivingBehaviour[Chicken] with AI[Chicken] {
   val metaData = new Chicken()
   world = worldRef
   val entityId: Int = id

@@ -11,7 +11,7 @@ import io.scalacraft.packets.clientbound.PlayPackets
 import io.scalacraft.packets.clientbound.PlayPackets.{SoundEffect, SoundCategory}
 
 class SheepActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
-  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Sheep] with LivingBehaviour[Sheep] with AI{
+  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Sheep] with LivingBehaviour[Sheep] with AI[Sheep]{
   val metaData = new Sheep()
   world = worldRef
   val entityId: Int = id

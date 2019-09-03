@@ -7,7 +7,7 @@ import io.scalacraft.loaders.Items.StorableItem
 import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, ItemId, Position}
+import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, Effect, EffectId}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggingStatus}
 import net.querz.nbt.CompoundTag
@@ -100,7 +100,7 @@ class DiggingManager(dropManager: ActorRef) extends Actor
     }
   }
 
-  private def itemsToDrop(block: Block, breakingProperties: BreakingProperties): Map[ItemId, Int] = block.drops map {
+  private def itemsToDrop(block: Block, breakingProperties: BreakingProperties): Map[Int, Int] = block.drops map {
     case Drop(Some(min), Some(max), namespace, _) => namespace -> randomGenerator.nextInt(math.round(max - min) + 1)
     case Drop(Some(min), _, namespace, _) => namespace -> math.round(min)
     case Drop(_, _, namespace, _) => namespace -> 1

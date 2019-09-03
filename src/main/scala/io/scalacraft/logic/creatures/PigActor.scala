@@ -11,7 +11,7 @@ import io.scalacraft.packets.clientbound.PlayPackets
 import io.scalacraft.packets.clientbound.PlayPackets.{NamedSoundEffect, SoundCategory, SoundEffect}
 
 class PigActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
-  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Pig] with LivingBehaviour[Pig] with AI {
+  extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Pig] with LivingBehaviour[Pig] with AI[Pig] {
   val metaData = new Pig()
   world = worldRef
   val entityId: Int = id
