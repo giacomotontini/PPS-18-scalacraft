@@ -8,7 +8,7 @@ import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.Helpers._
-import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, ItemId, Position}
+import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, Effect, EffectId}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggingStatus}
 import net.querz.nbt.CompoundTag
