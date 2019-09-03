@@ -69,7 +69,8 @@ class DropManager extends Actor with ActorLogging with Timers with DefaultTimeou
       if (floatingItems.contains(itemsPosition)) {
         (world ? FindFirstSolidBlockPositionUnder(position)).mapTo[Position] onComplete {
           case Success(firstSolidPosition) =>
-            floatingItems(firstSolidPosition.withY(_ + 1)) = floatingItems.remove(itemsPosition).get
+            floatingItems(firstSolidPosition.withY(_ + 1)) =
+              floatingItems.remove(itemsPosition).get ++ floatingItems.getOrElse(firstSolidPosition.withY(_ + 1), Map())
           case Failure(ex) => log.error(ex, "Unable to process BlockBrokenAtPosition")
         }
       }
@@ -90,5 +91,3 @@ object DropManager {
   def name: String = "DropManager"
 
 }
-
-
