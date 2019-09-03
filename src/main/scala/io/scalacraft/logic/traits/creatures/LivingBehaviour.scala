@@ -1,9 +1,9 @@
 package io.scalacraft.logic.traits.creatures
 
 import akka.actor.Actor
-import io.scalacraft.logic.commons.Message.{SendToAll, UseEntityWithItem}
+import io.scalacraft.logic.commons.Message.{EntityDead, SendToAll, UseEntityWithItem}
 import io.scalacraft.packets.Entities.Living
-import io.scalacraft.packets.clientbound.PlayPackets.{Animation, AnimationType, DestroyEntities, Effect, EffectId, EntityMetadata, NamedSoundEffect, SoundCategory, SoundEffect}
+import io.scalacraft.packets.clientbound.PlayPackets.{Animation, AnimationType, CombatEvent, DestroyEntities, Effect, EffectId, EntityMetadata, NamedSoundEffect, RemoveEntityEffect, SoundCategory, SoundEffect}
 import io.scalacraft.packets.serverbound.PlayPackets.{Attack, UseEntity}
 
 trait LivingBehaviour[T<: Living] extends BaseBehaviour[T] {
@@ -16,12 +16,10 @@ trait LivingBehaviour[T<: Living] extends BaseBehaviour[T] {
         val dead = inflictDamage(damage)
         world ! SendToAll(Animation(entityId, AnimationType.TakeDamage))
         world ! SendToAll(hurtSoundEffect())
+        world ! SendToAll(EntityMetadata(entityId, metaData))
         if(dead) {
-          world ! SendToAll(DestroyEntities(List(entityId)))
           world ! SendToAll(deathSoundEffect())
-          context stop self //TODO: tell the world (or creature spawner) to kill me
-        } else {
-          world ! SendToAll(EntityMetadata(entityId, metaData))
+          context.parent ! EntityDead(entityId)
         }
       case _ => //ignored
     }

@@ -5,13 +5,14 @@ import java.util.UUID
 import akka.actor.{Actor, ActorRef, Props, Timers}
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.traits.ai.general.AI
-import io.scalacraft.logic.traits.creatures.{BaseBehaviour, CreatureParameters, FarmAnimal, LivingBehaviour}
+import io.scalacraft.logic.traits.creatures.{CreatureParameters, FarmAnimal, LivingBehaviour}
 import io.scalacraft.packets.Entities.Cow
-import io.scalacraft.packets.clientbound.PlayPackets
 import io.scalacraft.packets.clientbound.PlayPackets.{SoundCategory, SoundEffect}
 
 class CowActor (id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
   extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Cow] with LivingBehaviour[Cow] with AI[Cow] {
+  import CreatureParameters._
+
   val metaData = new Cow()
   world = worldRef
   val entityId: Int = id
@@ -29,8 +30,20 @@ class CowActor (id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, wo
 
   override def receive: Receive = livingBehaviour orElse aiBehaviour
 
-  override lazy val deathSoundEffect: SoundEffect = SoundEffect(202, SoundCategory.Master, posX * 8, posY * 8, posZ * 8, 1, 0.5f)
-  override lazy val hurtSoundEffect: SoundEffect = SoundEffect(203, SoundCategory.Master, posX * 8, posY * 8, posZ * 8, 1, 0.5f)
+  override lazy val deathSoundEffect: SoundEffect = SoundEffect(metaData.deathSoundId,
+    SoundCategory.Master,
+    posX * SoundEffectPositionMultiplier,
+    posY * SoundEffectPositionMultiplier,
+    posZ * SoundEffectPositionMultiplier,
+    SoundVolume,
+    SoundPitch)
+  override lazy val hurtSoundEffect: SoundEffect = SoundEffect(metaData.hurtSoundId,
+    SoundCategory.Master,
+    posX * SoundEffectPositionMultiplier,
+    posY * SoundEffectPositionMultiplier,
+    posZ * SoundEffectPositionMultiplier,
+    SoundVolume,
+    SoundPitch)
 }
 object CowActor extends FarmAnimal {
 

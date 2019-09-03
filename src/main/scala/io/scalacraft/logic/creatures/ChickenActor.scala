@@ -7,11 +7,12 @@ import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.traits.ai.general.AI
 import io.scalacraft.logic.traits.creatures.{CreatureParameters, FarmAnimal, LivingBehaviour}
 import io.scalacraft.packets.Entities.Chicken
-import io.scalacraft.packets.clientbound.PlayPackets
 import io.scalacraft.packets.clientbound.PlayPackets.{SoundCategory, SoundEffect}
 
 class ChickenActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
   extends Actor with Timers with ImplicitContext with DefaultTimeout with CreatureParameters[Chicken] with LivingBehaviour[Chicken] with AI[Chicken] {
+  import CreatureParameters._
+
   val metaData = new Chicken()
   world = worldRef
   val entityId: Int = id
@@ -29,8 +30,18 @@ class ChickenActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean,
 
   override def receive: Receive = livingBehaviour orElse aiBehaviour
 
-  override lazy val deathSoundEffect: SoundEffect = SoundEffect(192, SoundCategory.Master, posX * 8, posY * 8, posZ * 8, 1, 0.5f)
-  override lazy val hurtSoundEffect: SoundEffect = SoundEffect(195, SoundCategory.Master, posX * 8, posY * 8, posZ * 8, 1, 0.5f)
+  override lazy val deathSoundEffect: SoundEffect = SoundEffect(metaData.deathSoundId,
+    SoundCategory.Master,
+    posX * SoundEffectPositionMultiplier,
+    posY * SoundEffectPositionMultiplier,
+    posZ * SoundEffectPositionMultiplier,
+    SoundVolume,
+    SoundPitch)
+  override lazy val hurtSoundEffect: SoundEffect = SoundEffect(metaData.hurtSoundId,
+    SoundCategory.Master, posX * SoundEffectPositionMultiplier,
+    posY * SoundEffectPositionMultiplier,
+    posZ * SoundEffectPositionMultiplier,
+    SoundVolume, SoundPitch)
 }
 
 object ChickenActor extends FarmAnimal {

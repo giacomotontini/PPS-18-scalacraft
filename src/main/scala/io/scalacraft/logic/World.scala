@@ -33,6 +33,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
   private val dropManager: ActorRef = context.actorOf(DropManager.props, DropManager.name)
   private val diggingManager: ActorRef = context.actorOf(DiggingManager.props(dropManager), DiggingManager.name)
   private var creatureSpawner: ActorRef = _
+  private var creatureRemovalsPending: List[Int] = List()
 
   private var worldAge: Long = 0
 
@@ -118,6 +119,8 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
       val timeOfDay = worldAge % TicksInDay
       if (worldAge % TimeUpdateInterval == 0) {
         self ! SendToAll(TimeUpdate(worldAge, timeOfDay))
+        self ! SendToAll(DestroyEntities(creatureRemovalsPending))
+        creatureRemovalsPending = List()
       }
       creatureSpawner ! SkyStateUpdate(SkyUpdateState.timeUpdateStateFromTime(timeOfDay))
       worldAge += ServerConfiguration.TicksInSecond
@@ -152,6 +155,7 @@ class World(serverConfiguration: ServerConfiguration) extends Actor
     case action: PlayerUnloadedChunk => creatureSpawner forward action
     case request @ RequestNearbyPoints(blockX,_, blockZ, _, _) => forwardToRegionWithBlock(blockX, blockZ)(request)
     case useEntityWithItem: UseEntityWithItem => creatureSpawner forward useEntityWithItem
+    case EntityDead(entityId) => creatureRemovalsPending +:= entityId
 
     /* ----------------------------------------------- Default ----------------------------------------------- */
 

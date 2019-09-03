@@ -26,3 +26,9 @@ trait CreatureParameters[T <: MobEntity] extends CommonParameters {
   protected def millisPerChunkOfBlock: Double = millisPerBlock / MovementFluidityFactor
   protected val randomGenerator: Random.type = scala.util.Random
 }
+
+object CreatureParameters {
+  val SoundEffectPositionMultiplier = 8
+  val SoundVolume = 1
+  val SoundPitch = 0.5f
+}

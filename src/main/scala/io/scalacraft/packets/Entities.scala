@@ -222,6 +222,12 @@ object Entities {
   class Pig extends Animal with MobEntity {
     @indexType(index = 7) var hasSaddle: Boolean = false
     @indexType(index = 1) @boxed var timeToBoostWithCarrotOnAStrick: Int  = 0
+
+    def ambientSoundId: Int = 416
+    def deathSoundId: Int = 417
+    def hurtSoundId: Int = 418
+    def saddleSoundId: Int = 419
+    def stepSoundId: Int = 420
   }
 
   class Rabbit extends Animal with MobEntity {
@@ -241,14 +247,32 @@ object Entities {
     @indexType(index = 7) var standingUp: Boolean = false
   }
 
-  class Chicken extends Animal with MobEntity
+  class Chicken extends Animal with MobEntity {
+    def ambientSoundId: Int = 192
+    def deathSoundId: Int = 193
+    def eggSoundId: Int = 194
+    def hurtSoundId: Int = 195
+    def stepSoundId: Int = 196
+  }
 
-  class Cow extends Animal with MobEntity
+  class Cow extends Animal with MobEntity {
+    def ambientSoundId: Int = 201
+    def deathSoundId: Int = 202
+    def hurtSoundId: Int = 203
+    def milkSoundId: Int = 204
+    def stepSoundId: Int = 205
+  }
 
   class Mooshroom extends Cow with MobEntity
 
   class Sheep extends Animal with MobEntity {
     @indexType(index = 0) @byte var sheepStatus: Int = 0
+
+    def ambientSoundId: Int = 461
+    def deathSoundId: Int = 462
+    def hurtSoundId: Int = 463
+    def shearSoundId: Int = 464
+    def stepSoundId: Int = 465
   }
 
   class TameableAnimal extends Animal {

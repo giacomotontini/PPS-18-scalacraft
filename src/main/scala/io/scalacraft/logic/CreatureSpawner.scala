@@ -103,6 +103,10 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
       case SkyUpdateState.MidNight => isDay = false
     }
     case useEntityWithItem: UseEntityWithItem => spawnedActor foreach(_.forward(useEntityWithItem))
+    case entityDead: EntityDead =>
+      context.parent forward entityDead
+      spawnedActor -= sender()
+      sender() ! PoisonPill
   }
 }
 

@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import io.scalacraft.logic.commons.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.packets.DataTypes.{EntityId, Position, Slot}
-import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SpawnPlayer}
+import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SoundEffect, SpawnPlayer}
 import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging, UseEntity}
 import net.querz.nbt.CompoundTag
 
@@ -148,6 +148,8 @@ object Message {
   case class SkyStateUpdate(state: SkyUpdateState) extends Message
 
   case class UseEntityWithItem(useEntity: UseEntity, itemId: Int)
+
+  case class EntityDead(entityId: Int)
 
   /* --------------------------------------------- Creatures AI --------------------------------------------- */
 

@@ -173,7 +173,6 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
       val z = math.cos(math.toRadians(yaw)) * 3
       val itemDropPosition = Position(posX + x.toInt, posY, posZ + z.toInt)
       world ! DropItems(itemId, quantity, itemDropPosition, playerEntityId, Position(posX, posY, posZ))
-    case sb.EntityAction(_, _, _) => // TODO: handle this
     case RemovePlayer =>
       world ! PlayerLeavingGame(playerEntityId, username)
       reset()
@@ -182,10 +181,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case entityLookAndRelativeMove: EntityLookAndRelativeMove => userContext ! entityLookAndRelativeMove
     case entityVelocity: EntityVelocity => userContext ! entityVelocity
     case entityLook: EntityLook => userContext ! entityLook
-    case entityHeadLook: EntityHeadLook =>
-      userContext ! entityHeadLook
-    case sb.ChatMessage(message) =>
-      world ! SendToAll(NamedSoundEffect(message, SoundCategory.Master, posX.toInt, posY.toInt, posZ.toInt, 1, 0.5f))
+    case entityHeadLook: EntityHeadLook => userContext ! entityHeadLook
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
   }
 
