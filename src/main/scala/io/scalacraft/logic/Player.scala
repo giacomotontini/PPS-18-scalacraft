@@ -2,7 +2,7 @@ package io.scalacraft.logic
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props, Stash}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.commons.Message._
@@ -24,7 +24,7 @@ import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
 class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConfiguration) extends Actor
-  with Timers with ActorLogging with DefaultTimeout with ImplicitContext with Stash {
+  with ActorLogging with DefaultTimeout with ImplicitContext with Stash {
 
   import Player._
 
@@ -34,6 +34,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
   private val randomGenerator = Random
   private var loadedChunks: Set[(Int, Int)] = Set()
   private var lastKeepAliveId: Long = _
+  private var keepAliveCancellable: Cancellable = _
   private var lastWindowId = 1
 
   private var playerEntityId = 0
@@ -94,22 +95,18 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
       val entityProperties = EntityProperties(playerEntityId, PlayerEntityProperties)
       world ! PlayerSpawning(playerEntityId, spawnPlayerPacket, entityProperties)
       activeInventories(PlayerInventory.Id) ! LoadInventory
-      timers.startPeriodicTimer(KeepAliveTickKey, KeepAliveTick, 5 seconds)
+      keepAliveCancellable = context.system.scheduler.schedule(0 millis, 10 seconds) {
+        lastKeepAliveId = System.currentTimeMillis
+        userContext ! cb.KeepAlive(lastKeepAliveId)
+      }
       context.become(playingBehaviour)
       unstashAll()
     case _ => stash()
   }
 
   private def playingBehaviour: Receive = {
-    case KeepAliveTick =>
-      lastKeepAliveId = randomGenerator.nextLong()
-      userContext ! cb.KeepAlive(lastKeepAliveId)
-      if (!timers.isTimerActive(KeepAliveTimeoutKey)) {
-        timers.startSingleTimer(KeepAliveTimeoutKey, KeepAliveTimeout, 30.seconds)
-      }
 
-    case KeepAliveTimeout => timers.cancel(KeepAliveTickKey)
-    case sb.KeepAlive(keepAliveId) if keepAliveId == lastKeepAliveId => timers.cancel(KeepAliveTimeoutKey)
+    case sb.KeepAlive(keepAliveId) if keepAliveId == lastKeepAliveId => // ok
     case sb.KeepAlive(keepAliveId) if keepAliveId != lastKeepAliveId => log.warning("Client keep alive id invalid.")
 
     case RequestSpawnPacket => sender ! spawnPlayerPacket
@@ -263,7 +260,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
   private def reset(): Unit = {
     loadedChunks = Set()
     lastPosition = null
-    timers.cancel(KeepAliveTickKey)
+    keepAliveCancellable.cancel()
     context.become(preStartBehaviour)
   }
 
@@ -322,14 +319,6 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
 }
 
 object Player {
-
-  private case object KeepAliveTickKey
-
-  private case object KeepAliveTick
-
-  private case object KeepAliveTimeout
-
-  private case object KeepAliveTimeoutKey
 
   import AttributeModifier._
 
