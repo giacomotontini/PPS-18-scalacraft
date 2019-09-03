@@ -1,6 +1,7 @@
 package io.scalacraft.logic.traits.creatures
 
 import akka.actor.Actor
+import io.scalacraft.loaders.Items
 import io.scalacraft.logic.commons.Message.{EntityDead, SendToAll, UseEntityWithItem}
 import io.scalacraft.packets.Entities.Living
 import io.scalacraft.packets.clientbound.PlayPackets.{Animation, AnimationType, CombatEvent, DestroyEntities, Effect, EffectId, EntityMetadata, NamedSoundEffect, RemoveEntityEffect, SoundCategory, SoundEffect}
@@ -12,7 +13,7 @@ trait LivingBehaviour[T<: Living] extends BaseBehaviour[T] {
   val livingBehaviour: Receive = baseBehaviour orElse {
     case UseEntityWithItem(useEntity: UseEntity, itemId: Int) if useEntity.target == entityId=>  useEntity.useType match {
       case Attack() =>
-        val damage = 1 //TODO use utils to determine damage based on item helded by user.
+        val damage = Items.getStorableItemById(itemId).attackDamage
         val dead = inflictDamage(damage)
         world ! SendToAll(Animation(entityId, AnimationType.TakeDamage))
         world ! SendToAll(hurtSoundEffect())
