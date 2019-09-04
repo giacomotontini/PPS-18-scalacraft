@@ -5,7 +5,6 @@ import io.circe.parser
 import io.scalacraft.packets.DataTypes.Identifier
 
 import scala.io.Source
-import scala.language.postfixOps
 
 object Items {
 
@@ -22,11 +21,13 @@ object Items {
     items
   }
 
-  private lazy val itemsTags = storableItems map { item => "minecraft:" + item.id -> List(item.id)} toMap
+  private lazy val itemsTags = storableItems map { item => "minecraft:" + item.id -> List(item.id) } toMap
 
   def getStorableItemById(itemId: Int): StorableItem = storableItems(itemId)
 
-  def getItemByNamespace(name: String): StorableItem = storableItems find { "minecraft:" + _.name == name } get
+  def getItemByNamespace(name: String): StorableItem = storableItems find {
+    "minecraft:" + _.name == name
+  } get
 
   def itemsMap: Map[Identifier, List[Int]] = itemsTags
 

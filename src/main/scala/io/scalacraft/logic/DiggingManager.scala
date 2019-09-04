@@ -8,6 +8,7 @@ import io.scalacraft.loaders.Blocks.{Block, BreakingProperties, Drop}
 import io.scalacraft.loaders.Items.StorableItem
 import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.Helpers._
 import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, Position}
@@ -18,11 +19,9 @@ import net.querz.nbt.CompoundTag
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class DiggingManager(dropManager: ActorRef) extends Actor
-  with ActorLogging with Timers with DefaultTimeout with ImplicitContext {
+class DiggingManager(dropManager: ActorRef) extends EnrichedActor {
 
   import DiggingManager._
   import PlayerDiggingStatus._

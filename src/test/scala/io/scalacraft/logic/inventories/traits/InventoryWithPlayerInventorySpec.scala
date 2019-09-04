@@ -9,7 +9,7 @@ trait InventoryWithPlayerInventorySpec[T <: InventoryWithPlayerInventory] extend
     val items = (playerInventorySectionSlots map (i => Some(InventoryItem(i, 1)))).toList
     inventory.addPlayerInventory(items)
     inventory.retrieveInventoryItems shouldBe items
-    inventory.retrieveAllItems().zipWithIndex.filterNot(i => playerInventorySectionSlots.contains(i._2)).map(_._1) should contain only None
+    inventory.retrieveAllItems.zipWithIndex.filterNot(i => playerInventorySectionSlots.contains(i._2)).map(_._1) should contain only None
   }
 
 }

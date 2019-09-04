@@ -21,11 +21,17 @@ object Packets {
   )
 
   sealed trait ConnectionState
+
   object ConnectionState {
+
     case object Handshaking extends ConnectionState
+
     case object Status extends ConnectionState
+
     case object Login extends ConnectionState
+
     case object Play extends ConnectionState
+
   }
 
 }

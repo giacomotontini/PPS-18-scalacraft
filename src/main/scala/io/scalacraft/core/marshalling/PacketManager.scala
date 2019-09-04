@@ -10,7 +10,6 @@ import io.scalacraft.packets.DataTypes.{Position => _, _}
 import io.scalacraft.packets.Entities.{Entity, MobEntity, Player}
 import io.scalacraft.packets.{DataTypes, Entities}
 
-import scala.language.postfixOps
 import scala.reflect.runtime.universe._
 
 class PacketManager[T: TypeTag] {
@@ -20,11 +19,9 @@ class PacketManager[T: TypeTag] {
   private val classTypes: List[ClassSymbol] = loadClassTypes[T]() ++ loadClassTypes[DataTypes.type]() ++
     loadClassTypes[Entities.type]()
 
-  private def loadClassTypes[U: TypeTag](): List[ClassSymbol] = {
-    typeOf[U].decls.collect {
-      case sym if sym.isClass && !sym.isAbstract => sym.asClass
-    } toList
-  }
+  private def loadClassTypes[U: TypeTag](): List[ClassSymbol] = typeOf[U].decls.collect {
+    case sym if sym.isClass && !sym.isAbstract => sym.asClass
+  } toList
 
   private val classConstructors: Map[Type, MethodMirror] = classTypes map { sym =>
     val cm = mirror.reflectClass(sym)
@@ -58,10 +55,9 @@ class PacketManager[T: TypeTag] {
     val paramSymbols = tpe.decl(termNames.CONSTRUCTOR).asMethod.paramLists.head
     paramSymbols map subTypesMarshaller
   }
-  private def createMarshaller(tpe: Type): Marshaller = {
-    // 0 is to take the first curring arguments list
+
+  private def createMarshaller(tpe: Type): Marshaller =
     new StructureMarshaller(getParamMarshallers(tpe), classConstructors(tpe))
-  }
 
   private def subTypesMarshaller: PartialFunction[Symbol, Marshaller] = {
     case sym => subTypesMarshaller(checkAnnotations = true, Some(sym), Some(sym))(sym)
@@ -173,6 +169,7 @@ class PacketManager[T: TypeTag] {
             case (index, clazz) => index -> classConstructors(mirror.classSymbol(clazz).toType)
           }
         }
+
         val playerTypeIndex = 92
         var typeToEntityClassConstructor: Map[Int, MethodMirror] = Map()
         val typesMarshaller = getParamMarshallers(typeOf[entityMetadataTypes])
@@ -189,7 +186,7 @@ class PacketManager[T: TypeTag] {
         new EntityMarshaller(typeToEntityClassConstructor, typeMarshaller, typesMarshaller, customType)
       case sym if checkAnnotations && hasAnnotation[enumType[_]](symAnnotations.get) =>
         val valueType = annotationTypeArg(annotation[enumType[_]](symAnnotations.get), 0)
-        val valueMarshaller = subTypesMarshaller(checkAnnotations = false, contextAnnotation=Some(sym))(valueType)
+        val valueMarshaller = subTypesMarshaller(checkAnnotations = false, contextAnnotation = Some(sym))(valueType)
         val companionSymbol = sym.info.typeSymbol.companion
 
         val valuesInstances = companionSymbol.info.decls collect {
@@ -208,12 +205,20 @@ class PacketManager[T: TypeTag] {
 
   private def isSymType[U: TypeTag](symbol: Symbol): Boolean =
     (if (symbol.isType) symbol.asType.toType else symbol.info) <:< typeOf[U]
-  private def hasAnnotation[U: TypeTag](symbol: Symbol): Boolean = symbol.annotations.exists {_.tree.tpe <:< typeOf[U]}
+
+  private def hasAnnotation[U: TypeTag](symbol: Symbol): Boolean = symbol.annotations.exists {
+    _.tree.tpe <:< typeOf[U]
+  }
+
   private def annotation[U: TypeTag](symbol: Symbol): Annotation =
-    symbol.annotations.find {_.tree.tpe <:< typeOf[U]}.get
+    symbol.annotations.find {
+      _.tree.tpe <:< typeOf[U]
+    }.get
+
   private def annotationParams(annotation: Annotation): List[Any] = annotation.tree.children.tail map {
     case Literal(Constant(value)) => value
   }
+
   private def annotationParam[U](annotation: Annotation, index: Int): U =
     annotationParams(annotation)(index).asInstanceOf[U]
 
@@ -223,8 +228,8 @@ class PacketManager[T: TypeTag] {
   }
 
   private def moduleInstance(tpe: Type): Any = {
-      val module = tpe.typeSymbol.companionSymbol.asModule
-      mirror.reflectModule(module).instance
+    val module = tpe.typeSymbol.companionSymbol.asModule
+    mirror.reflectModule(module).instance
   }
 
 }

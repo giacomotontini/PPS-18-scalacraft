@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, Props, Timers}
 import akka.pattern._
 import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.DataTypes.{EntityId, Position, SlotData}
@@ -14,10 +15,9 @@ import net.querz.nbt.CompoundTag
 
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
-class DropManager extends Actor with ActorLogging with Timers with DefaultTimeout with ImplicitContext {
+class DropManager extends EnrichedActor {
 
   import DropManager._
 

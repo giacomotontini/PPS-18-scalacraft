@@ -41,7 +41,9 @@ object LivePacketsMarshalling extends App {
     val array = new Array[Byte](length)
     for (i <- 0 until length) {
       var b: Int = 0
-      while ({ b = inStream.read(); b } < 0) { }
+      while ( {
+        b = inStream.read(); b
+      } < 0) {}
       array(i) = b.toByte
     }
 
@@ -59,15 +61,15 @@ object LivePacketsMarshalling extends App {
     try {
       val parsed = packetManager.unmarshal(packetId)(bufferedInStream)
       System.out.println(parsed)
-//      packetManager.marshal(parsed)(bufferedOutStream)
-//      bufferedOutStream.flush()
-//
-//      val content = Helpers.bytes2hex(outArray.toByteArray)
-//      if (Helpers.bytes2hex(array) != content) {
-//        System.err.println("\n$$$ marshalling error $$$")
-//        printExceptionContext(packetId, array)
-//        System.err.println("Struct content: " + content)
-//      }
+      //      packetManager.marshal(parsed)(bufferedOutStream)
+      //      bufferedOutStream.flush()
+      //
+      //      val content = Helpers.bytes2hex(outArray.toByteArray)
+      //      if (Helpers.bytes2hex(array) != content) {
+      //        System.err.println("\n$$$ marshalling error $$$")
+      //        printExceptionContext(packetId, array)
+      //        System.err.println("Struct content: " + content)
+      //      }
     } catch {
       case e: Exception =>
         System.err.println("\n$$$ UNmarshalling error $$$")
@@ -86,10 +88,8 @@ object LivePacketsMarshalling extends App {
 
     System.err.println("Packet id: 0x" + packetId.toHexString)
     System.err.println("Packet length: " + array.length)
-    System.err.println("Packet content: " +  content.take(128) +
+    System.err.println("Packet content: " + content.take(128) +
       (if (content.length > maxPacketContentLength) "<truncated>" else ""))
   }
-
-
 
 }

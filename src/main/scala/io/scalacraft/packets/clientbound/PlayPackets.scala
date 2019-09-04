@@ -65,7 +65,7 @@ object PlayPackets {
   case class SpawnPainting(@boxed entityId: Int,
                            entityUUID: UUID,
                            @boxed motive: Int,
-                           location: Position, //center coordinate, see wiki for computer image centering
+                           location: Position, // center coordinate, see wiki for computer image centering
                            @enumType[Byte] direction: Direction) extends Structure
 
   @packet(id = 0x05)
@@ -135,7 +135,7 @@ object PlayPackets {
   @packet(id = 0x08)
   case class BlockBreakAnimation(@boxed entityId: Int,
                                  location: Position,
-                                 @byte destroyStage: Int) extends Structure //0-9 normal-bad stage, > 9 destroyed
+                                 @byte destroyStage: Int) extends Structure // 0-9 normal-bad stage, > 9 destroyed
 
   @packet(id = 0x09)
   case class UpdateBlockEntity(location: Position, @byte action: Int, nbtData: Nbt) extends Structure //TODO: use enum
@@ -250,10 +250,10 @@ object PlayPackets {
                                     @byte yCoordinate: Int,
                                     @boxed blockId: Int) extends Structure
 
-  @packet(id = 0x0F)
+  @packet(id = 0x0F) // check protocol for position decoding algorithm
   case class MultiBlockChange(chunkX: Int,
                               chunkY: Int,
-                              @precededBy[VarInt] record: List[MultiBlockChangeRecord]) extends Structure //check protocol for position decoding algorithm
+                              @precededBy[VarInt] record: List[MultiBlockChangeRecord]) extends Structure
 
   case class TabCompleteMatches(tabMatch: String,
                                 tooltip: Option[Chat]) extends Structure
@@ -408,15 +408,28 @@ object PlayPackets {
   case class UnloadChunk(chunkX: Int, chunkY: Int) extends Structure // Block coordinate divided by 16, rounded down
 
 
-  sealed trait GameModeValue { def value: Int }
+  sealed trait GameModeValue {
+    def value: Int
+  }
+
   object GameModeValue {
 
-    @enumValue(0) case object Survival extends GameModeValue { override val value: Int = 0 }
+    @enumValue(0) case object Survival extends GameModeValue {
+      override val value: Int = 0
+    }
 
-    @enumValue(1) case object Creative extends GameModeValue { override val value: Int = 1 }
+    @enumValue(1) case object Creative extends GameModeValue {
+      override val value: Int = 1
+    }
 
-    @enumValue(2) case object Adventure extends GameModeValue { override val value: Int = 2 }
-    @enumValue(3) case object Spectator extends GameModeValue { override val value: Int = 3 }
+    @enumValue(2) case object Adventure extends GameModeValue {
+      override val value: Int = 2
+    }
+
+    @enumValue(3) case object Spectator extends GameModeValue {
+      override val value: Int = 3
+    }
+
   }
 
   sealed trait ExitModeValue
@@ -444,16 +457,27 @@ object PlayPackets {
   }
 
   sealed trait Reason
+
   @switchKey(0) case class InvalidBed(value: Float) extends Reason
+
   @switchKey(1) case class EndRaining(value: Float) extends Reason
+
   @switchKey(2) case class BeginRaining(value: Float) extends Reason
+
   @switchKey(3) case class ChangeGameMode(@enumType[Int] value: GameModeValue) extends Reason
+
   @switchKey(4) case class ExitEnd(@enumType[Int] value: ExitModeValue) extends Reason
+
   @switchKey(5) case class DemoMessage(@enumType[Int] value: DemoMessage) extends Reason
+
   @switchKey(6) case class ArrowHittingPlayer(value: Int) extends Reason
+
   @switchKey(7) case class FadeValue(value: Float) extends Reason
+
   @switchKey(8) case class FadeTime(value: Float) extends Reason
+
   @switchKey(9) case class PlayPufferFishStingSound(value: Int) extends Reason
+
   @switchKey(value = 10) case class PlayElderGuardianMob(value: Int) extends Reason
 
   @packet(id = 0x20)
@@ -496,6 +520,7 @@ object PlayPackets {
     @enumValue(1009) case object FireExtinguished extends EffectId
 
     @enumValue(1010) case object PlayRecord extends EffectId //data binded to this id specifies sound direction
+
     @enumValue(1011) case object IronDooClosed extends EffectId
 
     @enumValue(1012) case object WoodenDoorClosed extends EffectId
@@ -824,31 +849,40 @@ object PlayPackets {
 
 
   case class PlayerInfoProperty(name: String,
-                      value: String,
-                      signature: Option[String]) extends Structure
+                                value: String,
+                                signature: Option[String]) extends Structure
 
   sealed trait PlayerInfoAction
+
   @switchKey(0) case class PlayerInfoAddPlayer(uuid: UUID,
-                                 @maxLength(16) name: String,
-                                 @precededBy[VarInt] properties: List[PlayerInfoProperty],
-                                 @boxed gameMode: Int,
-                                 @boxed ping: Int,
-                                 displayName: Option[Chat]) extends PlayerInfoAction
+                                               @maxLength(16) name: String,
+                                               @precededBy[VarInt] properties: List[PlayerInfoProperty],
+                                               @boxed gameMode: Int,
+                                               @boxed ping: Int,
+                                               displayName: Option[Chat]) extends PlayerInfoAction
 
   @switchKey(1) case class PlayerInfoUpdateGameMode(uuid: UUID,
-                                      @boxed gameMode: Int) extends PlayerInfoAction
+                                                    @boxed gameMode: Int) extends PlayerInfoAction
+
   @switchKey(2) case class PlayerInfoUpdateLatency(uuid: UUID,
-                                     @boxed ping: Int) extends PlayerInfoAction
-  @switchKey(3) case class PlayerInfoUpdateDisplayName(uuid: UUID, displayName: Option[Chat]) extends PlayerInfoAction
+                                                   @boxed ping: Int) extends PlayerInfoAction
+
+  @switchKey(3) case class PlayerInfoUpdateDisplayName(uuid: UUID,
+                                                       displayName: Option[Chat]) extends PlayerInfoAction
+
   @switchKey(4) case class PlayerInfoRemovePlayer(uuid: UUID) extends PlayerInfoAction
 
   @packet(id = 0x30)
   case class PlayerInfo(@switchType[VarInt] @precededBy[VarInt] players: List[PlayerInfoAction]) extends Structure
 
   sealed trait FeetEyes
-  object FeetEyes{
+
+  object FeetEyes {
+
     @enumValue(0) case object Feet extends FeetEyes
+
     @enumValue(1) case object Eyes extends FeetEyes
+
   }
 
   @packet(id = 0x31)
@@ -857,7 +891,7 @@ object PlayPackets {
                         targetY: Double,
                         targetZ: Double,
                         isEntity: Boolean,
-                        @fromContext(4)  @boxed entityId: Option[Int],
+                        @fromContext(4) @boxed entityId: Option[Int],
                         @fromContext(4) @enumType[VarInt] entityFeetEyes: Option[FeetEyes]) extends Structure
 
   @packet(id = 0x32)
@@ -874,15 +908,23 @@ object PlayPackets {
                     location: Position) extends Structure
 
   sealed trait UnlockRecipeAction
-  object UnlockRecipeAction{
+
+  object UnlockRecipeAction {
+
     @enumValue(0) case object UnlockRecipeActionInit extends UnlockRecipeAction
+
     @enumValue(1) case object UnlockRecipeActionAdd extends UnlockRecipeAction
+
     @enumValue(2) case object UnlockRecipeActionRemove extends UnlockRecipeAction
+
   }
 
   sealed trait UnlockRecipeOther
+
   @switchKey(0) case class OtherInit(@precededBy[VarInt] reciperIds: List[Identifier]) extends UnlockRecipeOther
+
   @switchKey(1) case class OtherAdd() extends UnlockRecipeOther
+
   @switchKey(2) case class OtherRemove() extends UnlockRecipeOther
 
   @packet(id = 0x34)
@@ -917,23 +959,24 @@ object PlayPackets {
   case class SelectAdvancementTab(@precededBy[Boolean] identifier: Option[String]) extends Structure
 
   sealed trait WorldBorderAction
+
   @switchKey(0) case class WorldBorderActionSetSize(diameter: Double) extends WorldBorderAction
 
-  @switchKey(1)  case class WorldBorderActionLerpSize(oldDiameter: Double,
-                                      newDiameter: Double,
-                                      @boxed speed: Long) extends WorldBorderAction
+  @switchKey(1) case class WorldBorderActionLerpSize(oldDiameter: Double,
+                                                     newDiameter: Double,
+                                                     @boxed speed: Long) extends WorldBorderAction
 
   @switchKey(2) case class WorldBorderActionSetCenter(x: Double,
-                                       z: Double) extends WorldBorderAction
+                                                      z: Double) extends WorldBorderAction
 
   @switchKey(3) case class WorldBorderActionInitialize(x: Double,
-                                        z: Double,
-                                        oldDiameter: Double,
-                                        newDiameter: Double,
-                                        @boxed speed: Long,
-                                        @boxed portalTeleportBoundary: Int,
-                                        @boxed warningTime: Int,
-                                        @boxed warningBlocks: Int) extends WorldBorderAction
+                                                       z: Double,
+                                                       oldDiameter: Double,
+                                                       newDiameter: Double,
+                                                       @boxed speed: Long,
+                                                       @boxed portalTeleportBoundary: Int,
+                                                       @boxed warningTime: Int,
+                                                       @boxed warningBlocks: Int) extends WorldBorderAction
 
   @switchKey(4) case class WorldBorderActionSetWarningTime(@boxed warningTime: Int) extends WorldBorderAction
 
@@ -947,25 +990,31 @@ object PlayPackets {
   @packet(id = 0x3C)
   case class Camera(@boxed cameraId: Int) extends Structure
 
-  @packet(id= 0x3D)
+  @packet(id = 0x3D)
   case class HeldItemChange(@byte slot: Int) extends Structure
 
 
   sealed trait ScoreboardPosition
+
   object ScoreboardPosition {
+
     @enumValue(0) case object List extends ScoreboardPosition
+
     @enumValue(1) case object Sidebar extends ScoreboardPosition
+
     @enumValue(2) case object BelowName extends ScoreboardPosition
+
     @enumValue(3) case object TeamSpecific extends ScoreboardPosition
+
   }
 
   @packet(id = 0x3E)
   case class DisplayScoreboard(@switchType[Byte] position: ScoreboardPosition,
                                @maxLength(16) scoreName: String)
 
-  @packet(id = 0x3F)
+  @packet(id = 0x3F) // TODO: not sure if it's an object entity or a spawn entity
   case class EntityMetadata(@boxed entityId: Int,
-                            @fromContext(0) entityMetadata: ObjectEntity) extends Structure //TODO: not sure if it's an object entity or a spawn entity
+                            @fromContext(0) entityMetadata: ObjectEntity) extends Structure
 
   @packet(id = 0x40)
   case class AttachEntity(attachedId: Int,
@@ -979,13 +1028,21 @@ object PlayPackets {
                             @short velocityZ: Int) extends Structure
 
   sealed trait EquipmentSlot
+
   object EquipmentSlot {
+
     @enumValue(0) case object MainHand extends EquipmentSlot
+
     @enumValue(1) case object OffHand extends EquipmentSlot
+
     @enumValue(2) case object Boots extends EquipmentSlot
+
     @enumValue(3) case object Leggings extends EquipmentSlot
+
     @enumValue(4) case object Chestplate extends EquipmentSlot
+
     @enumValue(5) case object Helmet extends EquipmentSlot
+
   }
 
   @packet(id = 0x42)
@@ -1004,14 +1061,24 @@ object PlayPackets {
                           foodSaturation: Float) extends Structure
 
   sealed trait ScoreboardType
+
   object ScoreboardType {
+
     @enumValue(0) case object ScoreboardInteger extends ScoreboardType
+
     @enumValue(1) case object ScoreboardHearts extends ScoreboardType
+
   }
+
   sealed trait ScoreboardMode
-  @switchKey(0) case class CreateScoreboard(objectiveValue: Chat, @enumType[VarInt] scoreboardType: ScoreboardType) extends ScoreboardMode
+
+  @switchKey(0) case class CreateScoreboard(objectiveValue: Chat,
+                                            @enumType[VarInt] scoreboardType: ScoreboardType) extends ScoreboardMode
+
   @switchKey(1) case class RemoveScoreboard() extends ScoreboardMode
-  @switchKey(2) case class UpdateDisplayedText(objectiveValue: Chat, @enumType[VarInt] scoreboardType: ScoreboardType) extends ScoreboardMode
+
+  @switchKey(2) case class UpdateDisplayedText(objectiveValue: Chat,
+                                               @enumType[VarInt] scoreboardType: ScoreboardType) extends ScoreboardMode
 
   @packet(id = 0x45)
   case class ScoreboardObjective(@maxLength(16) objectiveName: String,
@@ -1117,9 +1184,11 @@ object PlayPackets {
 
   @switchKey(2) case class UpdateTeamInfo(info: TeamInfo) extends ModePacket47
 
-  @switchKey(3) case class AddPlayersToTeam(@precededBy[VarInt] @maxLength(40) entities: List[String]) extends ModePacket47
+  @switchKey(3) case class AddPlayersToTeam(@precededBy[VarInt] @maxLength(40)
+                                            entities: List[String]) extends ModePacket47
 
-  @switchKey(4) case class RemovePlayersFromTeam(@precededBy[VarInt] @maxLength(40) entities: List[String]) extends ModePacket47
+  @switchKey(4) case class RemovePlayersFromTeam(@precededBy[VarInt] @maxLength(40)
+                                                 entities: List[String]) extends ModePacket47
 
   @packet(0x47)
   case class Teams(@maxLength(16) teamName: String, @switchType[Byte] mode: ModePacket47) extends Structure
@@ -1241,7 +1310,9 @@ object PlayPackets {
 
   sealed trait AttributeModifier {
     def default: Double
+
     def min: Double
+
     def max: Double
   }
 
@@ -1330,6 +1401,7 @@ object PlayPackets {
       override val min: Double = 0.0
       override val max: Double = 1024.0
     }
+
   }
 
   sealed trait Operation
@@ -1370,8 +1442,8 @@ object PlayPackets {
   sealed trait RecipeType
 
   @switchKey("crafting_shapeless") case class CraftingShapeless(group: String,
-                                                               @precededBy[VarInt] ingredients: List[Ingredient],
-                                                               result: Slot) extends RecipeType
+                                                                @precededBy[VarInt] ingredients: List[Ingredient],
+                                                                result: Slot) extends RecipeType
 
   //TODO: 	Length of ingredient is width * height. Indexed by x + (y * width) --> Need dedicated Marshaller
   @switchKey("crafting_shaped") case class CraftingShaped(@boxed width: Int,

@@ -17,7 +17,8 @@ object Chunks {
       palette.forEach(paletteName => writeVarInt(Blocks.stateIdFromCompoundTag(paletteName), dataOutputStream))
     }
 
-    def writeLongArray(dataArray: Array[Long], valueMarshaller: LongMarshaller)(implicit dataOutputStream: DataOutputStream): Unit = {
+    def writeLongArray(dataArray: Array[Long], valueMarshaller: LongMarshaller)
+                      (implicit dataOutputStream: DataOutputStream): Unit = {
       writeVarInt(dataArray.length, dataOutputStream)
       dataArray.foreach(value => valueMarshaller.marshal(value)(dataOutputStream))
     }

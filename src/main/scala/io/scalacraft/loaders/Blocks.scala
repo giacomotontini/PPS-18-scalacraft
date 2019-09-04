@@ -6,7 +6,6 @@ import io.scalacraft.packets.DataTypes.{BlockStateId, Identifier}
 import net.querz.nbt.CompoundTag
 
 import scala.io.Source
-import scala.language.postfixOps
 
 object Blocks extends App {
 

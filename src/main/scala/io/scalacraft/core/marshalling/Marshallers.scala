@@ -302,7 +302,9 @@ object Marshallers {
       } else {
         var b: Byte = 0
         val buffer = mutable.ArrayBuffer[Byte]()
-        while ({ b = inStream.read().toByte; b } >= 0) {
+        while ( {
+          b = inStream.read().toByte; b
+        } >= 0) {
           buffer.append(b)
         }
 
@@ -472,7 +474,8 @@ object Marshallers {
       var index = 0x00
       var indexToBeReaded = 0
       while ( {
-        index = byteMarshaller.unmarshal()(trashContext, inStream).asInstanceOf[Int].toByte; index
+        index = byteMarshaller.unmarshal()(trashContext, inStream).asInstanceOf[Int].toByte
+        index
       } != -1) {
         if (index != indexToBeReaded) {
           fieldSeq :+= null

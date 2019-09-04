@@ -29,11 +29,11 @@ object ServerConfiguration {
   private val favicon = Base64.getEncoder.encodeToString(image.getBytes(Charset.forName("iso-8859-1")))
 
   val Name: String = "scalacraft"
-  val Version: String = "0.1"
+  val Version: String = "1.0"
   val VersionName: String = "1.13.2"
   val VersionProtocol: Int = 404
   val TicksInSecond: Int = 20
   val MaxViewDistance: Int = 10
-  val LoadingChunksBlocksThreshold = 8  // not compute needed chunks if player moves under this
+  val LoadingChunksBlocksThreshold = 8 // not compute needed chunks if player moves under this
 
 }

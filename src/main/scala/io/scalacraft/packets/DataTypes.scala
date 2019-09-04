@@ -7,6 +7,7 @@ import io.scalacraft.core.marshalling.annotations.PacketAnnotations._
 import net.querz.nbt.Tag
 
 object DataTypes {
+
   type Chat = String
   type Identifier = String
   type Slot = Option[SlotData]
@@ -24,11 +25,13 @@ object DataTypes {
 
     def ~(position: Position): Double = {
       val Position(rx, ry, rz) = this | position
-      math.sqrt(rx*rx + ry*ry + rz*rz)
+      math.sqrt(rx * rx + ry * ry + rz * rz)
     }
 
     def withX(f: Int => Int): Position = Position(f(x), y, z)
+
     def withY(f: Int => Int): Position = Position(x, f(y), z)
+
     def withZ(f: Int => Int): Position = Position(x, y, f(z))
 
   }
@@ -40,7 +43,9 @@ object DataTypes {
   }
 
   case class SlotData(@boxed itemId: Int, @byte itemCount: Int, nbt: Nbt)
+
   case class Rotation(x: Float, y: Float, z: Float)
+
   case class Angle(value: Int) extends AnyVal
 
   object Angle {
@@ -52,13 +57,21 @@ object DataTypes {
   }
 
   sealed trait Direction
+
   object Direction {
+
     @enumValue(0) case object Down extends Direction
+
     @enumValue(1) case object Up extends Direction
+
     @enumValue(2) case object North extends Direction
+
     @enumValue(3) case object South extends Direction
+
     @enumValue(4) case object West extends Direction
+
     @enumValue(5) case object East extends Direction
+
   }
 
   //Map each index of entity metadata to correspondent type
@@ -81,7 +94,9 @@ object DataTypes {
                                   @switchType[VarInt] field15: ParticleData) extends Structure
 
   sealed trait ParticleData extends Structure
+
   @switchKey(3) case class Block(@boxed blockState: Int) extends ParticleData
+
   @switchKey(12) case class Effect() extends ParticleData
 
 }

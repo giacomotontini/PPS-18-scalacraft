@@ -43,7 +43,7 @@ trait CraftingInventoryActor extends InventoryActor {
     val craftingItems = inventory.retrieveCraftingItems
     inventory.clearCrafted()
 
-    if (!craftingItems.forall(_.isDefined)) {
+    if (!craftingItems.forall(_.isEmpty)) {
       RecipeManager.checkForRecipes(craftingItems) match {
         case Some(recipe) => inventory.addCrafted(InventoryItem(recipe.id, recipe.count))
         case None => inventory.clearCrafted()

@@ -140,13 +140,11 @@ object Message {
     type SkyUpdateState = Value
     val Sunrise, Noon, Sunset, MidNight = Value
 
-    def timeUpdateStateFromTime(timeOfDay: Long): SkyUpdateState = {
-      timeOfDay match {
-        case _: Long if timeOfDay >= 0 && timeOfDay < 6000 => Sunrise
-        case _: Long if timeOfDay >= 6000 && timeOfDay < 12000 => Noon
-        case _: Long if timeOfDay >= 12000 && timeOfDay < 18000 => Sunset
-        case _: Long if timeOfDay >= 18000 && timeOfDay < 24000 => MidNight
-      }
+    def timeUpdateStateFromTime(timeOfDay: Long): SkyUpdateState = timeOfDay match {
+      case _: Long if timeOfDay >= 0 && timeOfDay < 6000 => Sunrise
+      case _: Long if timeOfDay >= 6000 && timeOfDay < 12000 => Noon
+      case _: Long if timeOfDay >= 12000 && timeOfDay < 18000 => Sunset
+      case _: Long if timeOfDay >= 18000 && timeOfDay < 24000 => MidNight
     }
   }
 

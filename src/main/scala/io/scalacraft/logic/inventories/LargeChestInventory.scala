@@ -17,6 +17,7 @@ class LargeChestInventory(val id: Int) extends InventoryWithPlayerInventory {
 
   override protected val inventory: Array[Option[InventoryItem]] = Array.fill(HotBarSlotRange.end + 1)(None)
   override protected[inventories] val mainHotInventoryRange: MainHotRange = LargeChestInventory
+
   override def inventoryClosed(): Any = {}
 
 }

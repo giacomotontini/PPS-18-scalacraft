@@ -10,6 +10,7 @@ import io.scalacraft.packets.DataTypes.VarInt
 trait ConnectionManager {
 
   def writePacket(dataToPacketId: DataOutputStream => VarInt): Unit
+
   def closeConnection(): Unit
 
 }
@@ -26,7 +27,7 @@ object ConnectionManager {
       val channelByteBufOutputStream = new ByteBufOutputStream(channelByteBuf)
 
       //this buffer will contains packet payload data
-      val buffer = new ByteArrayOutputStream()
+      val buffer = new ByteArrayOutputStream
 
       //dataBuffer is a function that writes payload byte and buffer and return the packetId
       val outStream = new DataOutputStream(buffer)

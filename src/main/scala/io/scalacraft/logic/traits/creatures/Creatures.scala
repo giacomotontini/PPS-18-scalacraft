@@ -11,7 +11,6 @@ import io.scalacraft.packets.DataTypes.Position
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.Random
 
 case class SpawnCreatureParameters(biomeToSpawnPosition: Map[Int, Set[(Position, Boolean)]],

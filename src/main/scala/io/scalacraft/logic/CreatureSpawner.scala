@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import akka.pattern._
 import io.scalacraft.logic.commons.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext, Message}
 import io.scalacraft.logic.creatures.misc.CreatureInstances
 import io.scalacraft.logic.traits.creatures.FarmAnimal
@@ -13,10 +14,9 @@ import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
 import scala.concurrent.Future
 import scala.concurrent.Future._
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout with ActorLogging {
+class CreatureSpawner extends EnrichedActor {
   //Mantains the number of player in a chunk, this is identified by his x, z coordinates
   var numberOfPlayersInChunk: Map[(Int, Int), Int] = Map()
   //Mantains the habitation times of every habitated chunk

@@ -7,6 +7,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
 import io.scalacraft.packets.DataTypes.{EntityId, Position}
@@ -15,12 +16,10 @@ import io.scalacraft.packets.serverbound.PlayPackets.{Face, PlayerBlockPlacement
 import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 
-class World(serverConfiguration: ServerConfiguration) extends Actor
-  with ActorLogging with Timers with ImplicitContext with DefaultTimeout {
+class World(serverConfiguration: ServerConfiguration) extends EnrichedActor with Timers {
 
   import World._
 

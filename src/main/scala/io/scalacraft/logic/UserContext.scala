@@ -9,6 +9,7 @@ import io.scalacraft.core.network.{ConnectionManager, RawPacket}
 import io.scalacraft.loaders.Packets
 import io.scalacraft.loaders.Packets.ConnectionState
 import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.clientbound.LoginPackets.LoginSuccess
@@ -19,8 +20,7 @@ import io.scalacraft.packets.serverbound.StatusPackets.{Ping, Request}
 
 import scala.util.{Failure, Random, Success}
 
-class UserContext(connectionManager: ConnectionManager, serverConfiguration: ServerConfiguration) extends Actor
-  with ActorLogging with DefaultTimeout with ImplicitContext {
+class UserContext(connectionManager: ConnectionManager, serverConfiguration: ServerConfiguration) extends EnrichedActor {
 
   private val world = context.actorSelection("/user/world")
 

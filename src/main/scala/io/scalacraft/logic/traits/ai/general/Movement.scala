@@ -11,7 +11,6 @@ import io.scalacraft.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLook
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 trait Movement[T<:MobEntity] {

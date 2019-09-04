@@ -6,6 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props, Stash}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
@@ -20,11 +21,10 @@ import net.querz.nbt.CompoundTag
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
 
-class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConfiguration) extends Actor
-  with ActorLogging with DefaultTimeout with ImplicitContext with Stash {
+class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConfiguration) extends EnrichedActor
+  with Stash {
 
   import Player._
 
@@ -245,8 +245,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     val playerInventoryActorRef = activeInventories(PlayerInventory.Id)
     activeInventories += (windowId -> context.actorOf(CraftingTableActor.props(windowId, self, playerInventoryActorRef)))
     (activeInventories(PlayerInventory.Id) ? RetrieveInventoryItems).mapTo[List[Option[InventoryItem]]] onComplete {
-      case Success(inventory) =>
-        activeInventories(windowId) ! PopulatePlayerInventory(inventory)
+      case Success(inventory) => activeInventories(windowId) ! PopulatePlayerInventory(inventory)
       case _ => log.warning("Failed to retrieve inventory items.")
     }
     userContext ! OpenWindows(windowId, CraftingTable("{\"translate\":\"block.minecraft.crafting_table.name\"}", 0))
@@ -263,19 +262,17 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
   private var lastPosition: (Double, Double) = _
 
   private def loadChunksAndMobs(): Future[Unit] = {
-    val timeout = 16 seconds
+    val timeout = 30 seconds
 
-    def needLoadingChunks: Boolean = {
+    def needLoadingChunks: Boolean =
       math.abs(posX - lastPosition._1) > ServerConfiguration.LoadingChunksBlocksThreshold ||
         math.abs(posZ - lastPosition._2) > ServerConfiguration.LoadingChunksBlocksThreshold
-    }
 
     def loadChunks(toUnload: Set[(Int, Int)], toLoad: Set[(Int, Int)]): Future[Unit] = {
       toUnload foreach { case (x, z) => userContext ! UnloadChunk(x, z) }
       Future.sequence(toLoad map { case (x, z) =>
         world.ask(RequestChunkData(x, z))(timeout) map {
-          case chunkData: ChunkData =>
-            userContext ! chunkData
+          case chunkData: ChunkData => userContext ! chunkData
           case _ => // do nothing
         }
       }) map (_ => Unit)
@@ -284,13 +281,13 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     def loadMobs(toUnload: Set[(Int, Int)], toLoad: Set[(Int, Int)]): Future[Unit] = {
       val unloadFuture = Future.sequence(toUnload map { case (x, z) =>
         world.ask(PlayerUnloadedChunk(x, z))(timeout).mapTo[List[DestroyEntities]] map (destroyCreatures =>
-          destroyCreatures.foreach(destroyCreaure => userContext ! destroyCreaure))
+          destroyCreatures.foreach(destroyCreature => userContext ! destroyCreature))
       }) map (_ => Unit)
       val loadFuture = Future.sequence(toLoad map { case (x, z) =>
         world.ask(SpawnCreaturesInChunk(x, z))(timeout).mapTo[List[SpawnMob]] map (spawnMobs =>
           spawnMobs.foreach(spawnMob => userContext ! spawnMob))
       }) map (_ => Unit)
-      loadFuture.zip(unloadFuture).flatMap(_ => Future.unit)
+      loadFuture zip unloadFuture flatMap (_ => Future.unit)
     }
 
     if (lastPosition == null || needLoadingChunks) {
@@ -305,7 +302,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
 
       val loadChunksFuture = loadChunks(toUnload, toLoad)
       val loadMobFuture = loadMobs(toUnload, toLoad)
-      loadChunksFuture.zip(loadMobFuture).flatMap(_ => Future.unit)
+      loadChunksFuture zip loadMobFuture flatMap (_ => Future.unit)
     } else Future.unit
   }
 

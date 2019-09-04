@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern._
 import io.scalacraft.loaders.{Blocks, Chunks}
 import io.scalacraft.logic.commons.Message.{RequestChunkData, RequestNearbyPoints, RequestSpawnPoints, _}
+import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.creatures.misc.ComputeCreatureMoves
 import io.scalacraft.misc.Helpers
@@ -12,11 +13,12 @@ import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
 import net.querz.nbt.CompoundTag
 import net.querz.nbt.mca.{Chunk, MCAFile, MCAUtil}
+import io.scalacraft.logic.commons.RichNbtCompoundTag._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class Region(mca: MCAFile) extends Actor with ActorLogging with ImplicitContext with DefaultTimeout {
+class Region(mca: MCAFile) extends EnrichedActor {
 
   import Region._
 

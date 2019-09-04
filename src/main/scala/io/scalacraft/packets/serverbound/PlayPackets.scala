@@ -67,20 +67,35 @@ object PlayPackets {
   case class EnchantItem(@byte enchantItem: Int, @byte windowId: Int) extends Structure
 
   trait ClickWindowAction
+
   object ClickWindowAction {
+
     case class LeftMouseClick(outsideWindows: Boolean = false) extends ClickWindowAction
+
     case class RightMouseClick(outsideWindows: Boolean = false) extends ClickWindowAction
+
     case object ShiftLeftMouseClick extends ClickWindowAction
+
     case object ShiftRightMouseClick extends ClickWindowAction
-    case class NumberKey(keyNum:Int) extends ClickWindowAction
+
+    case class NumberKey(keyNum: Int) extends ClickWindowAction
+
     case object MiddleMouseClick extends ClickWindowAction
+
     case object DropKey extends ClickWindowAction
+
     case object ControlDropKey extends ClickWindowAction
+
     case class LeftMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+
     case class RightMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+
     case class MiddleMouseDrag(addSlot: Boolean = false, endDrag: Boolean = false) extends ClickWindowAction
+
     case object DoubleClick extends ClickWindowAction
+
   }
+
   @packet(0x08)
   case class ClickWindow(@byte windowId: Int, @short slot: Int, @byte button: Int, @short actionNumber: Int,
                          @boxed mode: Int, clickedItem: Slot) extends Structure {
@@ -88,25 +103,22 @@ object PlayPackets {
     def actionPerformed(): ClickWindowAction = {
       import ClickWindowAction._
       mode match {
-        case 0 =>
-          button match {
-            case 0 => LeftMouseClick()
-            case 1 => RightMouseClick()
-          }
-        case 1 =>
-          button match {
-            case 0 => ShiftLeftMouseClick
-            case 1 => ShiftRightMouseClick
-          }
+        case 0 => button match {
+          case 0 => LeftMouseClick()
+          case 1 => RightMouseClick()
+        }
+        case 1 => button match {
+          case 0 => ShiftLeftMouseClick
+          case 1 => ShiftRightMouseClick
+        }
         case 2 => NumberKey(button)
         case 3 => MiddleMouseClick
-        case 4 =>
-          button match {
-            case 0 if slot == -999 => LeftMouseClick(true)
-            case 1 if slot == -999 => RightMouseClick(true)
-            case 0 => DropKey
-            case 1 => ControlDropKey
-          }
+        case 4 => button match {
+          case 0 if slot == -999 => LeftMouseClick(true)
+          case 1 if slot == -999 => RightMouseClick(true)
+          case 0 => DropKey
+          case 1 => ControlDropKey
+        }
         case 5 => button match {
           case 0 if slot == -999 => LeftMouseDrag()
           case 4 if slot == -999 => RightMouseDrag()
@@ -128,6 +140,7 @@ object PlayPackets {
 
   @packet(0x0A)
   case class PluginMessage(channel: Identifier, data: Array[Byte]) extends Structure
+
   sealed trait Hand
 
   object Hand {
@@ -209,12 +222,19 @@ object PlayPackets {
   sealed trait Face
 
   object Face {
-    @enumValue(0) case object Bottom  extends Face
+
+    @enumValue(0) case object Bottom extends Face
+
     @enumValue(1) case object Top extends Face
+
     @enumValue(2) case object North extends Face
+
     @enumValue(3) case object South extends Face
+
     @enumValue(4) case object West extends Face
+
     @enumValue(5) case object East extends Face
+
   }
 
   @packet(0x18)
@@ -405,4 +425,5 @@ object PlayPackets {
 
   @packet(0x2A)
   case class UseItem(@enumType[VarInt] hand: Hand) extends Structure
+
 }

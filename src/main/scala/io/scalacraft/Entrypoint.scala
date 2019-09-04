@@ -8,8 +8,6 @@ import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.packets.clientbound.PlayPackets.{GameModeValue, LevelType, ServerDifficulties}
 import scopt.OParser
 
-import scala.language.postfixOps
-
 object Entrypoint extends App with LazyLogging {
 
   val builder = OParser.builder[ServerConfiguration]
@@ -48,7 +46,7 @@ object Entrypoint extends App with LazyLogging {
 
   OParser.parse(parser, args, ServerConfiguration()) match {
     case Some(config) => startServer(config)
-    case _ =>  // arguments are bad, error message will have been displayed
+    case _ => // arguments are bad, error message will have been displayed
   }
 
   private def parseGameMode: PartialFunction[String, GameModeValue] = {

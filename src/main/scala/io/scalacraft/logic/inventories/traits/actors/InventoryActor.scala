@@ -19,18 +19,12 @@ trait InventoryActor extends ClickWindowActionManager {
   protected val id: Int
 
   def defaultBehaviour: Receive = {
-    case LoadInventory =>
-      updateClientInventory()
-    case AddItem(inventoryItem) =>
-      addItem(inventoryItem)
-    case RemoveItem(slotIndex, inventoryItem) =>
-      removeItem(slotIndex, inventoryItem)
-    case RetrieveAllItems =>
-      sender ! inventory.retrieveAllItems
-    case RetrieveInventoryItems =>
-      sender ! inventory.retrieveInventoryItems
-    case CloseWindow(_) =>
-      closeWindow()
+    case LoadInventory => updateClientInventory()
+    case AddItem(inventoryItem) => addItem(inventoryItem)
+    case RemoveItem(slotIndex, inventoryItem) => removeItem(slotIndex, inventoryItem)
+    case RetrieveAllItems => sender ! inventory.retrieveAllItems
+    case RetrieveInventoryItems => sender ! inventory.retrieveInventoryItems
+    case CloseWindow(_) => closeWindow()
     case click@ClickWindow(_, slot, _, actionNumber, _, clickedItem) =>
       clickWindow(click, slot, actionNumber, clickedItem)
   }
@@ -52,11 +46,8 @@ trait InventoryActor extends ClickWindowActionManager {
     inventory.removeItem(slotIndex, inventoryItem)
 
   protected def updateClientInventory(): Unit = inventory.retrieveAllItems.zipWithIndex.collect {
-    case (Some(item), slot) =>
-      val slotData = Some(SlotData(item.itemId, item.quantity, new CompoundTag()))
-      SetSlot(id, slot, slotData)
-    case (None, slot) =>
-      SetSlot(id, slot, None)
+    case (Some(item), slot) => SetSlot(id, slot, Some(SlotData(item.itemId, item.quantity, new CompoundTag())))
+    case (None, slot) => SetSlot(id, slot, None)
   } foreach (player ! ForwardToClient(_))
 
 }

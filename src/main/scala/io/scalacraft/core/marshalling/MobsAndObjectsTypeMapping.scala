@@ -3,6 +3,7 @@ package io.scalacraft.core.marshalling
 import io.scalacraft.packets.Entities._
 
 object MobsAndObjectsTypeMapping {
+
   val typeToMobEntityClass: Map[Int, Class[_]] = Map(
     0 -> classOf[AreaEffectCloud],
     1 -> classOf[ArmorStand],
@@ -101,6 +102,7 @@ object MobsAndObjectsTypeMapping {
     94 -> classOf[Trident]
 
   )
+
   val typeToObjectEntityClass: Map[Int, Class[_]] = Map(
     1 -> classOf[Boat],
     // 2 -> classOf[ItemStack]
@@ -132,13 +134,9 @@ object MobsAndObjectsTypeMapping {
     94 -> classOf[Trident]
   )
 
-  def fromTypeToObjectEntityClass(tpe: Int): Class[_] = {
-    typeToObjectEntityClass(tpe)
-  }
+  def fromTypeToObjectEntityClass(tpe: Int): Class[_] = typeToObjectEntityClass(tpe)
 
-  def fromTypeToMobEntityClass(tpe: Int): Class[_] = {
-    typeToMobEntityClass(tpe)
-  }
+  def fromTypeToMobEntityClass(tpe: Int): Class[_] = typeToMobEntityClass(tpe)
 
   def fromObjectEntityClassToType(objectClass: Class[_]): Int = {
     val swappedMap = typeToObjectEntityClass.map(_.swap)
@@ -149,4 +147,5 @@ object MobsAndObjectsTypeMapping {
     val swappedMap = typeToMobEntityClass.map(_.swap)
     swappedMap(mobClass)
   }
+
 }

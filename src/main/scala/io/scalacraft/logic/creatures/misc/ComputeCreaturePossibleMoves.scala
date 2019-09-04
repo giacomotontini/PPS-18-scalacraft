@@ -5,8 +5,6 @@ import java.io.FileInputStream
 import alice.tuprolog.{Prolog, SolveInfo, Struct, Term, Theory}
 import io.scalacraft.packets.DataTypes.Position
 
-import scala.language.implicitConversions
-
 private[this] object ScalaToProlog {
 
   def extractTerm(solveInfo:SolveInfo, s:String): Term =
