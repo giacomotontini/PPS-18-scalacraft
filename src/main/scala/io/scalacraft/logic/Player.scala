@@ -162,9 +162,9 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     }
 
     case packet: ClickWindow if activeInventories.contains(packet.windowId) =>
-      activeInventories(packet.windowId) forward (packet)
+      activeInventories(packet.windowId) forward packet
     case packet: CloseWindow if activeInventories.contains(packet.windowId) =>
-      activeInventories(packet.windowId) forward (packet)
+      activeInventories(packet.windowId) forward packet
     case InventoryDropItems(itemId, quantity) =>
       val x = -math.sin(math.toRadians(yaw)) * 3
       val z = math.cos(math.toRadians(yaw)) * 3
