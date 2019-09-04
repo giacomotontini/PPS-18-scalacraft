@@ -1,15 +1,12 @@
 package io.scalacraft.logic
 
-import java.util.concurrent.Executor
-
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import akka.actor.{ActorRef, Props}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks.{Block, BreakingProperties, Drop}
 import io.scalacraft.loaders.Items.StorableItem
 import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
-import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.Helpers._
 import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, Position}
 import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, Effect, EffectId}
@@ -17,8 +14,8 @@ import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggi
 import net.querz.nbt.CompoundTag
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Random, Success}
 
 class DiggingManager(dropManager: ActorRef) extends EnrichedActor {

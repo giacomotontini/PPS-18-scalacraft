@@ -1,19 +1,19 @@
 package io.scalacraft.logic
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.Props
 import akka.pattern._
 import io.scalacraft.loaders.{Blocks, Chunks}
 import io.scalacraft.logic.commons.Message.{RequestChunkData, RequestNearbyPoints, RequestSpawnPoints, _}
+import io.scalacraft.logic.commons.RichNbtCompoundTag._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
-import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
-import io.scalacraft.logic.creatures.misc.ComputeCreatureMoves
+import io.scalacraft.logic.creatures.ComputeCreatureMoves
+import io.scalacraft.logic.creatures.Spawnables.PositionWithProperties
 import io.scalacraft.misc.Helpers
 import io.scalacraft.misc.Helpers._
 import io.scalacraft.packets.DataTypes.Position
 import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
 import net.querz.nbt.CompoundTag
-import net.querz.nbt.mca.{Chunk, MCAFile, MCAUtil}
-import io.scalacraft.logic.commons.RichNbtCompoundTag._
+import net.querz.nbt.mca.{Chunk, MCAFile}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -22,7 +22,6 @@ class Region(mca: MCAFile) extends EnrichedActor {
 
   import Region._
 
-  private val airTag = Blocks.defaultCompoundTagFromName("air").get
   private val world = context.parent
 
   private var cleanupNeeded: Boolean = false
@@ -35,13 +34,13 @@ class Region(mca: MCAFile) extends EnrichedActor {
     yIndex + 1
   }
 
-  private[this] def cubeStates(chunk: Chunk, blockX: Int, blockY: Int, blockZ: Int): Seq[String] = {
-    for(yDrift <- -2 to 1) yield {
-      val nbtBlockState = chunk.getBlockStateAt(blockX,blockY+yDrift,blockZ)
-      val blockState = if(nbtBlockState.isSpawnableSurface) "surface" else if(nbtBlockState.emptyCube) "noSurface" else "unused"
-      s"state($blockX,${blockY+yDrift},$blockZ,$blockState)"
+  private[this] def cubeStates(chunk: Chunk, blockX: Int, blockY: Int, blockZ: Int): Seq[String] =
+    for (yDrift <- -2 to 1) yield {
+      val nbtBlockState = chunk.getBlockStateAt(blockX, blockY + yDrift, blockZ)
+      val blockState = if (nbtBlockState.isSpawnableSurface) "surface"
+      else if (nbtBlockState.emptyCube) "noSurface" else "unused"
+      s"state($blockX,${blockY + yDrift},$blockZ,$blockState)"
     }
-  }
 
   override def receive: Receive = {
 
@@ -86,36 +85,33 @@ class Region(mca: MCAFile) extends EnrichedActor {
     case FindFirstSolidBlockPositionUnder(Position(x, y, z)) =>
       val chunk = mca.getChunk(x >> 4, z >> 4)
       var currentY = y
-      while (!isSolidBlock(chunk.getBlockStateAt(x, currentY, z))) currentY -= 1
+      while (!chunk.getBlockStateAt(x, currentY, z).emptyCube) currentY -= 1
       sender ! Position(x, currentY, z)
 
     case RequestSpawnPoints(chunkX, chunkZ) =>
       val chunkColumn = mca.getChunk(chunkX, chunkZ)
       val biomeToSpawnPosition = (for (x <- 0 to 15;
                                        z <- 0 to 15) yield {
-        val posX = MCAUtil.chunkToBlock(chunkX) + x
-        val posZ = MCAUtil.chunkToBlock(chunkZ) + z
+        val posX = (chunkX << 4) + x
+        val posZ = (chunkZ << 4) + z
         val posY = firstSpawnableHeight(chunkColumn, x, z)
         val biome = chunkColumn.getBiomeAt(x, z)
         val isWater = chunkColumn.getBlockStateAt(x, posY - 1, z).isWater
-        biome -> (Position(posX, posY, posZ), isWater)
-      }).groupBy(_._1).map {
-        case (biomeIndex, values) =>
-          biomeIndex -> values.map(_._2).toSet
+        biome -> PositionWithProperties(Position(posX, posY, posZ), isWater)
+      }) groupBy (_._1) map {
+        case (biomeIndex, values) => biomeIndex -> (values map (_._2)).toSet
       }
       sender ! biomeToSpawnPosition
 
-    case RequestNearbyPoints(x:Int, y:Int, z:Int, oldX:Int, oldZ:Int) =>
-      val chunk = mca.getChunk(MCAUtil.blockToChunk(x), MCAUtil.blockToChunk(z))
-      val forbiddendXZPair = (oldX-x,oldZ-z)
+    case RequestNearbyPoints(x: Int, y: Int, z: Int, oldX: Int, oldZ: Int) =>
+      val chunk = mca.getChunk(x >> 4, z >> 4)
+      val forbiddenXZPair = (oldX - x, oldZ - z)
       var cubeStatesAssertions = Seq[String]()
-      for(xzPair <- List((-1,0),(1,0),(0,1),(0,-1))
-          if !xzPair.equals(forbiddendXZPair)){
-        val states = cubeStates(chunk, x+xzPair._1, y, z+xzPair._2)
-        cubeStatesAssertions ++= states
+      for (xzPair <- RelativeHorizontalNears if xzPair != forbiddenXZPair) {
+        cubeStatesAssertions ++= cubeStates(chunk, x + xzPair._1, y, z + xzPair._2)
       }
       val computeCreaturesMoves = new ComputeCreatureMoves(cubeStatesAssertions)
-      sender ! computeCreaturesMoves.computeMoves(x,y,z)
+      sender ! computeCreaturesMoves.computeMoves(x, y, z)
 
     case unhandled => log.warning(s"Unhandled message in Region: $unhandled")
   }
@@ -132,23 +128,24 @@ class Region(mca: MCAFile) extends EnrichedActor {
 
     Future.sequence(for (Position(rx, ry, rz) <- RelativeNears) yield {
       val pos = Position(position.x + rx, position.y + ry, position.z + rz)
-      (world ? RequestLight(pos)).zip(world ? RequestBlockState(pos)).mapTo[(Light, CompoundTag)] map {
-        case (light, _tag) => TagLightAndPosition(light, _tag, pos) }
+      (world ? RequestLight(pos) zip world ? RequestBlockState(pos)).mapTo[(Light, CompoundTag)] map {
+        case (light, _tag) => TagLightAndPosition(light, _tag, pos)
+      }
     }) onComplete {
       case Success(bottom :: top :: north :: south :: west :: east :: Nil) =>
         val all = List(bottom, top, north, south, west, east)
         val newLight = Light(
           (if (block.transparent) {
-            math.max(all.maxBy { _.light.blockLight }.light.blockLight - 1, block.light)
+            math.max((all maxBy (_.light.blockLight)).light.blockLight - 1, block.light)
           } else block.light).toByte,
           (if (block.transparent) {
             if (top.light.skyLight == MaxLight) MaxLight
-            else math.max(all.maxBy { _.light.skyLight }.light.skyLight - 1, MinLight)
+            else math.max((all maxBy (_.light.skyLight)).light.skyLight - 1, MinLight)
           } else MinLight).toByte
         )
 
         if (light != newLight) {
-          world ! ChangeLight(position,newLight)
+          world ! ChangeLight(position, newLight)
 
           for (direction <- all) {
             calculateLights(direction.position, direction.light, direction.tag)
@@ -159,19 +156,16 @@ class Region(mca: MCAFile) extends EnrichedActor {
     }
   }
 
-  private def isSolidBlock(tag: CompoundTag): Boolean = tag match {
-    case `airTag` => false
-    case null => false
-    case _ => true
-  }
-
 }
 
 object Region {
 
+  private val RelativeHorizontalNears = List((-1, 0), (1, 0), (0, 1), (0, -1))
+
   case class Light(blockLight: Byte, skyLight: Byte)
 
   private case class LightPosition(index: Int, shifts: Int)
+
   private case class TagLightAndPosition(light: Light, tag: CompoundTag, position: Position)
 
   private val MaxLight: Byte = 15

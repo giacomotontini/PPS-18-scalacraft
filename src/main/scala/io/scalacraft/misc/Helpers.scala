@@ -3,7 +3,7 @@ package io.scalacraft.misc
 import java.io.{InputStream, OutputStream}
 
 import io.scalacraft.packets.DataTypes.{Angle, Position, VarInt}
-import net.querz.nbt.{CompoundTag, ListTag, StringTag, Tag}
+import net.querz.nbt.{ListTag, Tag}
 
 import scala.collection.JavaConverters._
 import scala.util.Random

@@ -2,12 +2,11 @@ package io.scalacraft.logic
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props, Stash}
+import akka.actor.{ActorRef, Cancellable, Props, Stash}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
-import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.misc.ServerConfiguration

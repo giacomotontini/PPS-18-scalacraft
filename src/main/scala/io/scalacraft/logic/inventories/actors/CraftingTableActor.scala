@@ -1,7 +1,6 @@
 package io.scalacraft.logic.inventories.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
+import akka.actor.{ActorRef, Props}
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.inventories.CraftingTableInventory

@@ -1,9 +1,8 @@
 package io.scalacraft.logic.inventories.traits.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.ActorRef
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
-import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.logic.inventories.traits.{ClickWindowActionManager, Inventory}
 import io.scalacraft.packets.DataTypes.{Slot, SlotData}

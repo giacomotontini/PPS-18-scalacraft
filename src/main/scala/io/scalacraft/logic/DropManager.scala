@@ -2,11 +2,10 @@ package io.scalacraft.logic
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging, Props, Timers}
+import akka.actor.Props
 import akka.pattern._
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
-import io.scalacraft.logic.commons.{DefaultTimeout, ImplicitContext}
 import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.DataTypes.{EntityId, Position, SlotData}
 import io.scalacraft.packets.Entities
