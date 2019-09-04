@@ -28,7 +28,7 @@ class SheepActor(id: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, w
   val speed = 600 //speed u.d.m is 1/8000 block per 50ms: chicken's speed is 1.5 block/s
   val pathMovesNumber = 8
 
-  override def receive: Receive = livingBehaviour orElse aiBehaviour
+  override def receive: Receive = livingBehaviour
 
   override lazy val deathSoundEffect: SoundEffect = SoundEffect(metaData.deathSoundId,
     SoundCategory.Master,
