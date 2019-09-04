@@ -7,7 +7,7 @@ class PlayerInventorySpec extends InventoryWithPlayerInventorySpec[PlayerInvento
   with InventoryWithCraftingSpec[PlayerInventory] {
 
   override def beforeEach(): Unit = {
-    inventory = PlayerInventory()
+    inventory = new PlayerInventory
   }
 
   "A player inventory" should " allow to identify held item correctly" in {

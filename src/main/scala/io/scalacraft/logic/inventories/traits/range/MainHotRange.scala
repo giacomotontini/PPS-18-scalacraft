@@ -1,6 +1,8 @@
 package io.scalacraft.logic.inventories.traits.range
 
 trait MainHotRange {
-  private[logic] def MainInventorySlotRange: Range
-  private[logic] def HotBarSlotRange: Range
+
+  private[logic] val MainInventorySlotRange: Range
+  private[logic] val HotBarSlotRange: Range
+
 }

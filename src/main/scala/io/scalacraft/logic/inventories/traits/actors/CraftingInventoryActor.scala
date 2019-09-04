@@ -2,6 +2,7 @@ package io.scalacraft.logic.inventories.traits.actors
 
 import io.scalacraft.logic.RecipeManager
 import io.scalacraft.logic.commons.Message.ForwardToClient
+import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.logic.inventories.traits.InventoryWithCrafting
 import io.scalacraft.packets.DataTypes.Slot
@@ -9,6 +10,8 @@ import io.scalacraft.packets.clientbound.PlayPackets.ConfirmTransaction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindow
 
 trait CraftingInventoryActor extends InventoryActor {
+  this: EnrichedActor =>
+
   protected val inventory: InventoryWithCrafting
   protected val craftingOutputSlot: Int
 
@@ -37,13 +40,15 @@ trait CraftingInventoryActor extends InventoryActor {
   }
 
   private def scanCraftingArea(): Unit = {
-    val craftingItems = inventory.retrieveCraftingItems()
+    val craftingItems = inventory.retrieveCraftingItems
     inventory.clearCrafted()
-    if (!craftingItems.forall(_.isEmpty)) {
+
+    if (!craftingItems.forall(_.isDefined)) {
       RecipeManager.checkForRecipes(craftingItems) match {
         case Some(recipe) => inventory.addCrafted(InventoryItem(recipe.id, recipe.count))
         case None => inventory.clearCrafted()
       }
     }
   }
+
 }

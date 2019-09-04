@@ -7,6 +7,6 @@ class CraftingTableInventorySpec extends InventoryWithPlayerInventorySpec[Crafti
   with InventoryWithCraftingSpec[CraftingTableInventory] {
 
   override def beforeEach(): Unit = {
-    inventory = CraftingTableInventory(1) //dummyId
+    inventory = new CraftingTableInventory(1) //dummyId
   }
 }
