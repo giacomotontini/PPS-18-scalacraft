@@ -74,6 +74,7 @@ class CreatureSpawner extends Actor with ImplicitContext with DefaultTimeout wit
                 spawnedActor ++= spawnResult.actorToSpawn.map {
                   case (props: Props, name: String) => context.actorOf(props, name)
                 }
+              case _ => // none
             }
             askSomethingToCreatures[SpawnMob](RequestCreatureInChunk(chunkX, chunkZ), spawnMobPackets => senderRef ! spawnMobPackets)
             chunkHabitationTime ++= Map((chunkX, chunkZ) -> 0)

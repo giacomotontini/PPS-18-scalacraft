@@ -1,5 +1,7 @@
 package io.scalacraft.logic
 
+import java.util.concurrent.Executor
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import akka.pattern._
 import io.scalacraft.loaders.Blocks.{Block, BreakingProperties, Drop}
@@ -14,7 +16,7 @@ import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggi
 import net.querz.nbt.CompoundTag
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Random, Success}
@@ -29,6 +31,7 @@ class DiggingManager(dropManager: ActorRef) extends Actor
   private val materialAndTool = """(wooden|stone|iron|golden|diamond)_(axe|pickaxe|sword|shovel)""".r
   private val randomGenerator = new Random
   private val breakingBlocks: mutable.Map[Position, BreakingBlock] = mutable.Map()
+  private val fluidExecutor = ExecutionContext.fromExecutor((task: Runnable) => task.run())
 
   override def receive: Receive = {
 
@@ -110,6 +113,8 @@ class DiggingManager(dropManager: ActorRef) extends Actor
 
 
   private def slideFluid(position: Position, tag: CompoundTag): Unit = {
+    implicit val executor: ExecutionContextExecutor = fluidExecutor
+
     context.system.scheduler.scheduleOnce(250 millis) {
       Future.sequence(for (Position(rx, ry, rz) <- RelativeNears) yield {
         val pos = Position(position.x + rx, position.y + ry, position.z + rz)
