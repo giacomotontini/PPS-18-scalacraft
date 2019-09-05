@@ -2,9 +2,16 @@ package io.scalacraft.logic.inventories.traits
 
 import io.scalacraft.logic.inventories.InventoryItem
 
+/**
+ * An inventory with a player inventory area.
+ */
 trait InventoryWithPlayerInventory extends Inventory {
 
-  //When an inventory with inventory section is opened, the player inventory's items should be moved here
+  /**
+   * When an inventory with a player inventory section is opened, the player inventory's items should be moved here
+   * Add the player's inventory items to the current inventory.
+   * @param playerInventoryItems the player inventory items to be moved in the opened inventory
+   */
   def addPlayerInventory(playerInventoryItems: List[Option[InventoryItem]]): Unit =
     playerInventoryItems.zipWithIndex foreach { item =>
       inventory.update(item._2 + mainHotInventoryRange.MainInventorySlotRange.start, item._1)

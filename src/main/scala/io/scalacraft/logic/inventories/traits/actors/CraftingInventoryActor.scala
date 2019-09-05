@@ -9,6 +9,9 @@ import io.scalacraft.packets.DataTypes.Slot
 import io.scalacraft.packets.clientbound.PlayPackets.ConfirmTransaction
 import io.scalacraft.packets.serverbound.PlayPackets.ClickWindow
 
+/**
+ * The base actor for handling inventories with crafting section like Crafting table.
+ */
 trait CraftingInventoryActor extends InventoryActor {
   this: EnrichedActor =>
 
@@ -39,6 +42,10 @@ trait CraftingInventoryActor extends InventoryActor {
     super.closeWindow()
   }
 
+  /**
+   * Scan the crafting area of the inventory to check if a recipe could be crafted from current items arrangement.
+   * Affect the crafting output slot.
+   */
   private def scanCraftingArea(): Unit = {
     val craftingItems = inventory.retrieveCraftingItems
     inventory.clearCrafted()
