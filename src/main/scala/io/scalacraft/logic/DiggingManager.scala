@@ -18,6 +18,13 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Random, Success}
 
+
+/**
+ * Actor that handle the player's digging operation, find the items to drop based on the player helded item and
+ * slide fluids if the block broken is liquid.
+ *
+ * @param dropManager the reference of the actor that is used to drop the items
+ */
 class DiggingManager(dropManager: ActorRef) extends EnrichedActor {
 
   import DiggingManager._

@@ -22,6 +22,15 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Random, Success}
 
+
+/**
+ * The actor that represent a player in the game. It handle the movements in the world, the dynamic loading of chunks,
+ * the status and the settings of the player, the animations and the sounds that the player produce.
+ *
+ * @param username the player username
+ * @param playerUUID the player uuid
+ * @param serverConfiguration the global server configuration
+ */
 class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConfiguration) extends EnrichedActor
   with Stash {
 
@@ -181,7 +190,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
   }
 
-  def handleInteractionOn(block: Blocks.Block): Unit = block.name match {
+  private def handleInteractionOn(block: Blocks.Block): Unit = block.name match {
     case "crafting_table" => lastWindowId = openCraftingTableWindow()
     case _ => //not implemented
   }
