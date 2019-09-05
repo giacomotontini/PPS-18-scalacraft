@@ -30,24 +30,24 @@ class Region(mca: MCAFile) extends EnrichedActor {
   import Region._
 
   private val world = context.parent
-
+  val computeCreatureMoves = new ComputeCreatureMoves()
   private var cleanupNeeded: Boolean = false
 
   private[this] def firstSpawnableHeight(chunk: Chunk, x: Int, z: Int): Int = {
     var yIndex = 255
-    while (chunk.getBlockStateAt(x, yIndex, z) == null || !chunk.getBlockStateAt(x, yIndex, z).isSpawnableSurface) {
+    while (chunk.getBlockStateAt(x, yIndex, z) == null || !chunk.getBlockStateAt(x, yIndex, z).isSpawnableSurface()) {
       yIndex -= 1
     }
     yIndex + 1
   }
 
-  private[this] def cubeStates(chunk: Chunk, blockX: Int, blockY: Int, blockZ: Int): Seq[String] =
-    for (yDrift <- -2 to 1) yield {
+  private[this] def cubeStatesAssertion(chunk: Chunk, blockX: Int, blockY: Int, blockZ: Int, wantWater: Boolean = false): String =
+    (for (yDrift <- -2 to 1) yield {
       val nbtBlockState = chunk.getBlockStateAt(blockX, blockY + yDrift, blockZ)
-      val blockState = if (nbtBlockState.isSpawnableSurface) "surface"
-      else if (nbtBlockState.emptyCube) "noSurface" else "unused"
-      s"state($blockX,${blockY + yDrift},$blockZ,$blockState)"
-    }
+      val blockState = if (nbtBlockState.isSpawnableSurface(wantWater)) "surface"
+      else "noSurface" //if (nbtBlockState.emptyCube) "noSurface" else "unused"
+      s"assert(state($blockX,${blockY + yDrift},$blockZ,$blockState))"
+    }).mkString(",")
 
   override def receive: Receive = {
 
@@ -92,7 +92,7 @@ class Region(mca: MCAFile) extends EnrichedActor {
     case FindFirstSolidBlockPositionUnder(Position(x, y, z)) =>
       val chunk = mca.getChunk(x >> 4, z >> 4)
       var currentY = y
-      while (!chunk.getBlockStateAt(x, currentY, z).emptyCube) currentY -= 1
+      while (chunk.getBlockStateAt(x, currentY, z).emptyCube) currentY -= 1
       sender ! Position(x, currentY, z)
 
     case RequestSpawnPoints(chunkX, chunkZ) =>
@@ -113,12 +113,15 @@ class Region(mca: MCAFile) extends EnrichedActor {
     case RequestNearbyPoints(x: Int, y: Int, z: Int, oldX: Int, oldZ: Int) =>
       val chunk = mca.getChunk(x >> 4, z >> 4)
       val forbiddenXZPair = (oldX - x, oldZ - z)
-      var cubeStatesAssertions = Seq[String]()
+      var cubeStatesAssertions = Set[String]()
+
       for (xzPair <- RelativeHorizontalNears if xzPair != forbiddenXZPair) {
-        cubeStatesAssertions ++= cubeStates(chunk, x + xzPair._1, y, z + xzPair._2)
+        cubeStatesAssertions += cubeStatesAssertion(chunk, x + xzPair._1, y, z + xzPair._2)
       }
-      val computeCreaturesMoves = new ComputeCreatureMoves(cubeStatesAssertions)
-      sender ! computeCreaturesMoves.computeMoves(x, y, z)
+
+      val toAssert = cubeStatesAssertions.reduce((assertion1, assertion2) => s"$assertion1,$assertion2")
+      println(toAssert)
+      sender ! computeCreatureMoves.computeMoves(toAssert,x, y, z)
 
     case unhandled => log.warning(s"Unhandled message in Region: $unhandled")
   }
