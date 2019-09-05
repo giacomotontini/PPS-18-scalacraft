@@ -18,6 +18,13 @@ import net.querz.nbt.mca.{Chunk, MCAFile}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+
+/**
+ * Actor that represent a region in the world. Replies at the requests of chunk data, set/get the state or light of
+ * a block, find a block under some conditions.
+ *
+ * @param mca the in-memory file that contains all the properties and data of the region
+ */
 class Region(mca: MCAFile) extends EnrichedActor {
 
   import Region._
@@ -162,6 +169,12 @@ object Region {
 
   private val RelativeHorizontalNears = List((-1, 0), (1, 0), (0, 1), (0, -1))
 
+  /**
+   * Represent the light of a block, composed by the block light and the sky light
+   *
+   * @param blockLight the level of the block light
+   * @param skyLight the level of the sky light
+   */
   case class Light(blockLight: Byte, skyLight: Byte)
 
   private case class LightPosition(index: Int, shifts: Int)

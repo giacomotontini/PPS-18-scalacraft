@@ -19,6 +19,14 @@ import io.scalacraft.packets.serverbound.StatusPackets.{Ping, Request}
 
 import scala.util.{Failure, Random, Success}
 
+/**
+ * The actor that acts as intermediary between the player actor and his connection. Internally use a finite state
+ * machine to represent all possible states of the connection. All messages sent from player to his context are piped
+ * to the underline connection. All messages that the context receive are piped to the player actor.
+ *
+ * @param connectionManager the connection manager used to write message to the connection or stop the connection
+ * @param serverConfiguration the global configuration of the server
+ */
 class UserContext(connectionManager: ConnectionManager, serverConfiguration: ServerConfiguration) extends EnrichedActor {
 
   private val world = context.actorSelection("/user/world")

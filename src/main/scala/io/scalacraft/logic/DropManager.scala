@@ -16,6 +16,11 @@ import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
+
+/**
+ * Actor used to drop items to ground and collect them when a player is near. This actor also handle the gravity of
+ * the dropped items, so when a block under a drop is broken the item fall.
+ */
 class DropManager extends EnrichedActor {
 
   import DropManager._

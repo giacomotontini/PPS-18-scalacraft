@@ -17,7 +17,13 @@ import net.querz.nbt.mca.MCAUtil
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-
+/**
+ * Actor that encapsulates the logic of the world. It handle the player (un)registration, manage the time of game,
+ * distributes the entity id and maintain the references of the regions and the players. It is also used as a message
+ * forwarding center. Any entity can send a message to all or selected players through the world.
+ *
+ * @param serverConfiguration the global configuration of the server
+ */
 class World(serverConfiguration: ServerConfiguration) extends EnrichedActor with Timers {
 
   import World._
