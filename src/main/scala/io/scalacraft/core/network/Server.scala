@@ -7,6 +7,12 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.{Channel, ChannelInboundHandlerAdapter, ChannelInitializer}
 
+
+/**
+ * Represent the server which await incoming connection
+ * @param port the port to which the server should listen on
+ * @param handler the handler to be called on new connections
+ */
 class Server(port: Int, handler: () => ChannelInboundHandlerAdapter) extends LazyLogging {
 
   val bossGroup = new NioEventLoopGroup
@@ -34,11 +40,5 @@ class Server(port: Int, handler: () => ChannelInboundHandlerAdapter) extends Laz
     workerGroup.shutdownGracefully()
     bossGroup.shutdownGracefully()
   }
-
-}
-
-object Server extends App {
-
-  def apply(port: Int, serverHandler: () => ServerHandler): Server = new Server(port, serverHandler)
 
 }

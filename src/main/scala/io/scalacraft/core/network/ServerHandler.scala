@@ -7,6 +7,11 @@ import io.scalacraft.logic.UserContext
 import io.scalacraft.logic.commons.Message.UserDisconnected
 import io.scalacraft.misc.ServerConfiguration
 
+/**
+ * Represent an handler for a single connection of the server.
+ * @param actorSystem the actor system to which message must be forwarded
+ * @param serverConfiguration the minecraft server configuration
+ */
 class ServerHandler(actorSystem: ActorSystem, serverConfiguration: ServerConfiguration)
   extends ChannelInboundHandlerAdapter with LazyLogging {
 
