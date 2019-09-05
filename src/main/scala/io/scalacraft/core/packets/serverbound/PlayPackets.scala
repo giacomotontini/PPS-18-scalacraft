@@ -1,10 +1,10 @@
-package io.scalacraft.packets.serverbound
+package io.scalacraft.core.packets.serverbound
 
 import java.util.UUID
 
 import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations._
-import io.scalacraft.packets.DataTypes.{Identifier, Position, Slot, VarInt}
+import io.scalacraft.core.packets.DataTypes.{Identifier, Position, Slot, VarInt}
 
 object PlayPackets {
 

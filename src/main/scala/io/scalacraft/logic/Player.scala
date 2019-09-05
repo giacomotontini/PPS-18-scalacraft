@@ -10,12 +10,12 @@ import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
 import io.scalacraft.misc.ServerConfiguration
-import io.scalacraft.packets.DataTypes.{Angle, Position}
-import io.scalacraft.packets.Entities
-import io.scalacraft.packets.clientbound.PlayPackets._
-import io.scalacraft.packets.clientbound.{PlayPackets => cb}
-import io.scalacraft.packets.serverbound.PlayPackets._
-import io.scalacraft.packets.serverbound.{PlayPackets => sb}
+import io.scalacraft.core.packets.DataTypes.{Angle, Position}
+import io.scalacraft.core.packets.Entities
+import io.scalacraft.core.packets.clientbound.PlayPackets._
+import io.scalacraft.core.packets.clientbound.{PlayPackets => cb}
+import io.scalacraft.core.packets.serverbound.PlayPackets._
+import io.scalacraft.core.packets.serverbound.{PlayPackets => sb}
 import net.querz.nbt.CompoundTag
 
 import scala.concurrent.Future

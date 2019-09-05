@@ -11,11 +11,11 @@ import io.scalacraft.loaders.Packets.ConnectionState
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.misc.ServerConfiguration
-import io.scalacraft.packets.clientbound.LoginPackets.LoginSuccess
-import io.scalacraft.packets.clientbound.StatusPacket.{Pong, Response}
-import io.scalacraft.packets.serverbound.HandshakingPackets.{Handshake, NextState}
-import io.scalacraft.packets.serverbound.LoginPackets.LoginStart
-import io.scalacraft.packets.serverbound.StatusPackets.{Ping, Request}
+import io.scalacraft.core.packets.clientbound.LoginPackets.LoginSuccess
+import io.scalacraft.core.packets.clientbound.StatusPacket.{Pong, Response}
+import io.scalacraft.core.packets.serverbound.HandshakingPackets.{Handshake, NextState}
+import io.scalacraft.core.packets.serverbound.LoginPackets.LoginStart
+import io.scalacraft.core.packets.serverbound.StatusPackets.{Ping, Request}
 
 import scala.util.{Failure, Random, Success}
 

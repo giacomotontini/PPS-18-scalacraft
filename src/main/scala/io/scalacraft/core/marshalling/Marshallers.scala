@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 import io.scalacraft.misc.Helpers
-import io.scalacraft.packets.DataTypes.{Angle, Position}
+import io.scalacraft.core.packets.DataTypes.{Angle, Position}
 import net.querz.nbt.Tag
 
 import scala.collection.mutable

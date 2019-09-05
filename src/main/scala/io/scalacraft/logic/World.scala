@@ -9,9 +9,9 @@ import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
-import io.scalacraft.packets.DataTypes.{EntityId, Position}
-import io.scalacraft.packets.clientbound.PlayPackets._
-import io.scalacraft.packets.serverbound.PlayPackets.{Face, PlayerBlockPlacement}
+import io.scalacraft.core.packets.DataTypes.{EntityId, Position}
+import io.scalacraft.core.packets.clientbound.PlayPackets._
+import io.scalacraft.core.packets.serverbound.PlayPackets.{Face, PlayerBlockPlacement}
 import net.querz.nbt.mca.MCAUtil
 
 import scala.concurrent.duration._
@@ -104,7 +104,7 @@ class World(serverConfiguration: ServerConfiguration) extends EnrichedActor with
       forwardToRegionWithBlock(blockX, blockZ)(request)
 
     case PlayerPlaceBlockWithItemId(playerId, PlayerBlockPlacement(Position(x, y, z), face, _, _, _, _), itemId) =>
-      val blockState = Blocks.defaultCompoundTagFromName(Items.getStorableItemById(itemId).name)
+      val blockState = Blocks.defaultCompoundTagFromName(Items.getItemById(itemId).name)
       blockState foreach { tag => // if defined
         val position = face match {
           case Face.Bottom => Position(x, y - 1, z)

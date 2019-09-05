@@ -3,9 +3,9 @@ package io.scalacraft.logic.creatures.behaviours
 import akka.actor.Actor
 import io.scalacraft.logic.commons.Message.{AskResponse, DespawnCreature, RequestCreatureInChunk}
 import io.scalacraft.logic.creatures.parameters.CreatureParameters
-import io.scalacraft.packets.DataTypes.Angle
-import io.scalacraft.packets.Entities.MobEntity
-import io.scalacraft.packets.clientbound.PlayPackets.{DestroyEntities, SpawnMob}
+import io.scalacraft.core.packets.DataTypes.Angle
+import io.scalacraft.core.packets.Entities.MobEntity
+import io.scalacraft.core.packets.clientbound.PlayPackets.{DestroyEntities, SpawnMob}
 
 trait BaseBehaviour[T <: MobEntity] {
   this: CreatureParameters[T] with Actor =>

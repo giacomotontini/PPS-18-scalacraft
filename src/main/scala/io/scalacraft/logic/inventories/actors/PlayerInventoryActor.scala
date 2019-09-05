@@ -5,9 +5,9 @@ import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.inventories.traits.actors.CraftingInventoryActor
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
-import io.scalacraft.packets.DataTypes.{Slot, SlotData}
-import io.scalacraft.packets.serverbound.PlayPackets
-import io.scalacraft.packets.serverbound.PlayPackets.HeldItemChange
+import io.scalacraft.core.packets.DataTypes.{Slot, SlotData}
+import io.scalacraft.core.packets.serverbound.PlayPackets
+import io.scalacraft.core.packets.serverbound.PlayPackets.HeldItemChange
 import net.querz.nbt.CompoundTag
 
 /**

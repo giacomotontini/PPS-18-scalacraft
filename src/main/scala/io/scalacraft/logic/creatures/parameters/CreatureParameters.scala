@@ -3,7 +3,7 @@ package io.scalacraft.logic.creatures.parameters
 import java.util.UUID
 
 import io.scalacraft.core.marshalling.MobsAndObjectsTypeMapping
-import io.scalacraft.packets.Entities.MobEntity
+import io.scalacraft.core.packets.Entities.MobEntity
 
 import scala.util.Random
 

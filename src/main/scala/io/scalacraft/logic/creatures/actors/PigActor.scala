@@ -7,7 +7,7 @@ import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.creatures.Spawnables.SpawnableFarmAnimal
 import io.scalacraft.logic.creatures.behaviours.{AI, LivingBehaviour}
 import io.scalacraft.logic.creatures.parameters.CreatureParameters
-import io.scalacraft.packets.Entities.Pig
+import io.scalacraft.core.packets.Entities.Pig
 
 class PigActor(id: Int, _uuid: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
   extends EnrichedActor with CreatureParameters[Pig] with LivingBehaviour[Pig] with AI[Pig] {

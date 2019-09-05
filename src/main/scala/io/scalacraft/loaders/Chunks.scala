@@ -7,10 +7,19 @@ import io.scalacraft.misc.Helpers.writeVarInt
 import net.querz.nbt.mca.Chunk
 import net.querz.nbt.{CompoundTag, ListTag}
 
+/**
+ * Contains utility def for chunks
+ */
 object Chunks {
 
-  private val MaxSections = 16
+  private val MaxSections = 16 //maximum number of section for a chunk column
 
+  /**
+   * Build the ChunkData structure and a correspondent bitmask from a chunk column.
+   * @see <a href="https://wiki.vg/Protocol#Chunk_Data">ChunkData structure</a>
+   * @param chunkColumn the chunk column from which to build data
+   * @return a ChunkData structure in byte and the relative bitmask
+   */
   def buildChunkDataStructureAndBitmask(chunkColumn: Chunk): (Array[Byte], Int) = {
     def writePaletteArray(palette: ListTag[CompoundTag])(implicit dataOutputStream: DataOutputStream): Unit = {
       writeVarInt(palette.size, dataOutputStream)

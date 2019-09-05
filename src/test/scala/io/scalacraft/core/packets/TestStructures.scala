@@ -1,10 +1,10 @@
-package io.scalacraft.packets
+package io.scalacraft.core.packets
 
 import java.util.UUID
 
 import io.scalacraft.core.marshalling.Structure
-import io.scalacraft.packets.DataTypes.{Position, VarInt}
-import io.scalacraft.packets.Entities.MobEntity
+import io.scalacraft.core.packets.DataTypes.{Position, VarInt}
+import io.scalacraft.core.packets.Entities.MobEntity
 
 object TestStructures {
 

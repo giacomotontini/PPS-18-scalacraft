@@ -1,8 +1,8 @@
-package io.scalacraft.packets.serverbound
+package io.scalacraft.core.packets.serverbound
 
 import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations._
-import io.scalacraft.packets.DataTypes.VarInt
+import io.scalacraft.core.packets.DataTypes.VarInt
 
 object HandshakingPackets {
 

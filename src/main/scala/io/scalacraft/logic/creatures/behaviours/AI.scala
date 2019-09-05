@@ -3,7 +3,7 @@ package io.scalacraft.logic.creatures.behaviours
 import akka.actor.Cancellable
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.creatures.parameters.CreatureParameters
-import io.scalacraft.packets.Entities.MobEntity
+import io.scalacraft.core.packets.Entities.MobEntity
 
 import scala.concurrent.duration._
 

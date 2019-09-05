@@ -6,14 +6,14 @@ import java.util.UUID
 import io.scalacraft.core.marshalling.{PacketManager, Structure}
 import io.scalacraft.core.network.ConnectionManager
 import io.scalacraft.misc.{Helpers, ServerConfiguration}
-import io.scalacraft.packets.DataTypes
-import io.scalacraft.packets.DataTypes.VarInt
-import io.scalacraft.packets.clientbound.LoginPackets.LoginSuccess
-import io.scalacraft.packets.clientbound.StatusPacket.{Pong, Response}
-import io.scalacraft.packets.serverbound.HandshakingPackets
-import io.scalacraft.packets.serverbound.HandshakingPackets.Handshake
-import io.scalacraft.packets.serverbound.LoginPackets.LoginStart
-import io.scalacraft.packets.serverbound.StatusPackets.{Ping, Request}
+import io.scalacraft.core.packets.DataTypes
+import io.scalacraft.core.packets.DataTypes.VarInt
+import io.scalacraft.core.packets.clientbound.LoginPackets.LoginSuccess
+import io.scalacraft.core.packets.clientbound.StatusPacket.{Pong, Response}
+import io.scalacraft.core.packets.serverbound.HandshakingPackets
+import io.scalacraft.core.packets.serverbound.HandshakingPackets.Handshake
+import io.scalacraft.core.packets.serverbound.LoginPackets.LoginStart
+import io.scalacraft.core.packets.serverbound.StatusPackets.{Ping, Request}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, FlatSpec, Matchers}
 
 import scala.util.Random

@@ -3,7 +3,7 @@ package io.scalacraft.core.marshalling
 import java.lang.reflect.Field
 
 import io.scalacraft.core.marshalling.annotations.indexType
-import io.scalacraft.packets.Entities.{MobEntity, ObjectEntity}
+import io.scalacraft.core.packets.Entities.{MobEntity, ObjectEntity}
 
 class EntityMetadata {
 

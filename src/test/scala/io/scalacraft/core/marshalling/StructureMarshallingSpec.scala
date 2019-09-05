@@ -2,9 +2,9 @@ package io.scalacraft.core.marshalling
 
 import java.util.UUID
 
-import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.Entities.AreaEffectCloud
-import io.scalacraft.packets.TestStructures
+import io.scalacraft.core.packets.DataTypes.Position
+import io.scalacraft.core.packets.Entities.AreaEffectCloud
+import io.scalacraft.core.packets.TestStructures
 import org.scalatest._
 
 class StructureMarshallingSpec extends FlatSpec with Matchers with StructureMarshallerHelper[TestStructures.type] {

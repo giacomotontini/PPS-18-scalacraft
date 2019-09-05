@@ -7,11 +7,24 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageDecoder
 
+/**
+ * A class responsible of message decoding.
+ */
 private[network] class MessageDecoder extends ByteToMessageDecoder {
 
   var packetLength, packetId = -1
   var numRead, result = 0
 
+  /**
+   * It solely purpose is to read messages from raw bytes accordingly to packet format.
+   * Each message is made up of:
+   * [Packet length: VarInt (packet id length + packet payload length)]
+   * [Packet Id: VarInt]
+   * [Packet payload: ByteArray]
+   * @param ctx not used
+   * @param in input buffer to read from
+   * @param out output list on which raw packet must be added
+   */
   override def decode(ctx: ChannelHandlerContext, in: ByteBuf, out: util.List[AnyRef]): Unit = {
 
     def readVarInt(): Boolean = {

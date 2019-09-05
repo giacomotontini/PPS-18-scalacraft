@@ -10,8 +10,8 @@ import io.scalacraft.logic.creatures.ComputeCreatureMoves
 import io.scalacraft.logic.creatures.Spawnables.PositionWithProperties
 import io.scalacraft.misc.Helpers
 import io.scalacraft.misc.Helpers._
-import io.scalacraft.packets.DataTypes.Position
-import io.scalacraft.packets.clientbound.PlayPackets.ChunkData
+import io.scalacraft.core.packets.DataTypes.Position
+import io.scalacraft.core.packets.clientbound.PlayPackets.ChunkData
 import net.querz.nbt.CompoundTag
 import net.querz.nbt.mca.{Chunk, MCAFile}
 

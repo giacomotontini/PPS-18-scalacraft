@@ -8,9 +8,9 @@ import io.scalacraft.loaders.{Blocks, Items}
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.misc.Helpers._
-import io.scalacraft.packets.DataTypes.{BlockStateId, EntityId, Position}
-import io.scalacraft.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, Effect, EffectId}
-import io.scalacraft.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggingStatus}
+import io.scalacraft.core.packets.DataTypes.{BlockStateId, EntityId, Position}
+import io.scalacraft.core.packets.clientbound.PlayPackets.{BlockBreakAnimation, BlockChange, Effect, EffectId}
+import io.scalacraft.core.packets.serverbound.PlayPackets.{PlayerDigging, PlayerDiggingStatus}
 import net.querz.nbt.CompoundTag
 
 import scala.collection.mutable
@@ -43,7 +43,7 @@ class DiggingManager(dropManager: ActorRef) extends EnrichedActor {
         case Success((tag, entityId)) =>
           val blockStateId = Blocks.stateIdFromCompoundTag(tag)
           val block = Blocks.blockFromStateId(blockStateId)
-          val bProperties = breakingProperties(block, brokeToolId.map(id => Items.getStorableItemById(id)))
+          val bProperties = breakingProperties(block, brokeToolId.map(id => Items.getItemById(id)))
           if (bProperties.isDefined && bProperties.get.value > 0) {
             breakingBlocks(blockPosition) = BreakingBlock(entityId, blockStateId, block, bProperties)
 
