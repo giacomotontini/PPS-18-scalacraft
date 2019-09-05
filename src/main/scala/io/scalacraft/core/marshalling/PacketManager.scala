@@ -12,6 +12,11 @@ import io.scalacraft.core.packets.{DataTypes, Entities}
 
 import scala.reflect.runtime.universe._
 
+/**
+ * Used to serialize and deserialize all structures contained in a companion object.
+ *
+ * @tparam T must be an object which contains only definitions of [[io.scalacraft.core.marshalling.Structure Structure]]
+ */
 class PacketManager[T: TypeTag] {
 
   private val mirror = runtimeMirror(getClass.getClassLoader)
@@ -39,6 +44,13 @@ class PacketManager[T: TypeTag] {
     case (packetId, tpe) => packetId -> createMarshaller(tpe)
   }
 
+  /**
+   * Serialize a packet.
+   *
+   * @param packet the packet to serialize
+   * @param outStream the output stream where the serialized packet need to be written
+   * @return the variable integer which represent the packet id serialized
+   */
   def marshal[U <: Structure](packet: U)(implicit outStream: DataOutputStream): VarInt = {
     val packetId = packetTypes.collectFirst {
       case (packetId, tpe) if tpe =:= mirror.classSymbol(packet.getClass).toType => packetId
@@ -48,6 +60,13 @@ class PacketManager[T: TypeTag] {
     VarInt(packetId, 1)
   }
 
+  /**
+   * Deserialize a packet.
+   *
+   * @param packetId the packet id of the packet to deserialize
+   * @param inStream the input stream where the packet need to be deserialized
+   * @return the deserialized packet
+   */
   def unmarshal(packetId: Int)(implicit inStream: DataInputStream): Structure =
     packetMarshallers(packetId).unmarshal()(Context.create, inStream).asInstanceOf[Structure]
 

@@ -92,7 +92,7 @@ class Region(mca: MCAFile) extends EnrichedActor {
     case FindFirstSolidBlockPositionUnder(Position(x, y, z)) =>
       val chunk = mca.getChunk(x >> 4, z >> 4)
       var currentY = y
-      while (!chunk.getBlockStateAt(x, currentY, z).emptyCube) currentY -= 1
+      while (chunk.getBlockStateAt(x, currentY, z).emptyCube) currentY -= 1
       sender ! Position(x, currentY, z)
 
     case RequestSpawnPoints(chunkX, chunkZ) =>

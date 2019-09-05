@@ -7,6 +7,9 @@ import io.scalacraft.core.packets.clientbound.PlayPackets.{GameModeValue, LevelT
 
 import scala.io.Source
 
+/**
+ * Contains the dynamic server properties.
+ */
 case class ServerConfiguration(debug: Boolean = false,
                                port: Int = 25565,
                                serverDescription: String = "Scalacraft Server",
@@ -18,11 +21,20 @@ case class ServerConfiguration(debug: Boolean = false,
 
   import ServerConfiguration._
 
+  /**
+   * Generate the configuration string that must be send to client.
+   *
+   * @param onlinePlayers the number of current online players
+   * @return the configuration in json format
+   */
   def loadConfiguration(onlinePlayers: Int): String =
     s"""{"version": {"name": "$VersionName", "protocol": $VersionProtocol},"players": {"max": $maxPlayers,"online": $onlinePlayers},"description": {"text": "$serverDescription"},"favicon": "data:image/png;base64,$favicon"}"""
 
 }
 
+/**
+ * Contains the static server properties.
+ */
 object ServerConfiguration {
 
   private val image = Source.fromInputStream(getClass.getResourceAsStream("/server-logo.png"), "iso-8859-1").mkString

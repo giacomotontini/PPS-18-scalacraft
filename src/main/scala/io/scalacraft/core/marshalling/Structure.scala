@@ -2,6 +2,9 @@ package io.scalacraft.core.marshalling
 
 import net.querz.nbt.CompoundTag
 
+/**
+ * The base trait of all packets, used to override the `toString` method.
+ */
 trait Structure extends Product {
 
   override def toString: String = (new StringBuilder append getClass.getSimpleName)
