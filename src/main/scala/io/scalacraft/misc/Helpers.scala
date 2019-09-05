@@ -8,16 +8,38 @@ import net.querz.nbt.{ListTag, Tag}
 import scala.collection.JavaConverters._
 import scala.util.Random
 
-private[scalacraft] object Helpers {
+/**
+ * Contains some useful utility methods.
+ */
+object Helpers {
 
   private val random = new Random
 
+  /**
+   * Convert an hex string to an array of bytes.
+   *
+   * @param hex the hex string
+   * @return the array of bytes
+   */
   def hex2bytes(hex: String): Array[Byte] = hex.replaceAll("[^0-9A-Fa-f]", "")
     .sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte)
 
+  /**
+   * Convert an array of bytes to an hex string.
+   *
+   * @param bytes the array of bytes
+   * @param sep an optional separator
+   * @return the hex string
+   */
   def bytes2hex(bytes: Array[Byte], sep: Option[String] = None): String =
     bytes.map("%02x".format(_)).mkString(sep.getOrElse(""))
 
+  /**
+   * Read a variable integer from a stream.
+   *
+   * @param inStream the input stream from which the variable integer must be read
+   * @return the [[io.scalacraft.packets.DataTypes.VarInt VarInt]] wrapper
+   */
   def readVarInt(inStream: InputStream): VarInt = {
     var numRead = 0
     var result = 0
@@ -34,6 +56,13 @@ private[scalacraft] object Helpers {
     VarInt(result, numRead)
   }
 
+  /**
+   * Write a variable integer in a stream.
+   *
+   * @param value the value to be written
+   * @param outStream the output stream in which the variable integer must be written
+   * @return the length of the variable integer written
+   */
   def writeVarInt(value: Int, outStream: OutputStream): Int = {
     var i = value
     var numWrite = 0
@@ -50,6 +79,12 @@ private[scalacraft] object Helpers {
     numWrite
   }
 
+  /**
+   * Create a linear congruential generator from a seed.
+   *
+   * @param rseed the initial seed
+   * @return an iterator which represent the generator
+   */
   def linearCongruentialGenerator(rseed: Int): Iterator[Int] = new Iterator[Int] {
     var seed: Int = rseed
 
@@ -61,12 +96,31 @@ private[scalacraft] object Helpers {
     }
   }
 
+  /**
+   * Convert a [[net.querz.nbt.ListTag ListTag]] to a list of tags.
+   *
+   * @param listTag the [[net.querz.nbt.ListTag ListTag]] to be converted
+   * @return the list of tags converted
+   */
   def listTagToList[T <: Tag[_]](listTag: ListTag[T]): List[T] = listTag.iterator().asScala.toList
 
+  /**
+   * Create a random angle.
+   *
+   * @return the random angle
+   */
   def randomAngle: Angle = Angle(random.nextInt() % 256)
 
+  /**
+   * Create a random velocity.
+   *
+   * @return the random velocity
+   */
   def randomVelocity: Int = random.nextInt(4096) - 2048
 
+  /**
+   * The relative coordinates adjacent to `Position(0,0,0)`
+   */
   val RelativeNears = List(Position(0, -1, 0), Position(0, 1, 0), Position(0, 0, -1), Position(0, 0, 1),
     Position(-1, 0, 0), Position(1, 0, 0))
 
