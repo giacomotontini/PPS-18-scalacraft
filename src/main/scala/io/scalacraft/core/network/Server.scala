@@ -10,7 +10,8 @@ import io.netty.channel.{Channel, ChannelInboundHandlerAdapter, ChannelInitializ
 
 /**
  * Represent the server which await incoming connection
- * @param port the port to which the server should listen on
+ *
+ * @param port    the port to which the server should listen on
  * @param handler the handler to be called on new connections
  */
 class Server(port: Int, handler: () => ChannelInboundHandlerAdapter) extends LazyLogging {
@@ -42,3 +43,9 @@ class Server(port: Int, handler: () => ChannelInboundHandlerAdapter) extends Laz
   }
 
 }
+
+object Server {
+
+  def apply(port: Int, serverHandler: () => ServerHandler): Server = new Server(port, serverHandler)
+}
+
