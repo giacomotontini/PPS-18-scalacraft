@@ -55,7 +55,7 @@ trait Inventory {
    * @return the quantity left that cannot be added
    */
   def addItem(slot: Int, inventoryItem: InventoryItem): Int = {
-    val stackSize = Items.getStorableItemById(inventoryItem.itemId).stackSize
+    val stackSize = Items.getItemById(inventoryItem.itemId).stackSize
     fillSlot(slot, inventoryItem.quantity, stackSize, inventoryItem.itemId)
   }
 
@@ -79,7 +79,7 @@ trait Inventory {
     Tries to add the desired quantity to all slot containing the same item type until maximum stack size.
     If more must be added, free available slots are filled
     */
-    val stackSize = Items.getStorableItemById(inventoryItem.itemId).stackSize
+    val stackSize = Items.getItemById(inventoryItem.itemId).stackSize
     val quantity = fillSlots(findItemsIndex(inventoryItem.itemId), stackSize, inventoryItem.quantity)
     fillSlots(findAvailableIndex, stackSize, quantity)
   }

@@ -8,6 +8,9 @@ import io.scalacraft.core.marshalling.annotations.indexType
 import io.scalacraft.packets.DataTypes._
 import net.querz.nbt.CompoundTag
 
+/**
+ * All minecraft entities.
+ */
 object Entities {
 
   trait MobEntity extends Entity

@@ -36,7 +36,7 @@ class DiggingManager(dropManager: ActorRef) extends EnrichedActor {
         case Success((tag, entityId)) =>
           val blockStateId = Blocks.stateIdFromCompoundTag(tag)
           val block = Blocks.blockFromStateId(blockStateId)
-          val bProperties = breakingProperties(block, brokeToolId.map(id => Items.getStorableItemById(id)))
+          val bProperties = breakingProperties(block, brokeToolId.map(id => Items.getItemById(id)))
           if (bProperties.isDefined && bProperties.get.value > 0) {
             breakingBlocks(blockPosition) = BreakingBlock(entityId, blockStateId, block, bProperties)
 

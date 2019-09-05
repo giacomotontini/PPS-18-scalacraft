@@ -15,7 +15,7 @@ trait LivingBehaviour[T <: Living] extends BaseBehaviour[T] {
   val livingBehaviour: Receive = baseBehaviour orElse {
     case UseEntityWithItem(useEntity: UseEntity, itemId: Int) if useEntity.target == entityId => useEntity.useType match {
       case Attack() =>
-        val damage = Items.getStorableItemById(itemId).attackDamage
+        val damage = Items.getItemById(itemId).attackDamage
         val dead = inflictDamage(damage)
         world ! SendToAll(Animation(entityId, AnimationType.TakeDamage))
         world ! SendToAll(soundEffectFromId(hurtSoundEffectId))
