@@ -2,8 +2,18 @@ package io.scalacraft.core.marshalling
 
 import io.scalacraft.packets.Entities._
 
+/**
+ * Keeps all the data stracture to retrieve entities from type index and vice versa.
+ * All this mappings comes from protocol wiki.
+ * @see <a href="https://wiki.vg/Entity_metadata#Mobs_2">Mobs</a>
+ * @see <a href="https://wiki.vg/Entity_metadata#Objects">Objects</a>
+ */
 object MobsAndObjectsTypeMapping {
 
+  /**
+   * Map each mob index to an entity class.
+   * Some of them are not implemented due to protocol discrepancy.
+   */
   val typeToMobEntityClass: Map[Int, Class[_]] = Map(
     0 -> classOf[AreaEffectCloud],
     1 -> classOf[ArmorStand],
@@ -103,6 +113,10 @@ object MobsAndObjectsTypeMapping {
 
   )
 
+  /**
+   * Map each object index to an entity class.
+   * Some of them are not implemented due to protocol discrepancy.
+   */
   val typeToObjectEntityClass: Map[Int, Class[_]] = Map(
     1 -> classOf[Boat],
     // 2 -> classOf[ItemStack]
@@ -134,15 +148,31 @@ object MobsAndObjectsTypeMapping {
     94 -> classOf[Trident]
   )
 
+  /**
+   * @param tpe the type index of the minecraft object
+   * @return the object class relative to the given index
+   */
   def fromTypeToObjectEntityClass(tpe: Int): Class[_] = typeToObjectEntityClass(tpe)
 
+  /**
+   * @param tpe the type index of the minecraft mob
+   * @return the mob class relative to the given index
+   */
   def fromTypeToMobEntityClass(tpe: Int): Class[_] = typeToMobEntityClass(tpe)
 
+  /**
+   * @param objectClass a minecraft object class
+   * @return the id of the given minecraft object
+   */
   def fromObjectEntityClassToType(objectClass: Class[_]): Int = {
     val swappedMap = typeToObjectEntityClass.map(_.swap)
     swappedMap(objectClass)
   }
 
+  /**
+   * @param mobClass a minecraft mob class
+   * @return the id of the given minecraft mob
+   */
   def fromMobEntityClassToType(mobClass: Class[_]): Int = {
     val swappedMap = typeToMobEntityClass.map(_.swap)
     swappedMap(mobClass)

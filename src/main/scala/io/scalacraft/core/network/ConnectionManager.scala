@@ -7,10 +7,20 @@ import io.netty.channel.ChannelHandlerContext
 import io.scalacraft.misc.Helpers
 import io.scalacraft.packets.DataTypes.VarInt
 
+/**
+ * Handler for a connection. Provide function for writing on the channel and closing it.
+ */
 trait ConnectionManager {
 
+  /**
+   * Write a packet on the channel accordingly to protocol semantics.
+   * @param dataToPacketId a function that return the packet id and packet id length from a given dataOutputStream
+   */
   def writePacket(dataToPacketId: DataOutputStream => VarInt): Unit
 
+  /**
+   * Close the handled connection
+   */
   def closeConnection(): Unit
 
 }
