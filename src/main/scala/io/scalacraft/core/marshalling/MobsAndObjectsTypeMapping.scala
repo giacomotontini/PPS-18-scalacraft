@@ -1,6 +1,6 @@
 package io.scalacraft.core.marshalling
 
-import io.scalacraft.packets.Entities._
+import io.scalacraft.core.packets.Entities._
 
 /**
  * Keeps all the data stracture to retrieve entities from type index and vice versa.

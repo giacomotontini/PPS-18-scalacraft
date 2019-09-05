@@ -1,7 +1,7 @@
 package io.scalacraft.logic
 
 import io.scalacraft.logic.creatures.behaviours.Movement.computeYawAndPitch
-import io.scalacraft.packets.DataTypes.Angle
+import io.scalacraft.core.packets.DataTypes.Angle
 import org.scalatest.{FlatSpec, Matchers}
 
 class ComputeCreaturesAngleSpec extends FlatSpec with Matchers {

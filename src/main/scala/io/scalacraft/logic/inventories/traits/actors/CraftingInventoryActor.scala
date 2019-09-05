@@ -5,9 +5,9 @@ import io.scalacraft.logic.commons.Message.ForwardToClient
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.inventories.InventoryItem
 import io.scalacraft.logic.inventories.traits.InventoryWithCrafting
-import io.scalacraft.packets.DataTypes.Slot
-import io.scalacraft.packets.clientbound.PlayPackets.ConfirmTransaction
-import io.scalacraft.packets.serverbound.PlayPackets.ClickWindow
+import io.scalacraft.core.packets.DataTypes.Slot
+import io.scalacraft.core.packets.clientbound.PlayPackets.ConfirmTransaction
+import io.scalacraft.core.packets.serverbound.PlayPackets.ClickWindow
 
 /**
  * The base actor for handling inventories with crafting section like Crafting table.

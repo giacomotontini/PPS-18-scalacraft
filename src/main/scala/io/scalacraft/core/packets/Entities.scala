@@ -1,11 +1,11 @@
-package io.scalacraft.packets
+package io.scalacraft.core.packets
 
 import java.util.UUID
 
 import io.scalacraft.core.marshalling.EntityMetadata
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations.{boxed, byte}
 import io.scalacraft.core.marshalling.annotations.indexType
-import io.scalacraft.packets.DataTypes._
+import io.scalacraft.core.packets.DataTypes._
 import net.querz.nbt.CompoundTag
 
 /**

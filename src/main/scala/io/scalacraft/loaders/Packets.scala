@@ -1,7 +1,7 @@
 package io.scalacraft.loaders
 
 import io.scalacraft.core.marshalling.PacketManager
-import io.scalacraft.packets.{clientbound, serverbound}
+import io.scalacraft.core.packets.{clientbound, serverbound}
 
 /**
  * Contains data structures to retrieve the correct packet manager for each connection state

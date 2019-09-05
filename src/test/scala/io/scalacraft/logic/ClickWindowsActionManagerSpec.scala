@@ -4,8 +4,8 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
 import io.scalacraft.logic.inventories.traits.Inventory
 import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
-import io.scalacraft.packets.DataTypes.SlotData
-import io.scalacraft.packets.serverbound.PlayPackets.ClickWindowAction
+import io.scalacraft.core.packets.DataTypes.SlotData
+import io.scalacraft.core.packets.serverbound.PlayPackets.ClickWindowAction
 import net.querz.nbt.CompoundTag
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import io.scalacraft.logic.inventories.traits.ClickWindowActionManager

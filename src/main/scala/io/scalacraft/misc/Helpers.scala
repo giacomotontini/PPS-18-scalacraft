@@ -2,7 +2,7 @@ package io.scalacraft.misc
 
 import java.io.{InputStream, OutputStream}
 
-import io.scalacraft.packets.DataTypes.{Angle, Position, VarInt}
+import io.scalacraft.core.packets.DataTypes.{Angle, Position, VarInt}
 import net.querz.nbt.{ListTag, Tag}
 
 import scala.collection.JavaConverters._

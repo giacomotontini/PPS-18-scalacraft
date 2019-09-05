@@ -2,7 +2,7 @@ package io.scalacraft.loaders
 
 import io.circe.generic.auto._
 import io.circe.parser
-import io.scalacraft.packets.DataTypes.{BlockStateId, Identifier}
+import io.scalacraft.core.packets.DataTypes.{BlockStateId, Identifier}
 import net.querz.nbt.CompoundTag
 
 import scala.io.Source

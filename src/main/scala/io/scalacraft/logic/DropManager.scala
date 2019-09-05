@@ -7,9 +7,9 @@ import akka.pattern._
 import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.misc.Helpers
-import io.scalacraft.packets.DataTypes.{EntityId, Position, SlotData}
-import io.scalacraft.packets.Entities
-import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityMetadata, SpawnObject}
+import io.scalacraft.core.packets.DataTypes.{EntityId, Position, SlotData}
+import io.scalacraft.core.packets.Entities
+import io.scalacraft.core.packets.clientbound.PlayPackets.{CollectItem, EntityMetadata, SpawnObject}
 import net.querz.nbt.CompoundTag
 
 import scala.collection.mutable

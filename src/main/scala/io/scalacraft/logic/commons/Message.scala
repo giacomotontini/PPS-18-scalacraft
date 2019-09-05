@@ -6,9 +6,9 @@ import akka.actor.ActorRef
 import io.scalacraft.logic.Region.Light
 import io.scalacraft.logic.commons.Message.SkyUpdateState.SkyUpdateState
 import io.scalacraft.logic.inventories.InventoryItem
-import io.scalacraft.packets.DataTypes.{EntityId, Position, Slot}
-import io.scalacraft.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SpawnPlayer}
-import io.scalacraft.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging, UseEntity}
+import io.scalacraft.core.packets.DataTypes.{EntityId, Position, Slot}
+import io.scalacraft.core.packets.clientbound.PlayPackets.{CollectItem, EntityProperties, SpawnPlayer}
+import io.scalacraft.core.packets.serverbound.PlayPackets.{PlayerBlockPlacement, PlayerDigging, UseEntity}
 import net.querz.nbt.CompoundTag
 
 sealed trait Message
@@ -19,7 +19,7 @@ object Message {
 
   /**
    * To be used to request data of a chunk to a region. Responses can be:<br>
-   * - [[io.scalacraft.packets.clientbound.PlayPackets.ChunkData ChunkData]] if the request is successful<br>
+   * - [[io.scalacraft.core.packets.clientbound.PlayPackets.ChunkData ChunkData]] if the request is successful<br>
    * - [[io.scalacraft.logic.commons.Message.ChunkNotPresent ChunkNotPresent]] if the chunk in not loaded
    *
    * @param chunkX the X coordinate of the chunk in the region
@@ -50,7 +50,7 @@ object Message {
 
   /**
    * To be used to request the first solid block position (e.g. not air, water, etc..) under a certain block. The
-   * response is [[io.scalacraft.packets.DataTypes.Position Position]].
+   * response is [[io.scalacraft.core.packets.DataTypes.Position Position]].
    *
    * @param position the initial block position
    */
@@ -118,9 +118,9 @@ object Message {
   /**
    * Used to inform world that a player has just spawned.
    *
-   * @param playerId the entity id of the player
-   * @param spawnPacket the [[io.scalacraft.packets.clientbound.PlayPackets.SpawnPlayer SpawnPlayer]] packet
-   * @param properties the player properties
+   * @param playerId    the entity id of the player
+   * @param spawnPacket the [[io.scalacraft.core.packets.clientbound.PlayPackets.SpawnPlayer SpawnPlayer]] packet
+   * @param properties  the player properties
    */
   case class PlayerSpawning(playerId: EntityId, spawnPacket: SpawnPlayer, properties: EntityProperties) extends Message
 
@@ -181,7 +181,7 @@ object Message {
    *
    * @param playerId the entity id of the player
    * @param playerPosition the position of the player
-   * @param playerDiggingPacket the [[io.scalacraft.packets.serverbound.PlayPackets.PlayerDigging PlayerDigging]]
+   * @param playerDiggingPacket the [[io.scalacraft.core.packets.serverbound.PlayPackets.PlayerDigging PlayerDigging]]
    *                            packet received by client
    * @param holdingItemId the optional item id hold by player
    */
@@ -212,9 +212,9 @@ object Message {
   /**
    * Used to inform the player that a drop can be collected.
    *
-   * @param collectItem the [[io.scalacraft.packets.clientbound.PlayPackets.CollectItem CollectItem]] packet relative
+   * @param collectItem the [[io.scalacraft.core.packets.clientbound.PlayPackets.CollectItem CollectItem]] packet relative
    *                    to the item to collect
-   * @param itemId the id of the item to collect
+   * @param itemId      the id of the item to collect
    */
   case class CollectItemWithType(collectItem: CollectItem, itemId: Int) extends Message
 
@@ -224,13 +224,13 @@ object Message {
    * Used by player to inform that a new block is placed in the world.
    *
    * @param playerId the id of the player who place the new block
-   * @param packet the [[io.scalacraft.packets.serverbound.PlayPackets.PlayerBlockPlacement PlayerBlockPlacement]] packet
-   * @param itemId the id of the item to place
+   * @param packet   the [[io.scalacraft.core.packets.serverbound.PlayPackets.PlayerBlockPlacement PlayerBlockPlacement]] packet
+   * @param itemId   the id of the item to place
    */
   case class PlayerPlaceBlockWithItemId(playerId: EntityId, packet: PlayerBlockPlacement, itemId: Int) extends Message
 
   /**
-   * Used to request to a player his [[io.scalacraft.packets.clientbound.PlayPackets.SpawnPlayer SpawnPlayer]] packet.
+   * Used to request to a player his [[io.scalacraft.core.packets.clientbound.PlayPackets.SpawnPlayer SpawnPlayer]] packet.
    */
   case object RequestSpawnPacket extends Message
 

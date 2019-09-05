@@ -8,7 +8,7 @@ import io.scalacraft.logic.commons.Message._
 import io.scalacraft.logic.commons.Traits.EnrichedActor
 import io.scalacraft.logic.creatures.CreatureInstances
 import io.scalacraft.logic.creatures.Spawnables.{PositionWithProperties, SpawnableFarmAnimal}
-import io.scalacraft.packets.clientbound.PlayPackets.SpawnMob
+import io.scalacraft.core.packets.clientbound.PlayPackets.SpawnMob
 
 import scala.concurrent.Future
 import scala.concurrent.Future._

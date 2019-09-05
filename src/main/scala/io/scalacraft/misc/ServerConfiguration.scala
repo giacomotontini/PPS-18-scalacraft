@@ -3,7 +3,7 @@ package io.scalacraft.misc
 import java.nio.charset.Charset
 import java.util.Base64
 
-import io.scalacraft.packets.clientbound.PlayPackets.{GameModeValue, LevelType, ServerDifficulties}
+import io.scalacraft.core.packets.clientbound.PlayPackets.{GameModeValue, LevelType, ServerDifficulties}
 
 import scala.io.Source
 

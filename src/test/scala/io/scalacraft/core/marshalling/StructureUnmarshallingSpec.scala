@@ -1,9 +1,9 @@
 package io.scalacraft.core.marshalling
 
-import io.scalacraft.packets.Entities.AreaEffectCloud
-import io.scalacraft.packets.TestStructures
-import io.scalacraft.packets.TestStructures.EnumInterface.{EnumOption1, EnumOption2}
-import io.scalacraft.packets.TestStructures._
+import io.scalacraft.core.packets.Entities.AreaEffectCloud
+import io.scalacraft.core.packets.TestStructures
+import io.scalacraft.core.packets.TestStructures.EnumInterface.{EnumOption1, EnumOption2}
+import io.scalacraft.core.packets.TestStructures._
 import org.scalatest.{FlatSpec, Matchers}
 
 class StructureUnmarshallingSpec extends FlatSpec with Matchers with StructureMarshallerHelper[TestStructures.type] {

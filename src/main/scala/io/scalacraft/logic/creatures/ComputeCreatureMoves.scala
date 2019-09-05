@@ -4,7 +4,7 @@ import java.io.FileInputStream
 
 import alice.tuprolog.{Struct, Term, Theory}
 import io.scalacraft.logic.commons.ScalaToProlog._
-import io.scalacraft.packets.DataTypes.Position
+import io.scalacraft.core.packets.DataTypes.Position
 
 class ComputeCreatureMoves(toAssert: Seq[String]) {
 

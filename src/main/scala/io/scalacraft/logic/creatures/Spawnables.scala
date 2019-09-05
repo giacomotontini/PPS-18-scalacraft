@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, Props}
 import akka.pattern._
 import io.scalacraft.logic.commons.DefaultTimeout
 import io.scalacraft.logic.commons.Message.RequestEntityId
-import io.scalacraft.packets.DataTypes.Position
+import io.scalacraft.core.packets.DataTypes.Position
 
 import scala.concurrent.Await
 import scala.util.Random

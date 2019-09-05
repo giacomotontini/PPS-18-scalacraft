@@ -3,7 +3,7 @@ package io.scalacraft.core.marshalling
 import java.util.UUID
 
 import io.scalacraft.core.marshalling.Marshallers._
-import io.scalacraft.packets.DataTypes.Position
+import io.scalacraft.core.packets.DataTypes.Position
 import org.scalatest._
 
 class BaseTypesMarshallingSpec extends FlatSpec with Matchers with DataTypesMarshallerHelper {

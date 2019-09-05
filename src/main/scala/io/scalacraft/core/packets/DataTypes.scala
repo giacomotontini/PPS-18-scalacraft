@@ -1,4 +1,4 @@
-package io.scalacraft.packets
+package io.scalacraft.core.packets
 
 import java.util.UUID
 

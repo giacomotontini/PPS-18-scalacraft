@@ -5,7 +5,7 @@ import java.io.{ByteArrayOutputStream, DataOutputStream}
 import io.netty.buffer.ByteBufOutputStream
 import io.netty.channel.ChannelHandlerContext
 import io.scalacraft.misc.Helpers
-import io.scalacraft.packets.DataTypes.VarInt
+import io.scalacraft.core.packets.DataTypes.VarInt
 
 /**
  * Handler for a connection. Provide function for writing on the channel and closing it.

@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.scalacraft.core.network.{Server, ServerHandler}
 import io.scalacraft.logic.World
 import io.scalacraft.misc.ServerConfiguration
-import io.scalacraft.packets.clientbound.PlayPackets.{GameModeValue, LevelType, ServerDifficulties}
+import io.scalacraft.core.packets.clientbound.PlayPackets.{GameModeValue, LevelType, ServerDifficulties}
 import scopt.OParser
 
 object Entrypoint extends App with LazyLogging {
