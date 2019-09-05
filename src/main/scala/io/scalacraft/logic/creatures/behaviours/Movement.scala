@@ -1,22 +1,21 @@
 package io.scalacraft.logic.creatures.behaviours
 
 import akka.pattern._
-import io.scalacraft.logic.commons.Message.{RequestNearbyPoints, SendToAll}
-import io.scalacraft.logic.commons.Traits.EnrichedActor
-import io.scalacraft.logic.creatures.parameters.CreatureParameters
 import io.scalacraft.core.packets.DataTypes.{Angle, Position}
 import io.scalacraft.core.packets.Entities.MobEntity
 import io.scalacraft.core.packets.clientbound.PlayPackets.{EntityHeadLook, EntityLookAndRelativeMove, EntityVelocity}
+import io.scalacraft.logic.commons.Message.{RequestNearbyPoints, SendToAll}
+import io.scalacraft.logic.commons.Traits.EnrichedActor
+import io.scalacraft.logic.creatures.parameters.CreatureParameters
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 trait Movement[T <: MobEntity] {
   this: CreatureParameters[T] with EnrichedActor =>
 
   import Movement._
-  val MovementTickPeriod: FiniteDuration = 10 seconds
+  val MovementTickPeriod: FiniteDuration = 15 seconds
 
   protected case object MoveEntity
 
@@ -44,7 +43,7 @@ trait Movement[T <: MobEntity] {
     } else Future.successful(List())
   }
 
-  def doMove(): Unit = {
+  def doMove(): Future[Unit] = {
 
     def fluidMovementAnimation(move: Move, moveIndex: Int): Unit = {
 
@@ -70,8 +69,8 @@ trait Movement[T <: MobEntity] {
       }
     }
 
-    computeMoves(posX, posY, posZ, oldPosX, oldPosZ, pathMovesNumber) onComplete {
-      case Success(moves) =>
+    computeMoves(posX, posY, posZ, oldPosX, oldPosZ, pathMovesNumber).map{
+      moves =>
         moves.foreach { move =>
           fluidMovementAnimation(move, moves.indexOf(move))
         }
@@ -79,8 +78,6 @@ trait Movement[T <: MobEntity] {
         posX = newPosition.x
         posY = newPosition.y
         posZ = newPosition.z
-
-      case Failure(_) => // do nothing
     }
   }
 }

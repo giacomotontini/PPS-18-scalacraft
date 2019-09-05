@@ -4,9 +4,9 @@ import java.util.UUID
 
 import akka.actor.{ActorRef, Props}
 import akka.pattern._
+import io.scalacraft.core.packets.DataTypes.Position
 import io.scalacraft.logic.commons.DefaultTimeout
 import io.scalacraft.logic.commons.Message.RequestEntityId
-import io.scalacraft.core.packets.DataTypes.Position
 
 import scala.concurrent.Await
 import scala.util.Random
@@ -19,13 +19,13 @@ object Spawnables {
 
   case class SpawnCreatureParameters(biomeToSpawnPosition: Map[Int, Set[PositionWithProperties]],
                                      spawnPolicy: Position => Set[PropsWithName],
-                                     positionFilter: Set[PositionWithProperties] => Set[Position])
+                                     isWaterCreature: Boolean)
 
   case class SpawnCreatureResult(updatedPosition: Map[Int, Set[PositionWithProperties]],
                                  actorToSpawn: Set[PropsWithName])
 
-  trait SpawnableCreature {
-    protected val randomGenerator: Random.type = scala.util.Random
+  protected[Spawnables] trait SpawnableCreature {
+    val randomGenerator: Random = scala.util.Random
 
     def spawnableBiomes: Map[Int, Double]
 
@@ -33,21 +33,23 @@ object Spawnables {
 
     def name(UUID: UUID): String
 
-    protected def spawn(spawnCreatureParameters: SpawnCreatureParameters): SpawnCreatureResult = {
+    def spawn(spawnCreatureParameters: SpawnCreatureParameters): SpawnCreatureResult = {
+      def positionFilter(positionsWithProperties: Set[PositionWithProperties]): Set[Position] = positionsWithProperties.collect {
+        case PositionWithProperties(position, isWater) if isWater == spawnCreatureParameters.isWaterCreature => position
+      }
+
       var unusedPositions = spawnCreatureParameters.biomeToSpawnPosition
-      assert(unusedPositions.isInstanceOf[Map[Int, Set[Spawnables.PositionWithProperties]]])
       var actorToSpawn = Set[PropsWithName]()
-      for (biomeAndPosition <- spawnCreatureParameters.biomeToSpawnPosition
-           if spawnableBiomes.keySet.contains(biomeAndPosition._1)) {
-        assert(biomeAndPosition._2.isInstanceOf[Set[PositionWithProperties]])
-        var positions = spawnCreatureParameters.positionFilter(biomeAndPosition._2)
-        val biome = biomeAndPosition._1
-        val spawnProbability = spawnableBiomes(biome) / 256
-        if (randomGenerator.nextFloat() < spawnProbability && positions.nonEmpty) {
-          val position = positions.toVector(randomGenerator.nextInt(positions.size))
-          actorToSpawn ++= spawnCreatureParameters.spawnPolicy(position)
-          positions -= position
-          unusedPositions = Map(biome -> positions.map(position => PositionWithProperties(position, isWater = false))) // TODO: sistemare
+      for (biomeAndPositions <- spawnCreatureParameters.biomeToSpawnPosition
+           if spawnableBiomes.keySet.contains(biomeAndPositions._1)) {
+        val biome = biomeAndPositions._1
+        val spawnProbability = spawnableBiomes(biome)
+        for (position <- positionFilter(biomeAndPositions._2)) {
+          if (randomGenerator.nextDouble() < spawnProbability) {
+            actorToSpawn ++= spawnCreatureParameters.spawnPolicy(position)
+            unusedPositions = unusedPositions.updated(biome, unusedPositions(biome) - PositionWithProperties(position,
+              isWater = spawnCreatureParameters.isWaterCreature))
+          }
         }
       }
       SpawnCreatureResult(unusedPositions, actorToSpawn)
@@ -55,7 +57,7 @@ object Spawnables {
   }
 
   trait SpawnableFarmAnimal extends SpawnableCreature with DefaultTimeout {
-    override def spawnableBiomes: Map[Int, Double] = Map(1 -> 10, 4 -> 8, 5 -> 5)
+    override def spawnableBiomes: Map[Int, Double] = Map(1 -> 0.00008, 4 -> 0.00004, 5 -> 0.00003)
 
     val spawnNumber = 4
     val spawnBabyPercentage = 0.1
@@ -72,11 +74,7 @@ object Spawnables {
           (actorProps, actorName)
         }).toSet
 
-      val positionFilter: Set[PositionWithProperties] => Set[Position] = _.collect {
-        case PositionWithProperties(position, isWater) if !isWater => position
-      }
-
-      spawn(SpawnCreatureParameters(biomeToSpawnPosition, spawnGroup, positionFilter))
+      spawn(SpawnCreatureParameters(biomeToSpawnPosition, spawnGroup, isWaterCreature = false))
     }
   }
 

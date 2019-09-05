@@ -1,6 +1,6 @@
-checkUp(X,Y,Z,Result):- state(X,Y1,Z, "noSurface"), Y1 is Y+1, state(X, Y, Z, "surface"), Result=pos(X,Y1,Z).
-checkDown(X,Y,Z,Result):- state(X,Y,Z, "noSurface"), state(X,Y2,Z, "noSurface"), Y2 is Y-1, state(X,Y3,Z, "surface"), Y3 is Y-2, Result=pos(X,Y2,Z).
-checkSameLevel(X,Y,Z,Result):- state(X,Y,Z,"noSurface"), state(X,Y4,Z, "surface"), Y4 is Y-1, Result=pos(X,Y,Z).
+checkUp(X,Y,Z,Result):- state(X, Y, Z, "surface"), state(X,Y1,Z, "noSurface"), Y1 is Y+1, Result=pos(X,Y1,Z).
+checkDown(X,Y,Z,Result):- state(X,Y1,Z, "noSurface"), Y1 is Y+1, state(X,Y,Z, "noSurface"), state(X,Y2,Z, "noSurface"), Y2 is Y-1, state(X,Y3,Z, "surface"), Y3 is Y-2, Result=pos(X,Y2,Z).
+checkSameLevel(X,Y,Z,Result):- state(X,Y,Z,"noSurface"), state(X,Y1,Z, "surface"), Y1 is Y-1, Result=pos(X,Y,Z).
 
 move(X,Y,Z,Result):-
     checkUp(X,Y,Z,Result);
