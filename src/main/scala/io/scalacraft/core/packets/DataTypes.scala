@@ -6,6 +6,9 @@ import io.scalacraft.core.marshalling.Structure
 import io.scalacraft.core.marshalling.annotations.PacketAnnotations._
 import net.querz.nbt.Tag
 
+/**
+ * All data types of the game.
+ */
 object DataTypes {
 
   type Chat = String

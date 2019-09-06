@@ -5,8 +5,8 @@ import io.scalacraft.core.packets.Entities._
 /**
  * Keeps all the data stracture to retrieve entities from type index and vice versa.
  * All this mappings comes from protocol wiki.
- * @see <a href="https://wiki.vg/Entity_metadata#Mobs_2">Mobs</a>
- * @see <a href="https://wiki.vg/Entity_metadata#Objects">Objects</a>
+ * @see [[https://wiki.vg/Entity_metadata#Mobs_2 Mobs]]
+ * @see [[https://wiki.vg/Entity_metadata#Objects Objects]]
  */
 object MobsAndObjectsTypeMapping {
 

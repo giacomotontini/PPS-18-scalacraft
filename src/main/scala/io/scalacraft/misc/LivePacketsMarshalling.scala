@@ -5,6 +5,9 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, Da
 import io.scalacraft.core.marshalling.PacketManager
 import io.scalacraft.core.packets.DataTypes.VarInt
 
+/**
+ * Tool used to deserialize packets from a flow of bytes.
+ */
 object LivePacketsMarshalling extends App {
 
   val skipParsingFor: List[Int] = List(0x3f, 0x11)

@@ -8,6 +8,9 @@ import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.core.packets.clientbound.PlayPackets.{GameModeValue, LevelType, ServerDifficulties}
 import scopt.OParser
 
+/**
+ * The entrypoint of the server.
+ */
 object Entrypoint extends App with LazyLogging {
 
   val builder = OParser.builder[ServerConfiguration]

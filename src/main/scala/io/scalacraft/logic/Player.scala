@@ -4,18 +4,18 @@ import java.util.UUID
 
 import akka.actor.{ActorRef, Cancellable, Props, Stash}
 import akka.pattern._
-import io.scalacraft.loaders.Blocks
-import io.scalacraft.logic.commons.Message._
-import io.scalacraft.logic.commons.Traits.EnrichedActor
-import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
-import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
-import io.scalacraft.misc.ServerConfiguration
 import io.scalacraft.core.packets.DataTypes.{Angle, Position}
 import io.scalacraft.core.packets.Entities
 import io.scalacraft.core.packets.clientbound.PlayPackets._
 import io.scalacraft.core.packets.clientbound.{PlayPackets => cb}
 import io.scalacraft.core.packets.serverbound.PlayPackets._
 import io.scalacraft.core.packets.serverbound.{PlayPackets => sb}
+import io.scalacraft.loaders.Blocks
+import io.scalacraft.logic.commons.Message._
+import io.scalacraft.logic.commons.Traits.EnrichedActor
+import io.scalacraft.logic.inventories.actors.{CraftingTableActor, PlayerInventoryActor}
+import io.scalacraft.logic.inventories.{InventoryItem, PlayerInventory}
+import io.scalacraft.misc.ServerConfiguration
 import net.querz.nbt.CompoundTag
 
 import scala.concurrent.Future

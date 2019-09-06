@@ -32,7 +32,7 @@ trait CreatureParameters[T <: MobEntity] extends CommonParameters {
 object CreatureParameters {
 
   val SoundEffectPositionMultiplier = 8
-  val SoundVolume = 1
-  val SoundPitch = 0.5f
+  val SoundVolume = 1f
+  val SoundPitch = 1f
 
 }

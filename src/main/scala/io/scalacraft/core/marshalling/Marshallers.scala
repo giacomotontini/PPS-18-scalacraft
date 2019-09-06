@@ -11,8 +11,17 @@ import net.querz.nbt.Tag
 import scala.collection.mutable
 import scala.reflect.runtime.universe._
 
+/**
+ * Contains marshallers for all types.
+ */
 object Marshallers {
 
+  /**
+   * Wrap a [[java.io.DataInputStream DataInputStream]] to throw an [[java.io.EOFException EOFException]] when the end
+   * of file is reached insted of return a negative value.
+   *
+   * @param base the data input stream
+   */
   implicit class RichStream(base: DataInputStream) {
     def readIfIsAvailable(): Int = {
       val readedValue = base.read()
@@ -20,6 +29,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for boolean type.
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class BooleanMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case b: Boolean => outStream.write(if (b) 0x1 else 0x0)
@@ -32,6 +46,12 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for byte type.
+   *
+   * @param isUnsigned true if the marshaller should treat a byte as unsigned
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class ByteMarshaller(val isUnsigned: Boolean = false, val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case i: Int => outStream.write(i & 0xFF)
@@ -44,6 +64,12 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for short type.
+   *
+   * @param isUnsigned true if the marshaller should treat a short as unsigned
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class ShortMarshaller(val isUnsigned: Boolean = false, val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case i: Int =>
@@ -58,6 +84,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for int type.
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class IntMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case i: Int =>
@@ -75,6 +106,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for boolean type.
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class LongMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case l: Long =>
@@ -98,6 +134,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for float type.
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class FloatMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case f: Float =>
@@ -112,6 +153,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for double type.
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class DoubleMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case d: Double =>
@@ -127,6 +173,11 @@ object Marshallers {
 
   }
 
+  /**
+   * A marshaller for variable integer type.
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class VarIntMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case i: Int => Helpers.writeVarInt(i, outStream)
@@ -139,6 +190,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for variable long type.
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class VarLongMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case i: Long =>
@@ -171,6 +227,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for [[io.scalacraft.packets.DataTypes.Position Position]].
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class PositionMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case Position(x, y, z) =>
@@ -189,6 +250,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for [[io.scalacraft.packets.DataTypes.Angle Angle]].
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class AngleMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case Angle(value) => outStream.write(value & 0xFF)
@@ -201,6 +267,12 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for string type.
+   *
+   * @param maxLength the max length that the string can be
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class StringMarshaller(maxLength: Int, val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case s: String =>
@@ -234,6 +306,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for [[java.util.UUID UUID]].
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class UUIDMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case u: UUID =>
@@ -253,6 +330,13 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for optional types.
+   *
+   * @param paramMarshaller the marshaller of type of the parameter of optional
+   * @param conditionMarshaller the marshaller of the condition that indicate if the optional is present
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class OptionalMarshaller(paramMarshaller: Marshaller, conditionMarshaller: Option[Marshaller] = None,
                            val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
@@ -283,6 +367,12 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for array of bytes.
+   *
+   * @param lengthMarshaller the marshaller for the length of the array
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class ByteArrayMarshaller(lengthMarshaller: Option[Marshaller],
                             val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
@@ -323,6 +413,13 @@ object Marshallers {
       case i: Int => i
     }
 
+  /**
+   * A marshaller for lists.
+   *
+   * @param paramMarshaller the marshaller of the type of the parameter of optional
+   * @param lengthMarshaller the marshaller for the length of the list
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class ListMarshaller(paramMarshaller: Marshaller, lengthMarshaller: Option[Marshaller],
                        val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
@@ -365,6 +462,13 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for structures.
+   *
+   * @param fieldsMarshaller a list of marshallers, one for each field
+   * @param constructorMirror the constructor mirror used to create an instance of the structure via reflection
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class StructureMarshaller(fieldsMarshaller: List[Marshaller], constructorMirror: MethodMirror,
                             val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
@@ -384,6 +488,15 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for switch types.
+   *
+   * @param keyMarshaller the marshaller of the key param of the switch
+   * @param valuesMarshaller a map where keys are all possible keys of the switch and values are the relative marshallers
+   * @param valuesTypes a map where keys are all possible [[scala.reflect.api.JavaUniverse#RuntimeClass RuntimeClass]]
+   *                    of the keys of the switch and values are the key of the switch
+   * @param takeKeyFromContext true if the key of the switch need to be taken from context
+   */
   class SwitchMarshaller(keyMarshaller: Marshaller,
                          valuesMarshaller: Map[Any, Marshaller],
                          valuesTypes: Map[RuntimeClass, Any],
@@ -416,6 +529,13 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for enum types.
+   *
+   * @param valueMarshaller the marshaller for the type of the enum
+   * @param valuesInstances a map where keys are the enum keys and the values are the enum instances
+   * @param takeKeyFromContext true if the key of the switch need to be taken from context
+   */
   class EnumMarshaller(valueMarshaller: Marshaller,
                        valuesInstances: Map[Any, Any],
                        takeKeyFromContext: Boolean = false) extends Marshaller {
@@ -440,6 +560,11 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for Ntb types.
+   *
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class NbtMarshaller(val contextFieldIndex: Option[Int] = None) extends Marshaller {
     override def marshal(obj: Any)(implicit outStream: DataOutputStream): Unit = obj match {
       case tag: Tag[_] => tag.serialize(outStream, Tag.DEFAULT_MAX_DEPTH)
@@ -452,6 +577,17 @@ object Marshallers {
     }
   }
 
+  /**
+   * A marshaller for entities.
+   *
+   * @param constructorMirrors a map where keys are all possible types of an entity and values are the relative mirror
+   *                           used to create the instance with reflection   *
+   * @param typeMarshaller the marshaller of the entity type
+   * @param typesMarshallers a map where keys are all possible types of fields of an entity and values are the relative
+   *                         marshallers
+   * @param customType if defined use this value for entity type instead of read it with `typeMarshaller`
+   * @param contextFieldIndex @see [[io.scalacraft.core.marshalling.Marshaller#contextFieldIndex contextFieldIndex]]
+   */
   class EntityMarshaller(constructorMirrors: Map[Int, MethodMirror], typeMarshaller: Marshaller,
                          typesMarshallers: Seq[Marshaller], customType: Option[Int] = None,
                          val contextFieldIndex: Option[Int] = None) extends Marshaller {

@@ -5,6 +5,9 @@ import java.lang.reflect.Field
 import io.scalacraft.core.marshalling.annotations.indexType
 import io.scalacraft.core.packets.Entities.{MobEntity, ObjectEntity}
 
+/**
+ * Base class for entities. Add some useful method for serialization and deserialization.
+ */
 class EntityMetadata {
 
   private val fields: List[Field] = {
@@ -20,15 +23,26 @@ class EntityMetadata {
     _fields
   }
 
+  /**
+   * Set all fields from a list of values.
+   *
+   * @param values list of values for all fields
+   */
   private[marshalling] def setValues(values: List[Any]): Unit = for (i <- values.indices) {
     fields(i).set(this, values(i))
   }
 
+  /**
+   * List of index type for all fields.
+   */
   private[marshalling] val indexes: List[Int] = fields map (_.getDeclaredAnnotation(classOf[indexType]).index())
 
-  private[marshalling] def values: List[Any] = fields map {
-    _ get this
-  }
+  /**
+   * List of values for all fields.
+   *
+   * @return a list of values
+   */
+  private[marshalling] def values: List[Any] = fields map (_ get this)
 
   // for test purpose: needed because every unmarshalled packet is constructed via reflection throw a class constructor
   // and instance references are different
