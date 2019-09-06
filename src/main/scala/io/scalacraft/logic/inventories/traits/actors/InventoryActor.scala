@@ -35,9 +35,9 @@ trait InventoryActor extends ClickWindowActionManager {
 
   /**
    *
-   * @param click
+   * @param click the click window
    * @param slot on which user clicked
-   * @param actionNumber the number of the action performed. @see <a href="https://wiki.vg/Protocol#Click_Window">ClickWindow</a>
+   * @param actionNumber the number of the action performed. @see [[https://wiki.vg/Protocol#Click_Window ClickWindow]]
    * @param clickedItem the items on slot subject to this action
    */
   protected def clickWindow(click: ClickWindow, slot: Int, actionNumber: Int, clickedItem: Slot): Unit = {

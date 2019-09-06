@@ -16,7 +16,7 @@ object Chunks {
 
   /**
    * Build the ChunkData structure and a correspondent bitmask from a chunk column.
-   * @see <a href="https://wiki.vg/Protocol#Chunk_Data">ChunkData structure</a>
+   * @see [[https://wiki.vg/Protocol#Chunk_Data ChunkData structure]]
    * @param chunkColumn the chunk column from which to build data
    * @return a ChunkData structure in byte and the relative bitmask
    */

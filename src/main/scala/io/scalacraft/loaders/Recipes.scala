@@ -24,7 +24,7 @@ object Recipes {
   case class RecipeResult(count: Int, id: Int)
 
   /**
-   * Represent a recipe withOUT ingredients shape bond
+   * Represent a recipe without ingredients shape bond
    * @param ingredients the ingredients needed to follow the recipe
    * @param result the recipe result
    */

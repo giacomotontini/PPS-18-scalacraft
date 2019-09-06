@@ -1356,7 +1356,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plant"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -1435,7 +1435,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plant"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -1514,7 +1514,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plant"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -1593,7 +1593,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plant"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -1672,7 +1672,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plant"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -1751,7 +1751,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plant"
+  "type": "solid_block"
  },
  {
   "blastResistance": 18000000,
@@ -5739,7 +5739,7 @@
   ],
   "tool": "pickaxe",
   "transparent": false,
-  "type": "block"
+  "type": "solid_block"
  },
  {
   "blastResistance": 4,
@@ -14345,7 +14345,7 @@
   "tool": "sword",
   "tool2": "shears",
   "transparent": false,
-  "type": "non_solid"
+  "type": "non_solid_block"
  },
  {
   "blastResistance": 0,
@@ -14411,7 +14411,7 @@
   ],
   "tool": "shears",
   "transparent": true,
-  "type": "non_solid__plant"
+  "type": "non_solid_block"
  },
  {
   "blastResistance": 0,
@@ -14477,7 +14477,7 @@
   ],
   "tool": "shears",
   "transparent": true,
-  "type": "non_solid__plant"
+  "type": "non_solid_block"
  },
  {
   "blastResistance": 0,
@@ -14550,7 +14550,7 @@
   ],
   "tool": "shears",
   "transparent": true,
-  "type": "non_solid__plant"
+  "type": "non_solid_block"
  },
  {
   "blockId": 97,
@@ -16411,7 +16411,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -16482,7 +16482,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -16553,7 +16553,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -16624,7 +16624,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -16695,7 +16695,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -16766,7 +16766,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -16837,7 +16837,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -16908,7 +16908,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -16979,7 +16979,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -17050,7 +17050,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blockId": 128,
@@ -39745,7 +39745,7 @@
   ],
   "tool": "pickaxe",
   "transparent": false,
-  "type": "solid_block__tile_entity"
+  "type": "solid_block"
  },
  {
   "blastResistance": 5,
@@ -42276,7 +42276,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "redstone"
+  "type": "solid_block"
  },
  {
   "blastResistance": 2.5,
@@ -44254,7 +44254,7 @@
   ],
   "tool": "shovel",
   "transparent": true,
-  "type": "block"
+  "type": "non_solid_block"
  },
  {
   "blastResistance": 2.5,
@@ -44389,7 +44389,7 @@
   ],
   "tool": "shovel",
   "transparent": false,
-  "type": "block"
+  "type": "solid_block"
  },
  {
   "blastResistance": 2,
@@ -45338,7 +45338,7 @@
   ],
   "tool": "axe",
   "transparent": false,
-  "type": "wearable_items__solid_block"
+  "type": "solid_block"
  },
  {
   "blastResistance": 2,
@@ -45548,7 +45548,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "light_emitting_block"
+  "type": "solid_block"
  },
  {
   "blockId": 181,
@@ -45772,7 +45772,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "foodstuff"
+  "type": "non_solid_block"
  },
  {
   "blastResistance": 0,
@@ -52209,7 +52209,7 @@
   ],
   "tool": "any",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": null,
@@ -52274,7 +52274,7 @@
   ],
   "tool": "any",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": null,
@@ -52339,7 +52339,7 @@
   ],
   "tool": "any",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": null,
@@ -52404,7 +52404,7 @@
   ],
   "tool": "any",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": null,
@@ -52469,7 +52469,7 @@
   ],
   "tool": "any",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": null,
@@ -52534,7 +52534,7 @@
   ],
   "tool": "any",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 30,
@@ -60587,7 +60587,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "non_solid__plants"
+  "type": "non_solid_block"
  },
  {
   "blockId": 238,
@@ -62379,7 +62379,7 @@
   ],
   "tool": "pickaxe",
   "transparent": true,
-  "type": "tile_entity"
+  "type": "block_entity"
  },
  {
   "blastResistance": 0,
@@ -71941,7 +71941,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 291,
@@ -72075,7 +72075,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 292,
@@ -72125,7 +72125,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 293,
@@ -72259,7 +72259,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 294,
@@ -72309,7 +72309,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 295,
@@ -72443,7 +72443,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 296,
@@ -72493,7 +72493,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 297,
@@ -72627,7 +72627,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 298,
@@ -72677,7 +72677,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 299,
@@ -72811,7 +72811,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 300,
@@ -72861,7 +72861,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blockId": 301,
@@ -72995,7 +72995,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "wearable_items__non_solid_block"
+  "type": "non_solid_block"
  },
  {
   "blastResistance": 6000,
@@ -85571,7 +85571,7 @@
   ],
   "tool": "any",
   "transparent": false,
-  "type": "semi_solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 18000003,
@@ -89658,7 +89658,7 @@
   ],
   "tool": "any",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -89729,7 +89729,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -89800,7 +89800,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -89871,7 +89871,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -89942,7 +89942,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90013,7 +90013,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90084,7 +90084,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90155,7 +90155,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90226,7 +90226,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90297,7 +90297,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90368,7 +90368,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90439,7 +90439,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90510,7 +90510,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90581,7 +90581,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90652,7 +90652,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90723,7 +90723,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0.5,
@@ -90794,7 +90794,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 21,
@@ -91036,7 +91036,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -91116,7 +91116,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -91196,7 +91196,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -91276,7 +91276,7 @@
   ],
   "tool": "any",
   "transparent": true,
-  "type": "plants"
+  "type": "solid_block"
  },
  {
   "blastResistance": 0,
@@ -91351,7 +91351,7 @@
   ],
   "tool": "shears",
   "transparent": true,
-  "type": "non_solid__plant"
+  "type": "non_solid_block"
  },
  {
   "blastResistance": 0,
@@ -91426,7 +91426,7 @@
   ],
   "tool": "shears",
   "transparent": true,
-  "type": "non_solid__plant"
+  "type": "non_solid_block"
  },
  {
   "blastResistance": 5,
@@ -107407,7 +107407,7 @@
   ],
   "tool": "pickaxe",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blockId": 467,
@@ -107451,7 +107451,7 @@
   ],
   "tool": "pickaxe",
   "transparent": false,
-  "type": "solid"
+  "type": "solid_block"
  },
  {
   "blastResistance": 30,
@@ -108391,8 +108391,7 @@
    }
   ],
   "tool": "any",
-  "transparent": true,
-  "type": "item"
+  "transparent": true
  },
  {
   "blockId": 471,

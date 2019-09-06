@@ -10,7 +10,7 @@ import scala.io.Source
 /**
  * A data loader for blocks
  */
-object Blocks extends App {
+object Blocks {
 
   /**
    * Represent a possible block's state

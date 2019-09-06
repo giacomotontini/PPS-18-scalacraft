@@ -38,7 +38,7 @@ object Helpers {
    * Read a variable integer from a stream.
    *
    * @param inStream the input stream from which the variable integer must be read
-   * @return the [[io.scalacraft.packets.DataTypes.VarInt VarInt]] wrapper
+   * @return the [[io.scalacraft.core.packets.DataTypes.VarInt VarInt]] wrapper
    */
   def readVarInt(inStream: InputStream): VarInt = {
     var numRead = 0
