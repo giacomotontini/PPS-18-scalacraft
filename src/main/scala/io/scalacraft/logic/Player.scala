@@ -54,7 +54,6 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
   private var pitch: Float = 0.0f
   private var onGround = true
   private val health = 20
-  // private var foodHealth = 20
   private var mainHand: MainHand = _
   private var locale: String = _
   private var viewDistance: Int = _ //render distance in chunks

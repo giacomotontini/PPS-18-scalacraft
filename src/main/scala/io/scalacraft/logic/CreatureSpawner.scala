@@ -15,26 +15,43 @@ import scala.concurrent.Future._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
+/**
+ * The actor that handle the spawn and despawn of creatures based on the player position and the sky state.
+ */
 class CreatureSpawner extends EnrichedActor {
 
   type ChunkLocation = (Int, Int)
 
-  //Mantains the number of player in a chunk, this is identified by his x, z coordinates
+  /**
+   * Mantains the number of player in a chunk, this is identified by his x, z coordinates
+   */
+
   var numberOfPlayersInChunk: Map[ChunkLocation, Int] = Map()
-  //Indicates if creatures have been spawned yet in a given chunk
+
+  /**
+   * Indicates if creatures have been spawned yet in a given chunk
+   */
+
   var spawnedMobFuturePerChunk: Map[ChunkLocation, Future[_]] = Map()
   var spawnedActor: Set[ActorRef] = Set()
   val timeout: FiniteDuration = 20 seconds
   var isDay: Boolean = _
 
-  //Update numberOfPlayer in a chunk and get the actual number of player.
-  private[this] def updateNumberOfPlayerInChunk(chunkMapToUpdate: Map[ChunkLocation, Int], chunkX: Int, chunkZ: Int,
+  /**
+   * Update numberOfPlayer in a chunk and get the actual number of player.
+   * @param chunkX the x coordinate of the chunk
+   * @param chunkZ the z coordinate of the chunk
+   * @param updateFunction the update function coordinate of the chunk
+   * @param removeEntryPredicate the condition which establioshes if the entry must be removed
+   * @return the updated map and the actual number of player in the chunk
+   */
+  private[this] def updateNumberOfPlayerInChunk(chunkX: Int, chunkZ: Int,
                                                 updateFunction: Int => Int, removeEntryPredicate: Int => Boolean):
   (Map[ChunkLocation, Int], Int) = {
-    val parameterToBeUpdated = chunkMapToUpdate.getOrElse((chunkX, chunkZ), 0)
+    val parameterToBeUpdated = numberOfPlayersInChunk.getOrElse((chunkX, chunkZ), 0)
     val updatedParameter = updateFunction(parameterToBeUpdated)
-    val updatedMap = if (removeEntryPredicate(updatedParameter)) chunkMapToUpdate - ((chunkX, chunkZ))
-    else chunkMapToUpdate.updated((chunkX, chunkZ), updatedParameter)
+    val updatedMap = if (removeEntryPredicate(updatedParameter)) numberOfPlayersInChunk - ((chunkX, chunkZ))
+    else numberOfPlayersInChunk.updated((chunkX, chunkZ), updatedParameter)
     (updatedMap, updatedParameter)
   }
 
@@ -58,8 +75,8 @@ class CreatureSpawner extends EnrichedActor {
 
     case SpawnCreaturesInChunk(chunkX, chunkZ) =>
       val senderRef = sender
-      val (updatedMap, _) = updateNumberOfPlayerInChunk(chunkMapToUpdate = numberOfPlayersInChunk,
-        chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1, removeEntryPredicate = _ => false)
+      val (updatedMap, _) = updateNumberOfPlayerInChunk(chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ + 1,
+        removeEntryPredicate = _ => false)
       numberOfPlayersInChunk = updatedMap
       if (!spawnedMobFuturePerChunk.contains(chunkX, chunkZ)) {
         val spawnedMobFuture = context.parent.ask(RequestSpawnPoints(chunkX, chunkZ))(timeout)
@@ -87,8 +104,8 @@ class CreatureSpawner extends EnrichedActor {
 
     case PlayerUnloadedChunk(chunkX, chunkZ) =>
       val senderRef = sender
-      val (updatedMap, actualNumberOfPlayer) = updateNumberOfPlayerInChunk(chunkMapToUpdate = numberOfPlayersInChunk,
-        chunkX = chunkX, chunkZ = chunkZ, updateFunction = _ - 1, removeEntryPredicate = _ == 0)
+      val (updatedMap, actualNumberOfPlayer) = updateNumberOfPlayerInChunk(chunkX = chunkX, chunkZ = chunkZ,
+        updateFunction = _ - 1, removeEntryPredicate = _ == 0)
       numberOfPlayersInChunk = updatedMap
       if (spawnedMobFuturePerChunk.contains(chunkX, chunkZ) && actualNumberOfPlayer == 0) {
         askSomethingToCreatures[DespawnCreature](DespawnCreature(chunkX, chunkZ), senderRef ! _)

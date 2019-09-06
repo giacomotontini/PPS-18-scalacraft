@@ -11,15 +11,38 @@ import io.scalacraft.logic.creatures.parameters.CreatureParameters
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+/**
+ * Used as a mixin to import movement logic of a mob entity actor.
+ * @tparam T the mob entity instance
+ */
+
 trait Movement[T <: MobEntity] {
   this: CreatureParameters[T] with EnrichedActor =>
 
   import Movement._
-  val MovementTickPeriod: FiniteDuration = 15 seconds
 
   protected case object MoveEntity
 
+  /**
+   * Represent a move.
+   * @param deltaX the entity's deviation on x axis
+   * @param deltaY the entity's deviation on y axis
+   * @param deltaZ the entity's deviation on z axis
+   * @param newPosition the entity's new position
+   */
+
   case class Move(deltaX: Int, deltaY: Int, deltaZ: Int, newPosition: Position)
+
+  /**
+   * It computes the movement path of an entity
+   * @param posX the entity x position
+   * @param posY the entity y position
+   * @param posZ the entity z position
+   * @param oldPosX the entity old x position (useful to keep entity away from the direction it came from)
+   * @param oldPosZ the entity old z position (useful to keep entity away from the direction it came from)
+   * @param movesNumber the path's moves number
+   * @return a future with the movements path
+   */
 
   def computeMoves(posX: Int, posY: Int, posZ: Int, oldPosX: Int, oldPosZ: Int, movesNumber: Int): Future[List[Move]] = {
 
@@ -43,7 +66,18 @@ trait Movement[T <: MobEntity] {
     } else Future.successful(List())
   }
 
+  /**
+   * It moves the entity and updates it position.
+   * @return a future that represent the movement termination.
+   */
+
   def doMove(): Future[Unit] = {
+
+    /**
+     * It computes a fluid movement animation.
+     * @param move the move to do.
+     * @param moveIndex the index of the move in the movement path.
+     */
 
     def fluidMovementAnimation(move: Move, moveIndex: Int): Unit = {
 
@@ -89,6 +123,14 @@ object Movement {
   private val SquareExponent = 2
   private val HalfCircumferenceMap = 128
   private val CircumferenceMap = 256
+
+  /**
+   * It compute the yaw and pith angles for a movement.
+   * @param deltaX the entity's deviation on x axis
+   * @param deltaY the entity's deviation on y axis
+   * @param deltaZ the entity's deviation on z axis
+   * @return
+   */
 
   def computeYawAndPitch(deltaX: Int, deltaY: Int, deltaZ: Int): YawAndPitch = {
     val radius = Math.sqrt(Math.pow(deltaX, SquareExponent) + Math.pow(deltaY, SquareExponent) +

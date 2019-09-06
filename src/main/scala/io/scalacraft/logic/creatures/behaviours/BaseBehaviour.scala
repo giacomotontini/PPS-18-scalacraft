@@ -7,6 +7,12 @@ import io.scalacraft.core.packets.DataTypes.Angle
 import io.scalacraft.core.packets.Entities.MobEntity
 import io.scalacraft.core.packets.clientbound.PlayPackets.{DestroyEntities, SpawnMob}
 
+/**
+ * Used as a mixin to import the behaviour of a mob entity actor.
+ * More precisely, it answer the SpawnCreature spawn/despawn packet questions.
+ * @tparam T the mob entity instance
+ */
+
 trait BaseBehaviour[T <: MobEntity] {
   this: CreatureParameters[T] with Actor =>
 

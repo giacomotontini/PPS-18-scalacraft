@@ -35,7 +35,7 @@ class Region(mca: MCAFile) extends EnrichedActor {
 
   private[this] def firstSpawnableHeight(chunk: Chunk, x: Int, z: Int): Int = {
     var yIndex = 255
-    while (chunk.getBlockStateAt(x, yIndex, z) == null || !chunk.getBlockStateAt(x, yIndex, z).isSpawnableSurface()) {
+    while (chunk.getBlockStateAt(x, yIndex, z) == null || !chunk.getBlockStateAt(x, yIndex, z).isSpawnableSurface) {
       yIndex -= 1
     }
     yIndex + 1
@@ -44,8 +44,9 @@ class Region(mca: MCAFile) extends EnrichedActor {
   private[this] def cubeStatesAssertion(chunk: Chunk, blockX: Int, blockY: Int, blockZ: Int, wantWater: Boolean = false): String =
     (for (yDrift <- -2 to 1) yield {
       val nbtBlockState = chunk.getBlockStateAt(blockX, blockY + yDrift, blockZ)
-      val blockState = if (nbtBlockState.isSpawnableSurface(wantWater)) "surface"
-      else "noSurface" //if (nbtBlockState.emptyCube) "noSurface" else "unused"
+      val blockState = if (nbtBlockState.isSolidBlock) "surface"
+      else if (nbtBlockState.isWater) "water"
+      else "noSurface"
       s"assert(state($blockX,${blockY + yDrift},$blockZ,$blockState))"
     }).mkString(",")
 
@@ -92,7 +93,7 @@ class Region(mca: MCAFile) extends EnrichedActor {
     case FindFirstSolidBlockPositionUnder(Position(x, y, z)) =>
       val chunk = mca.getChunk(x >> 4, z >> 4)
       var currentY = y
-      while (chunk.getBlockStateAt(x, currentY, z).emptyCube) currentY -= 1
+      while (!chunk.getBlockStateAt(x, currentY, z).isSolidBlock) currentY -= 1
       sender ! Position(x, currentY, z)
 
     case RequestSpawnPoints(chunkX, chunkZ) =>
@@ -120,8 +121,7 @@ class Region(mca: MCAFile) extends EnrichedActor {
       }
 
       val toAssert = cubeStatesAssertions.reduce((assertion1, assertion2) => s"$assertion1,$assertion2")
-      println(toAssert)
-      sender ! computeCreatureMoves.computeMoves(toAssert,x, y, z)
+      sender ! computeCreatureMoves.computeMoves(toAssert, x, y, z)
 
     case unhandled => log.warning(s"Unhandled message in Region: $unhandled")
   }
@@ -176,7 +176,7 @@ object Region {
    * Represent the light of a block, composed by the block light and the sky light
    *
    * @param blockLight the level of the block light
-   * @param skyLight the level of the sky light
+   * @param skyLight   the level of the sky light
    */
   case class Light(blockLight: Byte, skyLight: Byte)
 

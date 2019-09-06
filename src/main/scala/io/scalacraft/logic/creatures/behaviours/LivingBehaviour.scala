@@ -9,6 +9,12 @@ import io.scalacraft.core.packets.Entities.Living
 import io.scalacraft.core.packets.clientbound.PlayPackets._
 import io.scalacraft.core.packets.serverbound.PlayPackets.{Attack, UseEntity}
 
+/**
+ * Used as a mixin to import the behaviour of a living entity actor.
+ * More precisely, it handles player's attacks.
+ * @tparam T the living entity instance (e.g Chicken, Sheep, ...)
+ */
+
 trait LivingBehaviour[T <: Living] extends BaseBehaviour[T] {
   this: CreatureParameters[T] with Actor =>
 

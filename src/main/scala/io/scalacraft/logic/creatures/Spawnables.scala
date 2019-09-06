@@ -17,23 +17,49 @@ object Spawnables {
 
   case class PositionWithProperties(position: Position, isWater: Boolean)
 
+  /**
+   * Parameters of spawn method.
+   * @param biomeToSpawnPosition map that connect each biome in a chunk to all spawn position.
+   * @param spawnPolicy the spawn rule
+   * @param isWaterCreature true if the creaure is a water creauture, false otherwise.
+   */
+
   case class SpawnCreatureParameters(biomeToSpawnPosition: Map[Int, Set[PositionWithProperties]],
                                      spawnPolicy: Position => Set[PropsWithName],
                                      isWaterCreature: Boolean)
 
+  /**
+   * Results of spawn method.
+   * @param updatedPosition map that connect each biome in a chunk to all spawn position (considering those already used).
+   * @param actorToSpawn the set of actor to be spawned.
+   */
+
   case class SpawnCreatureResult(updatedPosition: Map[Int, Set[PositionWithProperties]],
                                  actorToSpawn: Set[PropsWithName])
 
-  protected[Spawnables] trait SpawnableCreature {
+  /**
+   * Represents generic spawnable creatures.
+   */
+
+  trait SpawnableCreature {
     val randomGenerator: Random = scala.util.Random
 
+    /**
+     * Connect each creature spawnable biome to his spawn probability
+     */
     def spawnableBiomes: Map[Int, Double]
 
     def props(entityId: Int, UUID: UUID, x: Int, y: Int, z: Int, isBaby: Boolean = false, world: ActorRef): Props
 
     def name(UUID: UUID): String
 
+    /**
+     * Spawn the creature in a random position using probability
+     * @param spawnCreatureParameters the method parameters (i.e biomeToSpawnPosition, spawnPolicy, isWaterCreature)
+     * @return the unused position, the list of actor to be spawned
+     */
     def spawn(spawnCreatureParameters: SpawnCreatureParameters): SpawnCreatureResult = {
+
       def positionFilter(positionsWithProperties: Set[PositionWithProperties]): Set[Position] = positionsWithProperties.collect {
         case PositionWithProperties(position, isWater) if isWater == spawnCreatureParameters.isWaterCreature => position
       }
@@ -56,6 +82,9 @@ object Spawnables {
     }
   }
 
+  /**
+   * Represent spawnable farm animal: chickens, sheeps, pigs and cows.
+   */
   trait SpawnableFarmAnimal extends SpawnableCreature with DefaultTimeout {
     override def spawnableBiomes: Map[Int, Double] = Map(1 -> 0.00008, 4 -> 0.00004, 5 -> 0.00003)
 

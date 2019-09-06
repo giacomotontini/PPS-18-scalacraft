@@ -21,6 +21,14 @@ class ComputeCreatureMoves() {
     Position(x, y, z)
   }
 
+  /**
+   * Computes creature possible moves using a prolog algorithm.
+   * @param assertions the assertions to be made.
+   * @param x the entity x position.
+   * @param y the entity y position.
+   * @param z the entity z position
+   * @return the list of possible moves.
+   */
   def computeMoves(assertions: String, x: Int, y: Int, z: Int): List[Position] = {
     def assert(): Unit = {
       val toAssert = s"retractall(state(_,_,_,_)),$assertions"

@@ -1,48 +1,36 @@
 package io.scalacraft.logic.commons
 
-import net.querz.nbt.{CompoundTag, StringTag}
+import io.scalacraft.loaders.Blocks
+import net.querz.nbt.CompoundTag
 
 object RichNbtCompoundTag {
 
+  /**
+   * It's a nbt compound tag enriched with some methods useful to understand the block type
+   * @param nbtTag the tag to be enriched
+   */
+
   implicit class RichNbtCompoundTag(nbtTag: CompoundTag) {
-    val treeTypes = List("birch", "oak", "spruce")
+    import Blocks._
 
-    private[this] def checkIfIsASpecificTypeOfBlock(tagValue: String): Boolean = if (nbtTag != null) {
-      val waterStringTag = new StringTag()
-      waterStringTag.setValue(tagValue)
-      nbtTag.entrySet().stream().anyMatch(_.getValue.equals(waterStringTag))
-    }
-    else false
+    /**
+     * Check if the block associated with the nbt tag is a water block
+     * @return true if is a water block, false otherwise
+     */
+    def isWater: Boolean = nbtTag != null && blockFromCompoundTag(nbtTag).name.equals("water")
 
-    def isWater: Boolean = checkIfIsASpecificTypeOfBlock("minecraft:water")
+    /**
+     * Check if the block associated with the nbt tag is a solid block
+     * @return true if is a solid block, false otherwise
+     */
+    def isSolidBlock: Boolean = nbtTag != null &&
+      List("solid_block", "block_entity").contains(blockFromCompoundTag(nbtTag).`type`.getOrElse(""))
 
-    def isAir: Boolean = checkIfIsASpecificTypeOfBlock("minecraft:air") ||
-      checkIfIsASpecificTypeOfBlock("minecraft:cave_air")
+    /**
+     * Check if the block associated with the nbt tag is a spawnable block (i.e solid or water)
+     * @return true if is a solid block, false otherwise
+     */
+    def isSpawnableSurface: Boolean = isSolidBlock || isWater
 
-    def isGrass: Boolean = checkIfIsASpecificTypeOfBlock("minecraft:grass") ||
-      checkIfIsASpecificTypeOfBlock("minecraft:tall_grass")
-
-    def isLeaves: Boolean =
-      treeTypes.exists(treeType => checkIfIsASpecificTypeOfBlock("minecraft:" + treeType + "_leaves"))
-
-    def isWoodOfTree: Boolean =
-      treeTypes.exists(treeType => checkIfIsASpecificTypeOfBlock("minecraft:" + treeType + "_log"))
-
-    def isLava: Boolean = checkIfIsASpecificTypeOfBlock("minecraft:lava") ||
-      checkIfIsASpecificTypeOfBlock("minecraft:flowing_lava")
-
-    def isPoppy: Boolean = checkIfIsASpecificTypeOfBlock("minecraft:poppy")
-
-    def isDandelion: Boolean = checkIfIsASpecificTypeOfBlock("minecraft:dandelion")
-
-    def isOxyeDaisy: Boolean = checkIfIsASpecificTypeOfBlock("minecraft:oxeye_daisy")
-
-    def isSpawnableSurface: Boolean =
-      !isAir && !isWoodOfTree && !isLeaves && !isGrass && !isLava && !isPoppy && !isDandelion && !isWater && !isOxyeDaisy
-
-    def areFlowers: Boolean = isDandelion || isGrass || isOxyeDaisy || isPoppy
-
-    def emptyCube: Boolean = areFlowers || isAir || isGrass
   }
-
 }

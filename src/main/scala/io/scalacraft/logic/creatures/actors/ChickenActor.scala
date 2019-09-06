@@ -9,6 +9,19 @@ import io.scalacraft.logic.creatures.behaviours.{AI, LivingBehaviour}
 import io.scalacraft.logic.creatures.parameters.CreatureParameters
 import io.scalacraft.core.packets.Entities.Chicken
 
+/**
+ * The actor that represent a chicken in the game. It handle: the movement in the world (AI), the player's attack effect
+ * (damage, sound and death animation) and answer to some request made by CreatureSpawner actor (i.e provides spawn and
+ * despawn packages).
+ * @param id the chicken id
+ * @param _uuid the chicken uuid
+ * @param x the chicken x position
+ * @param y the chicken y position
+ * @param z the chicken z position
+ * @param isBaby the chicken size (baby or not)
+ * @param worldRef the world actor reference
+ */
+
 class ChickenActor(id: Int, _uuid: UUID, x: Int, y: Int, z: Int, isBaby: Boolean, worldRef: ActorRef)
   extends EnrichedActor with CreatureParameters[Chicken] with LivingBehaviour[Chicken] with AI[Chicken] {
 
