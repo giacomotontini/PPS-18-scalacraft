@@ -180,12 +180,7 @@ class Player(username: String, playerUUID: UUID, serverConfiguration: ServerConf
     case RemovePlayer =>
       world ! PlayerLeavingGame(playerEntityId, username)
       reset()
-
-    case entityRelativeMove: EntityRelativeMove => userContext ! entityRelativeMove
-    case entityLookAndRelativeMove: EntityLookAndRelativeMove => userContext ! entityLookAndRelativeMove
-    case entityVelocity: EntityVelocity => userContext ! entityVelocity
-    case entityLook: EntityLook => userContext ! entityLook
-    case entityHeadLook: EntityHeadLook => userContext ! entityHeadLook
+      
     case unhandled => log.warning(s"Unhandled message in Player-$username: $unhandled")
   }
 
