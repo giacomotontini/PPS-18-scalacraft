@@ -1,66 +1,87 @@
 package io.scalacraft
 
-import java.io.{BufferedInputStream, ByteArrayInputStream}
+import akka.actor.ActorSystem
+import com.typesafe.scalalogging.LazyLogging
+import io.scalacraft.core.network.{Server, ServerHandler}
+import io.scalacraft.logic.World
+import io.scalacraft.misc.ServerConfiguration
+import io.scalacraft.core.packets.clientbound.PlayPackets.{GameModeValue, LevelType, ServerDifficulties}
+import scopt.OParser
 
-import io.scalacraft.core.Marshallers.VarIntMarshaller
-import io.scalacraft.core.{Context, Helpers, PacketManager}
+/**
+ * The entrypoint of the server.
+ */
+object Entrypoint extends App with LazyLogging {
 
-import scala.language.postfixOps
+  val builder = OParser.builder[ServerConfiguration]
+  val parser = {
+    import builder._
 
-object Entrypoint extends App {
-
-  implicit val inStream: BufferedInputStream = new BufferedInputStream(System.in)
-  implicit val context: Context = Context.trash
-
-  val marshaller = new VarIntMarshaller()
-
-  val packetManager = if (args(0) == "clientbound") {
-    if (args(1) == "login") {
-      println("here")
-      new PacketManager[io.scalacraft.core.clientbound.LoginPackets.type]
-    } else if (args(1) == "status") {
-      new PacketManager[io.scalacraft.core.clientbound.StatusPacket.type]
-    } else {
-      new PacketManager[io.scalacraft.core.clientbound.PlayPackets.type]
-    }
-  } else {
-    if (args(1) == "login") {
-      new PacketManager[io.scalacraft.core.serverbound.LoginPackets.type]
-    } else if (args(1) == "status") {
-      new PacketManager[io.scalacraft.core.serverbound.StatusPackets.type]
-    } else if (args(1) == "handshaking") {
-      new PacketManager[io.scalacraft.core.serverbound.HandshakingPackets.type]
-    } else {
-      new PacketManager[io.scalacraft.core.serverbound.PlayPackets.type]
-    }
+    OParser.sequence(
+      programName(ServerConfiguration.Name),
+      head(ServerConfiguration.Name, ServerConfiguration.Version),
+      opt[Unit]("debug")
+        .action((_, c) => c.copy(debug = true))
+        .text("enable debug mode"),
+      opt[Unit]("reduced-debug-info")
+        .action((_, c) => c.copy(reducedDebugInfo = true))
+        .text("disable in-game debug info"),
+      opt[Int]('p', "port")
+        .action((p, c) => c.copy(port = p))
+        .text("the port listen on"),
+      opt[String]("description")
+        .action((d, c) => c.copy(serverDescription = d))
+        .text("the server description"),
+      opt[String]("game-mode")
+        .validate(g => if (parseGameMode.isDefinedAt(g)) success else failure("invalid game mode"))
+        .action((g, c) => c.copy(gameMode = parseGameMode(g))),
+      opt[String]("server-difficulty")
+        .validate(d => if (parseServerDifficulty.isDefinedAt(d)) success else failure("invalid server difficulty"))
+        .action((d, c) => c.copy(serverDifficulty = parseServerDifficulty(d))),
+      opt[Int]("max-players")
+        .action((m, c) => c.copy(maxPlayers = m))
+        .text("the maximum number of players"),
+      opt[String]("biome-type")
+        .validate(b => if (parseLevelTypeBiome.isDefinedAt(b)) success else failure("invalid biome type"))
+        .action((b, c) => c.copy(levelTypeBiome = parseLevelTypeBiome(b)))
+    )
   }
 
-  while (true) {
-    val length = marshaller.unmarshal().asInstanceOf[Int] - 1
-    val packetId = marshaller.unmarshal().asInstanceOf[Int]
-    val array = new Array[Byte](length)
-    for (i <- 0 until length) {
-      array(i) = inStream.read().toByte
-    }
+  OParser.parse(parser, args, ServerConfiguration()) match {
+    case Some(config) => startServer(config)
+    case _ => // arguments are bad, error message will have been displayed
+  }
 
-    val buffer = new ByteArrayInputStream(array)
-    val bufferedStream = new BufferedInputStream(buffer)
+  private def parseGameMode: PartialFunction[String, GameModeValue] = {
+    case "adventure" => GameModeValue.Adventure
+    case "creative" => GameModeValue.Creative
+    case "spectator" => GameModeValue.Spectator
+    case "survival" => GameModeValue.Survival
+  }
 
-    try {
-      val parsed = packetManager.unmarshal(packetId)(bufferedStream)
-      println(parsed)
-    } catch {
-      case e: Exception =>
-        if (packetId != 82 && packetId != 63) {
-          System.err.println("packet id " + packetId)
-          e.printStackTrace()
-          System.err.println(Helpers.bytes2hex(array))
-        }
+  private def parseServerDifficulty: PartialFunction[String, ServerDifficulties] = {
+    case "normal" => ServerDifficulties.Normal
+    case "hard" => ServerDifficulties.Hard
+    case "easy" => ServerDifficulties.Easy
+    case "peaceful" => ServerDifficulties.Peaceful
+  }
 
-    }
+  private def parseLevelTypeBiome: PartialFunction[String, LevelType] = {
+    case "default" => LevelType.Default
+    case "amplified" => LevelType.Amplified
+    case "buffet" => LevelType.Buffet
+    case "custom" => LevelType.Custom
+    case "flat" => LevelType.Flat
+    case "largebiomes" => LevelType.LargeBiomes
+  }
 
-    buffer.close()
-    bufferedStream.close()
+  private def startServer(config: ServerConfiguration): Unit = {
+    logger.debug("Starting main ActorSystem..")
+    val system = ActorSystem("scalacraft")
+    system.actorOf(World.props(config), World.name)
+
+    val server = Server(config.port, () => new ServerHandler(system, config))
+    server.run()
   }
 
 }
