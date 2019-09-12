@@ -20,7 +20,7 @@ lazy val root = Project(
   .settings(
     assemblyJarName in assembly := s"${name.value}-${version.value}.jar",
     libraryDependencies ++= dependencies,
-    mainClass in assembly := Some("io.scalacraft.EntryPoint"),
+    mainClass in assembly := Some("io.scalacraft.Entrypoint"),
     name := projectName,
     scalaVersion := projectScalaVersion,
     version := projectVersion,

@@ -1,15 +1,13 @@
 package io.scalacraft.logic.creatures
 
-import java.io.FileInputStream
-
 import alice.tuprolog.{Struct, Term, Theory}
-import io.scalacraft.logic.commons.ScalaToProlog._
 import io.scalacraft.core.packets.DataTypes.Position
+import io.scalacraft.logic.commons.ScalaToProlog._
 
 class ComputeCreatureMoves() {
 
-  val FileName = "src/main/prolog/computeMoves.pl"
-  private val engine = mkPrologEngine(new Theory(new FileInputStream(FileName)))
+  val FileName = "/prolog/computeMoves.pl"
+  private val engine = mkPrologEngine(new Theory(getClass.getResourceAsStream(FileName)))
 
   implicit def termToPosition(terms: List[Term]): List[Position] = terms.map { term =>
     import alice.tuprolog.Int
